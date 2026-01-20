@@ -1,6 +1,7 @@
 package com.cz.api.utils;
 
 import com.cz.api.vo.ResultVO;
+import com.cz.common.model.exception.ApiException;
 
 public class R {
 
@@ -15,6 +16,13 @@ public class R {
         ResultVO r = new ResultVO();
         r.setCode(code);
         r.setMsg(msg);
+        return r;
+    }
+
+    public static ResultVO error(ApiException ex) {
+        ResultVO r = new ResultVO();
+        r.setCode(ex.getCode());
+        r.setMsg(ex.getMessage());
         return r;
     }
 

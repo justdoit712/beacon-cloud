@@ -18,6 +18,6 @@ public class TestController {
     @GetMapping("/api/test")
     public void test(){
         System.out.println("====================================");
-        checkFilterContext.check(new Object());
+        checkFilterContext.check(null);
     }
 }

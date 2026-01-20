@@ -1,6 +1,7 @@
 package com.cz.api.filter;
 
 
+import com.cz.common.model.model.StandardSubmit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
@@ -28,13 +29,13 @@ public class CheckFilterContext {
     /**
      * 当前check方法用于管理校验链的顺序
      */
-    public void check(Object obj) {
+    public void check(StandardSubmit submit) {
         //1. 将获取到filters基于,做切分
         String[] filterArray = filters.split(",");
-        //2. 遍历数组即可
+        //2. 遍历数组
         for (String filter : filterArray) {
             CheckFilter checkFilter = checkFiltersMap.get(filter);
-            checkFilter.check(obj);
+            checkFilter.check(submit);
         }
     }
 }

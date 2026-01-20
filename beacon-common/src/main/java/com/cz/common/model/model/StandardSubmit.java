@@ -1,9 +1,8 @@
-package com.cz.common.model;
+package com.cz.common.model.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -15,7 +14,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class StandardSubmit {
+public class StandardSubmit implements Serializable {
 
     /**
      * 针对当前短信的唯一标识
@@ -58,7 +57,7 @@ public class StandardSubmit {
     private LocalDateTime sendTime;
 
     /**
-     * 当前短信的费用
+     * 当前短信的费用，单位：厘
      */
     private Long fee;
 
@@ -93,6 +92,25 @@ public class StandardSubmit {
      */
     private int reportState;
 
+    /**
+     * 真实ip
+     */
+    private String realIP;
+
+    /**
+     * 客户端请求携带的apikey
+     */
+    private String apiKey;
+
+    /**
+     * 0-验证码短信 1-通知类短信 2-营销类短信
+     */
+    private int state;
+
+    /**
+     * 短信签名ID
+     */
+    private Long SignId;
     // 后续再做封装~~~~
 
 }

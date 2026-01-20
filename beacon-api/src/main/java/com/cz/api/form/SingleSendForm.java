@@ -3,10 +3,10 @@ package com.cz.api.form;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import org.hibernate.validator.constraints.Range;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 /**
  * @author zc
@@ -34,7 +34,7 @@ public class SingleSendForm {
 
     /** 0-验证码短信 1-通知类短信 2-营销类短信 */
     @Range(min = 0, max = 2, message = "短信类型只能是0-2的整数")
-    @NonNull
+    @NotNull
     private Integer state;
 
 }
