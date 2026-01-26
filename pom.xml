@@ -20,6 +20,7 @@
         <module>beacon-common</module>
         <module>beacon-cache</module>
         <module>beacon-test</module>
+        <module>beacon-strategy</module>
     </modules>
 
     <properties>
