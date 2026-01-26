@@ -26,10 +26,34 @@ public class MobileAreaMapperTest {
     @Test
     public void queryAll() {
         List<MobileArea> list = mapper.queryAll();
-        Map map = new HashMap(list.size());
-        for (MobileArea mobileArea : list) {
-            map.put("phase:" + mobileArea.getMobileNumber(),mobileArea.getMobileArea() + "," + mobileArea.getMobileType());
+        System.out.println("数据总条数: " + list.size());
+
+        // 定义每批次的大小
+        int batchSize = 3000;
+        int total = list.size();
+
+
+        for (int i = 0; i < total; i += batchSize) {
+            // 计算当前批次的结束索引（注意不要越界，最后一次取总长度）
+            int toIndex = Math.min(i + batchSize, total);
+
+            // subList(from, to) 包含 from，不包含 to
+            List<MobileArea> batchList = list.subList(i, toIndex);
+
+            // 4. 处理这一批数据
+            Map<String, String> map = new HashMap<>(batchList.size());
+            for (MobileArea mobileArea : batchList) {
+                map.put("phase:" + mobileArea.getMobileNumber(),
+                        mobileArea.getMobileArea() + "," + mobileArea.getMobileType());
+            }
+
+            try {
+                // 发送这一批
+                cacheClient.pipeline(map);
+                System.out.println("成功处理批次: " + i + " - " + toIndex);
+            } catch (Exception e) {
+                System.err.println("批次处理失败 [" + i + "," + toIndex + "]: " + e.getMessage());
+            }
         }
-        cacheClient.pipeline(map);
     }
 }
