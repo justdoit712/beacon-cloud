@@ -26,4 +26,9 @@ public interface CacheConstant {
      * 号段补全
      */
     String PHASE = "phase:";
+
+    /**
+     * 敏感词
+     */
+    String DIRTY_WORD = "dirty_word";
 }

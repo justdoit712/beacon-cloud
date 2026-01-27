@@ -3,6 +3,7 @@ package com.cz.cache.controller;
 import com.msb.framework.redis.RedisClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -13,6 +14,8 @@ import java.util.Set;
 public class CacheController {
     @Autowired
     private RedisClient redisClient;
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
     @PostMapping(value = "/cache/hmset/{key}")
     public void hmset(@PathVariable(value = "key")String key, @RequestBody Map<String,Object> map){
@@ -74,4 +77,26 @@ public class CacheController {
         log.info("【缓存模块】 get方法，获取key ={} 的数据 value = {}", key,value);
         return value;
     }
+
+
+    @PostMapping(value = "/cache/saddstr/{key}")
+    public void saddStr(@PathVariable(value = "key")String key, @RequestBody String... value){
+        log.info("【缓存模块】 saddStr方法，存储key = {}，存储value = {}", key, value);
+        redisClient.sAdd(key,value);
+    }
+
+
+    @PostMapping(value = "/cache/sinterstr/{key}/{sinterKey}")
+    public Set<Object> sinterStr(@PathVariable(value = "key")String key, @PathVariable String sinterKey,@RequestBody String... value){
+        log.info("【缓存模块】 sinterStr的交集方法，存储key = {}，sinterKey = {}，存储value = {}", key, sinterKey,value);
+        //1、 存储数据到set集合
+        redisClient.sAdd(key,value);
+        //2、 需要将key和sinterKey做交集操作，并拿到返回的set
+        Set<Object> result = redisTemplate.opsForSet().intersect(key, sinterKey);
+        //3、 将key删除
+        redisClient.delete(key);
+        //4、 返回交集结果
+        return result;
+    }
+
 }
