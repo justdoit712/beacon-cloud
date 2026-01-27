@@ -1,4 +1,4 @@
-package com.cz.api.config;
+package com.cz.strategy.config;
 
 
 
@@ -7,9 +7,9 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 
 /**
  * 设置RabbitTemplate的confirm&return机制
@@ -30,11 +30,12 @@ public class RabbitTemplateConfig {
         rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
         //4、配置confirm机制
         rabbitTemplate.setConfirmCallback(new RabbitTemplate.ConfirmCallback(){
+
             @Override
             public void confirm(CorrelationData correlationData, boolean ack, String cause) {
                 // ack为false，代表消息没有发送到exchange。
                 if(!ack){
-                    log.error("【接口模块-发送消息】 消息没有发送到交换机，correlationData = {}，cause = {}",correlationData,cause);
+                    log.error("【策略模块-发送消息】 消息没有发送到交换机，correlationData = {}，cause = {}",correlationData,cause);
                 }
             }
         });
@@ -45,7 +46,7 @@ public class RabbitTemplateConfig {
             // 触发这个回调，说明交换机没有把消息路由到指定的队列中
             @Override
             public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
-                log.error("【接口模块-发送消息】 消息没有路由到指定的Queue。 message = {},exchange = {},routingKey = {}",
+                log.error("【策略模块-发送消息】 消息没有路由到指定的Queue。 message = {},exchange = {},routingKey = {}",
                         new String(message.getBody()),exchange,routingKey);
             }
         });

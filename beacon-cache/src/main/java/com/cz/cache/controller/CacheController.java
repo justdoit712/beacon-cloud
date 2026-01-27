@@ -66,4 +66,12 @@ public class CacheController {
         });
 
     }
+
+    @GetMapping("/cache/get/{key}")
+    public Object get(@PathVariable(value = "key")String key){
+        log.info("【缓存模块】 get方法，获取key ={}的数据", key);
+        Object value = redisClient.get(key);
+        log.info("【缓存模块】 get方法，获取key ={} 的数据 value = {}", key,value);
+        return value;
+    }
 }
