@@ -18,6 +18,7 @@ public class StrategyStarterApp {
     }
     public static void main(String[] args) {
         SpringApplication.run(StrategyStarterApp.class,args);
+        System.out.println("StrategyStarterApp  mission complete");
     }
 
 }

@@ -17,5 +17,6 @@ public class ApiStarterApp {
 
     public static void main(String[] args) {
         org.springframework.boot.SpringApplication.run(ApiStarterApp.class, args);
+        System.out.println("ApiStarterApp  mission complete");
     }
 }

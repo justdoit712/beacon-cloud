@@ -24,7 +24,7 @@ public class DirtyWordStrategyFilter implements StrategyFilter {
 
     @Override
     public void strategy(StandardSubmit submit) {
-        log.info("【策略模块-敏感词校验】   校验ing…………");
+        log.info("【策略模块-敏感词校验-dirtyword】   校验ing…………");
         //1、 获取短信内容
         String text = submit.getText();
 

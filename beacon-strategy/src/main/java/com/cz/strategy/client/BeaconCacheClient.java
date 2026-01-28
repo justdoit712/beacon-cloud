@@ -19,4 +19,8 @@ public interface BeaconCacheClient {
 
     @PostMapping(value = "/cache/sinterstr/{key}/{sinterKey}")
     Set<Object> sinterStr(@PathVariable(value = "key")String key, @PathVariable String sinterKey, @RequestBody String... value);
+
+    @GetMapping("/cache/smember/{key}")
+    Set smember(@PathVariable(value = "key")String key);
+
 }
