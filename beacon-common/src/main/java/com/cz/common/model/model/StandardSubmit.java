@@ -119,6 +119,11 @@ public class StandardSubmit implements Serializable {
      * 短信签名ID
      */
     private Long SignId;
+
+    /**
+     * 是否是转码短信
+     */
+    private Boolean isTransfer = false;
     // 后续再做封装~~~~
 
 }

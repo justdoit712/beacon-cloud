@@ -52,4 +52,6 @@ public interface CacheConstant {
      * 分隔符
      */
     String SEPARATE = ":";
+
+    String TRANSFER = "transfer:";
 }
