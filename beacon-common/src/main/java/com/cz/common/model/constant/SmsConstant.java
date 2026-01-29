@@ -12,4 +12,19 @@ public interface SmsConstant {
      */
     int REPORT_FAIL = 2;
 
+    /**
+     * 验证码类型短信
+     */
+    int CODE_TYPE = 0;
+
+    /**
+     * 通知类型短信
+     */
+    int NOTIFY_TYPE = 1;
+
+    /**
+     * 营销类型短信
+     */
+    int MARKETING_TYPE = 2;
+
 }

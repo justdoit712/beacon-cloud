@@ -17,7 +17,10 @@ public enum ExceptionEnums {
     ERROR_DIRTY_WORD (-13,"包含敏感词"),
     BLACK_GLOBAL(-14,"全局黑名单"),
     BLACK_CLIENT(-15,"客户黑名单"),
+    ONE_MINUTE_LIMIT(-16,"一分钟限流规则"),
+    ONE_HOUR_LIMIT(-17,"一小时限流规则")
     ;
+
 
     private Integer code;
 

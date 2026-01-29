@@ -4,6 +4,7 @@ import com.msb.framework.redis.RedisClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -97,6 +98,33 @@ public class CacheController {
         redisClient.delete(key);
         //4、 返回交集结果
         return result;
+    }
+
+    @PostMapping(value = "/cache/zadd/{key}/{score}/{member}")
+    public Boolean zadd(@PathVariable(value = "key")String key,
+                        @PathVariable(value = "score")Long score,
+                        @PathVariable(value = "member")Object member){
+        log.info("【缓存模块】 zaddLong方法，存储key = {}，存储score = {}，存储value = {}", key,score, member);
+        Boolean result = redisClient.zAdd(key, member, score);
+        return result;
+    }
+
+    @GetMapping(value = "/cache/zrangebyscorecount/{key}/{start}/{end}")
+    public int zRangeByScoreCount(@PathVariable(value = "key") String key,
+                                  @PathVariable(value = "start") Double start,
+                                  @PathVariable(value = "end") Double end) {
+        log.info("【缓存模块】 zRangeByScoreCount方法，查询key = {},start = {},end = {}", key,start,end);
+        Set<ZSetOperations.TypedTuple<Object>> values = redisTemplate.opsForZSet().rangeByScoreWithScores(key, start, end);
+        if(values != null){
+            return values.size();
+        }
+        return 0;
+    }
+
+    @DeleteMapping(value = "/cache/zremove/{key}/{member}")
+    public void zRemove(@PathVariable(value = "key") String key,@PathVariable(value = "member") String member) {
+        log.info("【缓存模块】 zRemove方法，删除key = {},member = {}", key,member);
+        redisClient.zRemove(key,member);
     }
 
 }

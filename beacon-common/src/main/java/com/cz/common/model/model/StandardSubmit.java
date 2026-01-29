@@ -124,6 +124,12 @@ public class StandardSubmit implements Serializable {
      * 是否是转码短信
      */
     private Boolean isTransfer = false;
+
+    /**
+     * 针对一小时限流规则存储的系统时间毫秒值
+     */
+
+    private Long oneHourLimitMilli;
     // 后续再做封装~~~~
 
 }
