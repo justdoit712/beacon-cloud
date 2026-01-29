@@ -15,7 +15,10 @@ public enum ExceptionEnums {
     SNOWFLAKE_OUT_OF_RANGE(-11,"雪花算法生成的id超出范围！"),
     SNOWFLAKE_TIME_BACK(-12,"雪花算法生成的id出现时间回拨！"),
     ERROR_DIRTY_WORD (-13,"包含敏感词"),
+    BLACK_GLOBAL(-14,"全局黑名单"),
+    BLACK_CLIENT(-15,"客户黑名单"),
     ;
+
     private Integer code;
 
     private String msg;

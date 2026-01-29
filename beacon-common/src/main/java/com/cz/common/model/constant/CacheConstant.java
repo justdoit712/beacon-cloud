@@ -35,11 +35,21 @@ public interface CacheConstant {
     /**
      * 回调签名
      */
-    String IS_CALLBACK = "is_callback:";
+    String IS_CALLBACK = "is_Callback:";
 
 
     /**
      * 回调地址
      */
     String CALLBACK_URL = "callback_url";
+
+    /**
+     * 黑名单
+     */
+    String BLACK = "black:";
+
+    /**
+     * 分隔符
+     */
+    String SEPARATE = ":";
 }

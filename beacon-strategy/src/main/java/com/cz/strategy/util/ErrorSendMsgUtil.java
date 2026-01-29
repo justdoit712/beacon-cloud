@@ -25,10 +25,8 @@ public class ErrorSendMsgUtil {
     /**
      * 策略模块校验未通过，发送写日志操作
      * @param submit
-     * @param dirtyWords
      */
-    public void sendWriteLog(StandardSubmit submit, List<String> dirtyWords) {
-        submit.setErrorMsg(ExceptionEnums.ERROR_DIRTY_WORD.getMsg() + "dirtyWords = " + dirtyWords.toString());
+    public void sendWriteLog(StandardSubmit submit) {
         submit.setReportState(SmsConstant.REPORT_FAIL);
         // 发送消息到写日志队列
         rabbitTemplate.convertAndSend(RabbitMQConstants.SMS_WRITE_LOG, submit);
@@ -39,10 +37,10 @@ public class ErrorSendMsgUtil {
      */
 
     public void sendPushReport(StandardSubmit submit) {
-        Integer isCallback = cacheClient.hgetInteger(CacheConstant.CLIENT_BUSINESS + submit.getApiKey(), CacheConstant.IS_CALLBACK);
+        Integer isCallback = cacheClient.hgetInteger(CacheConstant.CLIENT_BUSINESS + submit.getApiKey(), "isCallback");
         if(isCallback == 1){
             // 如果需要回调，再查询客户的回调地址
-            String callbackUrl = cacheClient.hget(CacheConstant.CLIENT_BUSINESS + submit.getApiKey(), CacheConstant.CALLBACK_URL);
+            String callbackUrl = cacheClient.hget(CacheConstant.CLIENT_BUSINESS + submit.getApiKey(), "callbackUrl");
             // 如果回调地址不为空
             if(!StringUtils.isEmpty(callbackUrl)){
                 //客户需要状态报告推送，开始封装StandardReport
