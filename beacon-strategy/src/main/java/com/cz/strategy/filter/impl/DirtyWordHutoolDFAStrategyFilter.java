@@ -12,6 +12,7 @@ import com.cz.strategy.client.BeaconCacheClient;
 import com.cz.strategy.config.RabbitMQConfig;
 import com.cz.strategy.filter.StrategyFilter;
 import com.cz.strategy.util.DFAUtil;
+import com.cz.strategy.util.ErrorSendMsgUtil;
 import com.cz.strategy.util.HutoolDFAUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -32,6 +33,8 @@ public class DirtyWordHutoolDFAStrategyFilter implements StrategyFilter {
     private RabbitTemplate rabbitTemplate;
     @Autowired
     private BeaconCacheClient cacheClient;
+    @Autowired
+    private ErrorSendMsgUtil errorSendMsgUtil;
     @Override
     public void strategy(StandardSubmit submit) {
         log.info("【策略模块-敏感词校验-hutoolDFADirtyWord】   校验ing…………");
@@ -46,32 +49,15 @@ public class DirtyWordHutoolDFAStrategyFilter implements StrategyFilter {
             // 5、 如果有敏感词，抛出异常 / 其他操作。。
             log.info("【策略模块-敏感词校验】   短信内容包含敏感词信息， dirtyWords = {}", dirtyWords);
             // 封装错误信息
-            submit.setErrorMsg(ExceptionEnums.ERROR_DIRTY_WORD.getMsg() + "dirtyWords = " + dirtyWords.toString());
-            submit.setReportState(SmsConstant.REPORT_FAIL);
-            // 发送消息到写日志队列
-            rabbitTemplate.convertAndSend(RabbitMQConstants.SMS_WRITE_LOG,submit);
+            errorSendMsgUtil.sendWriteLog(submit, dirtyWords);
             // 发送状态报告前，需要对StandardReport进行封装
-            Integer isCallback = cacheClient.hgetInteger(CacheConstant.CLIENT_BUSINESS + submit.getApiKey(), CacheConstant.IS_CALLBACK);
-            if(isCallback == 1){
-                // 如果需要回调，再查询客户的回调地址
-                String callbackUrl = cacheClient.hget(CacheConstant.CLIENT_BUSINESS + submit.getApiKey(), CacheConstant.CALLBACK_URL);
-                // 如果回调地址不为空
-                if(!StringUtils.isEmpty(callbackUrl)){
-                    //客户需要状态报告推送，开始封装StandardReport
-                    StandardReport report = new StandardReport();
-                    BeanUtils.copyProperties(submit,report);
-                    report.setIsCallback(isCallback);
-                    report.setCallbackUrl(callbackUrl);
-                    // 发送消息到RabbitMQ
-                    rabbitTemplate.convertAndSend(RabbitMQConstants.SMS_PUSH_REPORT,report);
-                }
-
-
-            }
+            errorSendMsgUtil.sendPushReport(submit);
             // 抛出异常
             throw new StrategyException(ExceptionEnums.ERROR_DIRTY_WORD);
 
         }
+
+        log.info("【策略模块-敏感词校验】   短信内容没有敏感词信息");
     }
 }
 
