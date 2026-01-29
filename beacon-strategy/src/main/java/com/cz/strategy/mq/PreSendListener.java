@@ -1,6 +1,7 @@
 package com.cz.strategy.mq;
 
 import com.cz.common.model.constant.RabbitMQConstants;
+import com.cz.common.model.exception.StrategyException;
 import com.cz.common.model.model.StandardSubmit;
 import com.cz.strategy.filter.StrategyFilterContext;
 import com.rabbitmq.client.Channel;
@@ -30,9 +31,9 @@ public class PreSendListener {
             filterContext.strategy(submit);
             log.info("【策略模块-消费完毕】手动ack");
             channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
-        } catch (IOException e) {
-            e.printStackTrace();
-            log.error("【策略模块-消费失败】凉凉~~~");
+        } catch (StrategyException e) {
+            log.info("【策略模块-消费失败】未通过 msg = {}",e.getMessage());
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
         }
     }
 }

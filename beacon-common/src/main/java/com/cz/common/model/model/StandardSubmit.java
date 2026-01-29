@@ -1,9 +1,11 @@
 package com.cz.common.model.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 在接口模块-策略模块-短信网关模块需要做校验和封装的POJO类对象
@@ -54,6 +56,7 @@ public class StandardSubmit implements Serializable {
     /**
      * 短信的发送时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime sendTime;
 
     /**
@@ -91,6 +94,11 @@ public class StandardSubmit implements Serializable {
      * 短信的发送状态， 0-等待ing，1-成功，2-失败
      */
     private int reportState;
+
+    /**
+     * 短信的发送错误信息
+     */
+    private String errorMsg;
 
     /**
      * 真实ip

@@ -8,6 +8,7 @@ import com.cz.common.model.model.StandardSubmit;
 import com.cz.common.model.constant.RabbitMQConstants;
 import com.cz.common.model.enums.ExceptionEnums;
 import com.cz.common.model.util.SnowFlakeUtil;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cz.api.utils.R;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+
+import java.time.LocalDateTime;
+import java.util.Date;
 
 
 @RestController
@@ -71,6 +75,7 @@ public class SmsController {
 
         //     基于雪花算法生成唯一id，并添加到StandardSubmit对象中
         submit.setSequenceId(snowFlakeUtil.nextId());
+        submit.setSendTime(LocalDateTime.now());
         //     发送到MQ，交给策略模块处理
 
         rabbitTemplate.convertAndSend(RabbitMQConstants.SMS_PRE_SEND,submit,new CorrelationData(submit.getSequenceId().toString()));

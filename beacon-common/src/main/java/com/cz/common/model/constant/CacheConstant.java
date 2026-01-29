@@ -31,4 +31,15 @@ public interface CacheConstant {
      * 敏感词
      */
     String DIRTY_WORD = "dirty_word";
+
+    /**
+     * 回调签名
+     */
+    String IS_CALLBACK = "is_callback:";
+
+
+    /**
+     * 回调地址
+     */
+    String CALLBACK_URL = "callback_url";
 }

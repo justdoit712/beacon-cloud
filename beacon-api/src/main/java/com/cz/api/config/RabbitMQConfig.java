@@ -2,6 +2,9 @@ package com.cz.api.config;
 
 
 import com.cz.common.model.constant.RabbitMQConstants;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -31,8 +34,17 @@ public class RabbitMQConfig {
      * Spring 会自动发现这个 Bean，并在监听消息时使用它将 byte[] 转换为 Java 对象
      */
     @Bean
-    public MessageConverter messageConverter() {
-        return new Jackson2JsonMessageConverter();
+    public MessageConverter jsonMessageConverter() {
+        ObjectMapper mapper = new ObjectMapper();
+
+        // 1. 注册支持 LocalDateTime 的模块
+        mapper.registerModule(new JavaTimeModule());
+
+        // 2. 禁用“将日期序列化为时间戳”的特性
+        // 这样 LocalDateTime 就会被序列化为 yyyy-MM-dd HH:mm:ss 格式的字符串
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        return new Jackson2JsonMessageConverter(mapper);
     }
 
 }

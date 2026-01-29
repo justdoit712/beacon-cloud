@@ -13,7 +13,8 @@ public enum ExceptionEnums {
     BALANCE_NOT_ENOUGH(-6,"手客户余额不足"),
     PARAMETER_ERROR(-10,"参数不合法！"),
     SNOWFLAKE_OUT_OF_RANGE(-11,"雪花算法生成的id超出范围！"),
-    SNOWFLAKE_TIME_BACK(-12,"雪花算法生成的id出现时间回拨！")
+    SNOWFLAKE_TIME_BACK(-12,"雪花算法生成的id出现时间回拨！"),
+    ERROR_DIRTY_WORD (-13,"包含敏感词"),
     ;
     private Integer code;
 
