@@ -36,4 +36,12 @@ public interface BeaconCacheClient {
 
     @DeleteMapping(value = "/cache/zremove/{key}/{member}")
     public void zRemove(@PathVariable(value = "key") String key,@PathVariable(value = "member") String member) ;
+
+
+    @PostMapping(value = "/cache/hincrby/{key}/{field}/{delta}")
+     Long hIncrBy(@PathVariable(value = "key") String key,
+                        @PathVariable(value = "field") String field,
+                        @PathVariable(value = "delta") Long delta);
+
+
 }
