@@ -1,6 +1,10 @@
 package com.cz.common.model.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,6 +21,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StandardReport implements Serializable {
+
+    /**
+     * 为了在网关运营商的二次回调中可以方便查询客户的状态报告的推送信息
+     */
+    private String apikey;
 
     /**
      * 针对当前短信的唯一标识，雪花算法（保留）
@@ -42,7 +51,8 @@ public class StandardReport implements Serializable {
     /**
      * 短信的发送时间，当前系统时间
      */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime sendTime;
 
     /**
@@ -60,5 +70,15 @@ public class StandardReport implements Serializable {
      */
     private Integer isCallback;
     private String callbackUrl;
+
+    /**
+     *  推送报告重试次数
+     */
+    private Integer resendCount = 0;
+
+    /**
+     * 如果第一次修改操作，这里为false，如果是第二次投递，需要直接记录日志信息
+     */
+    private Boolean reUpdate = false;
 
 }
