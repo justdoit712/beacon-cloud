@@ -2,14 +2,10 @@ package com.cz.strategy.util;
 
 
 
-import com.cz.common.model.constant.CacheConstant;
-import com.cz.strategy.client.BeaconCacheClient;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
-
-import java.util.Set;
 
 import static com.google.common.collect.ConcurrentHashMultiset.create;
 

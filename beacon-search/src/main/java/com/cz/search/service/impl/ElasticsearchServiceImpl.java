@@ -1,7 +1,7 @@
 package com.cz.search.service.impl;
 
-import com.cz.common.model.enums.ExceptionEnums;
-import com.cz.common.model.exception.SearchException;
+import com.cz.common.enums.ExceptionEnums;
+import com.cz.common.exception.SearchException;
 import com.cz.search.service.SearchService;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.index.IndexRequest;

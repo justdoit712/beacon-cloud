@@ -1,7 +1,7 @@
 package com.cz.api.utils;
 
 import com.cz.api.vo.ResultVO;
-import com.cz.common.model.exception.ApiException;
+import com.cz.common.exception.ApiException;
 
 public class R {
 

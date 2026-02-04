@@ -1,7 +1,7 @@
 package com.cz.api.filter;
 
 
-import com.cz.common.model.model.StandardSubmit;
+import com.cz.common.model.StandardSubmit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;

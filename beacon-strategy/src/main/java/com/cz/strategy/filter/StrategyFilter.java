@@ -1,6 +1,6 @@
 package com.cz.strategy.filter;
 
-import com.cz.common.model.model.StandardSubmit;
+import com.cz.common.model.StandardSubmit;
 
 public interface StrategyFilter {
 

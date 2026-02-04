@@ -1,9 +1,9 @@
 package com.cz.push.mq;
 
 
-import com.cz.common.model.constant.RabbitMQConstants;
-import com.cz.common.model.model.StandardReport;
-import com.cz.common.model.util.JsonUtil;
+import com.cz.common.constant.RabbitMQConstants;
+import com.cz.common.model.StandardReport;
+import com.cz.common.util.JsonUtil;
 import com.cz.push.config.RabbitMQConfig;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;

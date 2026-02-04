@@ -2,7 +2,7 @@ package com.cz.strategy.util;
 
 
 
-import com.cz.common.model.model.StandardSubmit;
+import com.cz.common.model.StandardSubmit;
 
 import java.util.Map;
 

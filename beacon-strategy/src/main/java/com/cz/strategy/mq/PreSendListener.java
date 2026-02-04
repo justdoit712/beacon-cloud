@@ -1,8 +1,8 @@
 package com.cz.strategy.mq;
 
-import com.cz.common.model.constant.RabbitMQConstants;
-import com.cz.common.model.exception.StrategyException;
-import com.cz.common.model.model.StandardSubmit;
+import com.cz.common.constant.RabbitMQConstants;
+import com.cz.common.exception.StrategyException;
+import com.cz.common.model.StandardSubmit;
 import com.cz.strategy.filter.StrategyFilterContext;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;

@@ -4,11 +4,10 @@ package com.cz.api.controller;
 import com.cz.api.filter.CheckFilterContext;
 import com.cz.api.form.SingleSendForm;
 import com.cz.api.vo.ResultVO;
-import com.cz.common.model.model.StandardSubmit;
-import com.cz.common.model.constant.RabbitMQConstants;
-import com.cz.common.model.enums.ExceptionEnums;
-import com.cz.common.model.util.SnowFlakeUtil;
-import lombok.Data;
+import com.cz.common.model.StandardSubmit;
+import com.cz.common.constant.RabbitMQConstants;
+import com.cz.common.enums.ExceptionEnums;
+import com.cz.common.util.SnowFlakeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +24,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 
 @RestController

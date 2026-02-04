@@ -1,7 +1,6 @@
 package com.cz.strategy.filter.impl;
 
-import com.cz.common.model.constant.CacheConstant;
-import com.cz.common.model.model.StandardSubmit;
+import com.cz.common.model.StandardSubmit;
 import com.cz.strategy.client.BeaconCacheClient;
 import com.cz.strategy.filter.StrategyFilter;
 import com.cz.strategy.util.DFAUtil;
@@ -10,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
-import java.util.UUID;
 
 @Service(value = "dfaDirtyWord")
 @Slf4j

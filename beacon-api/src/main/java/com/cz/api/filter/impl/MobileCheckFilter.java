@@ -2,9 +2,9 @@ package com.cz.api.filter.impl;
 
 import com.cz.api.filter.CheckFilter;
 import com.cz.api.utils.PhoneFormatCheckUtil;
-import com.cz.common.model.model.StandardSubmit;
-import com.cz.common.model.enums.ExceptionEnums;
-import com.cz.common.model.exception.ApiException;
+import com.cz.common.model.StandardSubmit;
+import com.cz.common.enums.ExceptionEnums;
+import com.cz.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;

@@ -1,10 +1,10 @@
 package com.cz.strategy.filter.impl;
 
 
-import com.cz.common.model.constant.CacheConstant;
-import com.cz.common.model.constant.RabbitMQConstants;
-import com.cz.common.model.model.StandardSubmit;
-import com.cz.common.model.util.OperatorUtil;
+import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.RabbitMQConstants;
+import com.cz.common.model.StandardSubmit;
+import com.cz.common.util.OperatorUtil;
 import com.cz.strategy.client.BeaconCacheClient;
 import com.cz.strategy.filter.StrategyFilter;
 import com.cz.strategy.util.MobileOperatorUtil;
@@ -13,7 +13,6 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,7 +1,7 @@
 package com.cz.strategy.util;
 
 import cn.hutool.dfa.WordTree;
-import com.cz.common.model.constant.CacheConstant;
+import com.cz.common.constant.CacheConstant;
 import com.cz.strategy.client.BeaconCacheClient;
 
 import java.util.List;

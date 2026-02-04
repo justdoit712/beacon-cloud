@@ -1,6 +1,6 @@
 package com.cz.strategy.util;
 
-import com.cz.common.model.constant.CacheConstant;
+import com.cz.common.constant.CacheConstant;
 import com.cz.strategy.client.BeaconCacheClient;
 
 import java.util.HashMap;
