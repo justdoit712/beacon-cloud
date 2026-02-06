@@ -1,7 +1,11 @@
 package com.cz.test.entity;
 
+import org.apache.commons.lang.StringUtils;
+
+import java.util.Arrays;
 import java.util.Date;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 客户信息表(ClientBusiness)实体类
@@ -107,8 +111,12 @@ public class ClientBusiness implements Serializable {
         this.apikey = apikey;
     }
 
-    public String getIpAddress() {
-        return ipAddress;
+    public List<String> getIpAddress() {
+        String ips = ipAddress;
+        if(!StringUtils.isEmpty(ips)){
+            return Arrays.asList(ips.split(","));
+        }
+        return null;
     }
 
     public void setIpAddress(String ipAddress) {
