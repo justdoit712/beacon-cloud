@@ -137,4 +137,12 @@ public class CacheController {
         return result;
     }
 
+    @PostMapping(value = "/cache/keys/{pattern}")
+    public Set<String> keys(@PathVariable String pattern){
+        log.info("【缓存模块】 keys方法，根据pattern查询所有key的信息， pattern = {}", pattern);
+        Set<String> keys = redisTemplate.keys(pattern);
+        log.info("【缓存模块】 keys方法，根据pattern查询所有key的信息， pattern = {},查询出全部的keys信息，keys = {}", pattern, keys);
+        return keys;
+    }
+
 }

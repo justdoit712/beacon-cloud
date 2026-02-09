@@ -16,3 +16,24 @@ spring:
         server-addr: 192.168.88.128:8848
         file-extension: yml
         # beacon-api-dev.yml
+
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: 2931163626@qq.com
+    password: optzmoheptapdcfb
+    tos: lc204573@gmail.com
+    protocol: smtp
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            enable: true # 开启SSL
+          socketFactory:
+            port: 465
+            class: javax.net.ssl.SSLSocketFactory
