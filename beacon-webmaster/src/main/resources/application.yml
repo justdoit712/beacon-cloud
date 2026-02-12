@@ -1,0 +1,20 @@
+# MyBatis和dataSource配置
+spring:
+  datasource:
+    driver-class-name: org.gjt.mm.mysql.Driver
+    url: jdbc:mysql://192.168.88.128:3306/duanxin_pingtai?characterEncoding=utf-8&amp;useSSL=false&amp;serverTimezone=UTC
+    username: root
+    password: 123
+    type: com.alibaba.druid.pool.DruidDataSource
+# MyBatis
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+
+shiro:
+  # 默认登录页面
+  loginUrl: /login.html
+  # 没有权限的页面
+  unauthorizedUrl: unauthorized.html

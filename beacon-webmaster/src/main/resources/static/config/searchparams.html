@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>数据同步通知管理</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <link rel="stylesheet" href="../public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../public/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../public/plugins/bootstrap-table/bootstrap-table.min.css">
+    <link rel="stylesheet" href="../public/plugins/ztree/css/metroStyle/metroStyle.css">
+    <link rel="stylesheet" href="../public/css/main.css">
+
+</head>
+<body>
+<div id="dtapp" v-cloak>
+
+    <div v-show="showList">
+        <div id="toolbar">
+            <button v-if="hasPermission('sys:menu:save')" class="btn btn-success " type="button" @click="add">
+                <i class="fa fa-plus"></i>&nbsp;&nbsp;<span class="bold">新增</span>
+            </button>
+            <button v-if="hasPermission('sys:menu:update')" class="btn btn-success " type="button" @click="update">
+                <i class="fa fa-pencil-square-o"></i>&nbsp;&nbsp;<span class="bold">修改</span>
+            </button>
+            <button v-if="hasPermission('sys:menu:delete')" class="btn btn-danger " type="button" @click="del">
+                <i class="fa fa-remove"></i>&nbsp;&nbsp;<span class="bold">删除</span>
+            </button>
+        </div>
+
+        <table id="table"></table>
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">请求参数名</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="searchparams.name" placeholder="请求参数名"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">对应搜索参数列名</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="searchparams.cloum" placeholder="对应搜索参数列名"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">搜索类型</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="searchparams.type" placeholder="搜索类型如match,term,range"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">参数范围(range类型有效)</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="searchparams.tOrder" placeholder="0代表range起点,1代表range终点"/>
+                </div>
+            </div>
+<!--            <div class="form-group">-->
+<!--                <div class="col-sm-2 control-label">启用状态</div>-->
+<!--                <label class="radio-inline">-->
+<!--                    <input type="radio" value="0" name="state" class="form-control radiosize" v-model="searchparams.state" />停用-->
+<!--                </label>-->
+<!--                <label class="radio-inline">-->
+<!--                    <input type="radio" value="1" name="state" class="form-control radiosize" v-model="searchparams.state" />启用-->
+<!--                </label>-->
+
+<!--            </div>-->
+            <div class="form-group">
+                <div class="col-sm-2 control-label">启用状态</div>
+                <div class="col-sm-10">
+                    <input type="radio" value="1" v-model="searchparams.state">启用
+                    <input type="radio" value="0" v-model="searchparams.state">停用
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<!-- 选择菜单 -->
+<div id="menuLayer" style="display: none;padding:10px;">
+    <ul id="menuTree" class="ztree"></ul>
+</div>
+
+<script src="../public/libs/jquery.min.js"></script>
+<script src="../public/plugins/layer/layer.js"></script>
+<script src="../public/libs/bootstrap.min.js"></script>
+<script src="../public/libs/vue.min.js"></script>
+<script src="../public/plugins/bootstrap-table/bootstrap-table.min.js"></script>
+<script src="../public/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js"></script>
+<script src="../public/plugins/ztree/jquery.ztree.all.min.js"></script>
+<script src="../public/js/common.js"></script>
+<script src="../public/js/config/searchparams.js"></script>
+</body>
+</html>

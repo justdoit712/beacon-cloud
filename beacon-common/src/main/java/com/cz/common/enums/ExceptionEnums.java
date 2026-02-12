@@ -23,6 +23,11 @@ public enum ExceptionEnums {
     SEARCH_INDEX_ERROR(-19,"添加文档信息失败！"),
     SEARCH_UPDATE_ERROR(-20,"修改文档信息失败！"),
 
+    KAPACHA_ERROR(-100,"验证码错误！"),
+    AUTHEN_ERROR(-101,"用户名或密码错误！"),
+    NOT_LOGIN(-102,"用户未登录！"),
+    USER_MENU_ERROR(-103,"查询用户的菜单信息失败！"),
+    SMS_NO_AUTHOR(-104,"当前登录用户没有权限查询当前短信信息")
     ;
 
 

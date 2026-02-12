@@ -25,6 +25,7 @@
         <module>beacon-push</module>
         <module>beacon-smsgateway</module>
         <module>beacon-monitor</module>
+        <module>beacon-webmaster</module>
     </modules>
 
     <properties>
