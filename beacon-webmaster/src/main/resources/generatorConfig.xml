@@ -43,6 +43,7 @@
         <!--<table tableName="sms_user" domainObjectName="SmsUser" />
         <table tableName="sms_role" domainObjectName="SmsRole" />
         <table tableName="sms_menu" domainObjectName="SmsMenu" />-->
+        <table tableName="client_business" domainObjectName="ClientBusiness" />
 
 
 

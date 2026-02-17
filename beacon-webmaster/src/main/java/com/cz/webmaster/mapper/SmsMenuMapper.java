@@ -3,6 +3,8 @@ package com.cz.webmaster.mapper;
 import com.cz.webmaster.entity.SmsMenu;
 import com.cz.webmaster.entity.SmsMenuExample;
 import java.util.List;
+import java.util.Map;
+
 import org.apache.ibatis.annotations.Param;
 
 public interface SmsMenuMapper {
@@ -27,4 +29,11 @@ public interface SmsMenuMapper {
     int updateByPrimaryKeySelective(SmsMenu row);
 
     int updateByPrimaryKey(SmsMenu row);
+
+    /**
+     * 根据用户id查询当前用户的一级和二级菜单
+     * @param id
+     * @return
+     */
+    List<Map<String, Object>> findMenuByUserId(@Param("userId") Integer id);
 }

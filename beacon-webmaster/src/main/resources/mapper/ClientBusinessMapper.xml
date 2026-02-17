@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.cz.webmaster.mapper.SmsMenuMapper">
-  <resultMap id="BaseResultMap" type="com.cz.webmaster.entity.SmsMenu">
-    <id column="id" jdbcType="INTEGER" property="id" />
-    <result column="name" jdbcType="VARCHAR" property="name" />
-    <result column="parent_id" jdbcType="BIGINT" property="parentId" />
-    <result column="url" jdbcType="VARCHAR" property="url" />
-    <result column="icon" jdbcType="VARCHAR" property="icon" />
-    <result column="type" jdbcType="INTEGER" property="type" />
-    <result column="sort" jdbcType="INTEGER" property="sort" />
+<mapper namespace="com.cz.webmaster.mapper.ClientBusinessMapper">
+  <resultMap id="BaseResultMap" type="com.cz.webmaster.entity.ClientBusiness">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="corpname" jdbcType="VARCHAR" property="corpname" />
+    <result column="apikey" jdbcType="VARCHAR" property="apikey" />
+    <result column="ip_address" jdbcType="VARCHAR" property="ipAddress" />
+    <result column="is_callback" jdbcType="TINYINT" property="isCallback" />
+    <result column="callback_url" jdbcType="VARCHAR" property="callbackUrl" />
+    <result column="client_linkname" jdbcType="VARCHAR" property="clientLinkname" />
+    <result column="client_phone" jdbcType="VARCHAR" property="clientPhone" />
+    <result column="client_filters" jdbcType="VARCHAR" property="clientFilters" />
     <result column="created" jdbcType="TIMESTAMP" property="created" />
     <result column="create_id" jdbcType="BIGINT" property="createId" />
     <result column="updated" jdbcType="TIMESTAMP" property="updated" />
@@ -78,16 +80,17 @@
     </where>
   </sql>
   <sql id="Base_Column_List">
-    id, name, parent_id, url, icon, type, sort, created, create_id, updated, update_id, 
-    is_delete, extend1, extend2, extend3, extend4
+    id, corpname, apikey, ip_address, is_callback, callback_url, client_linkname, client_phone, 
+    client_filters, created, create_id, updated, update_id, is_delete, extend1, extend2, 
+    extend3, extend4
   </sql>
-  <select id="selectByExample" parameterType="com.cz.webmaster.entity.SmsMenuExample" resultMap="BaseResultMap">
+  <select id="selectByExample" parameterType="com.cz.webmaster.entity.ClientBusinessExample" resultMap="BaseResultMap">
     select
     <if test="distinct">
       distinct
     </if>
     <include refid="Base_Column_List" />
-    from sms_menu
+    from client_business
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
@@ -95,59 +98,67 @@
       order by ${orderByClause}
     </if>
   </select>
-  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
     select 
     <include refid="Base_Column_List" />
-    from sms_menu
-    where id = #{id,jdbcType=INTEGER}
+    from client_business
+    where id = #{id,jdbcType=BIGINT}
   </select>
-  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
-    delete from sms_menu
-    where id = #{id,jdbcType=INTEGER}
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from client_business
+    where id = #{id,jdbcType=BIGINT}
   </delete>
-  <delete id="deleteByExample" parameterType="com.cz.webmaster.entity.SmsMenuExample">
-    delete from sms_menu
+  <delete id="deleteByExample" parameterType="com.cz.webmaster.entity.ClientBusinessExample">
+    delete from client_business
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.cz.webmaster.entity.SmsMenu">
-    insert into sms_menu (id, name, parent_id, 
-      url, icon, type, sort, 
+  <insert id="insert" parameterType="com.cz.webmaster.entity.ClientBusiness">
+    insert into client_business (id, corpname, apikey, 
+      ip_address, is_callback, callback_url, 
+      client_linkname, client_phone, client_filters, 
       created, create_id, updated, 
       update_id, is_delete, extend1, 
       extend2, extend3, extend4
       )
-    values (#{id,jdbcType=INTEGER}, #{name,jdbcType=VARCHAR}, #{parentId,jdbcType=BIGINT}, 
-      #{url,jdbcType=VARCHAR}, #{icon,jdbcType=VARCHAR}, #{type,jdbcType=INTEGER}, #{sort,jdbcType=INTEGER}, 
+    values (#{id,jdbcType=BIGINT}, #{corpname,jdbcType=VARCHAR}, #{apikey,jdbcType=VARCHAR}, 
+      #{ipAddress,jdbcType=VARCHAR}, #{isCallback,jdbcType=TINYINT}, #{callbackUrl,jdbcType=VARCHAR}, 
+      #{clientLinkname,jdbcType=VARCHAR}, #{clientPhone,jdbcType=VARCHAR}, #{clientFilters,jdbcType=VARCHAR}, 
       #{created,jdbcType=TIMESTAMP}, #{createId,jdbcType=BIGINT}, #{updated,jdbcType=TIMESTAMP}, 
       #{updateId,jdbcType=BIGINT}, #{isDelete,jdbcType=TINYINT}, #{extend1,jdbcType=VARCHAR}, 
       #{extend2,jdbcType=VARCHAR}, #{extend3,jdbcType=VARCHAR}, #{extend4,jdbcType=VARCHAR}
       )
   </insert>
-  <insert id="insertSelective" parameterType="com.cz.webmaster.entity.SmsMenu">
-    insert into sms_menu
+  <insert id="insertSelective" parameterType="com.cz.webmaster.entity.ClientBusiness">
+    insert into client_business
     <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="id != null">
         id,
       </if>
-      <if test="name != null">
-        name,
+      <if test="corpname != null">
+        corpname,
       </if>
-      <if test="parentId != null">
-        parent_id,
+      <if test="apikey != null">
+        apikey,
       </if>
-      <if test="url != null">
-        url,
+      <if test="ipAddress != null">
+        ip_address,
       </if>
-      <if test="icon != null">
-        icon,
+      <if test="isCallback != null">
+        is_callback,
       </if>
-      <if test="type != null">
-        type,
+      <if test="callbackUrl != null">
+        callback_url,
       </if>
-      <if test="sort != null">
-        sort,
+      <if test="clientLinkname != null">
+        client_linkname,
+      </if>
+      <if test="clientPhone != null">
+        client_phone,
+      </if>
+      <if test="clientFilters != null">
+        client_filters,
       </if>
       <if test="created != null">
         created,
@@ -179,25 +190,31 @@
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
       <if test="id != null">
-        #{id,jdbcType=INTEGER},
+        #{id,jdbcType=BIGINT},
       </if>
-      <if test="name != null">
-        #{name,jdbcType=VARCHAR},
+      <if test="corpname != null">
+        #{corpname,jdbcType=VARCHAR},
       </if>
-      <if test="parentId != null">
-        #{parentId,jdbcType=BIGINT},
+      <if test="apikey != null">
+        #{apikey,jdbcType=VARCHAR},
       </if>
-      <if test="url != null">
-        #{url,jdbcType=VARCHAR},
+      <if test="ipAddress != null">
+        #{ipAddress,jdbcType=VARCHAR},
       </if>
-      <if test="icon != null">
-        #{icon,jdbcType=VARCHAR},
+      <if test="isCallback != null">
+        #{isCallback,jdbcType=TINYINT},
       </if>
-      <if test="type != null">
-        #{type,jdbcType=INTEGER},
+      <if test="callbackUrl != null">
+        #{callbackUrl,jdbcType=VARCHAR},
       </if>
-      <if test="sort != null">
-        #{sort,jdbcType=INTEGER},
+      <if test="clientLinkname != null">
+        #{clientLinkname,jdbcType=VARCHAR},
+      </if>
+      <if test="clientPhone != null">
+        #{clientPhone,jdbcType=VARCHAR},
+      </if>
+      <if test="clientFilters != null">
+        #{clientFilters,jdbcType=VARCHAR},
       </if>
       <if test="created != null">
         #{created,jdbcType=TIMESTAMP},
@@ -228,35 +245,41 @@
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.cz.webmaster.entity.SmsMenuExample" resultType="java.lang.Long">
-    select count(*) from sms_menu
+  <select id="countByExample" parameterType="com.cz.webmaster.entity.ClientBusinessExample" resultType="java.lang.Long">
+    select count(*) from client_business
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </select>
   <update id="updateByExampleSelective" parameterType="map">
-    update sms_menu
+    update client_business
     <set>
       <if test="row.id != null">
-        id = #{row.id,jdbcType=INTEGER},
+        id = #{row.id,jdbcType=BIGINT},
       </if>
-      <if test="row.name != null">
-        name = #{row.name,jdbcType=VARCHAR},
+      <if test="row.corpname != null">
+        corpname = #{row.corpname,jdbcType=VARCHAR},
       </if>
-      <if test="row.parentId != null">
-        parent_id = #{row.parentId,jdbcType=BIGINT},
+      <if test="row.apikey != null">
+        apikey = #{row.apikey,jdbcType=VARCHAR},
       </if>
-      <if test="row.url != null">
-        url = #{row.url,jdbcType=VARCHAR},
+      <if test="row.ipAddress != null">
+        ip_address = #{row.ipAddress,jdbcType=VARCHAR},
       </if>
-      <if test="row.icon != null">
-        icon = #{row.icon,jdbcType=VARCHAR},
+      <if test="row.isCallback != null">
+        is_callback = #{row.isCallback,jdbcType=TINYINT},
       </if>
-      <if test="row.type != null">
-        type = #{row.type,jdbcType=INTEGER},
+      <if test="row.callbackUrl != null">
+        callback_url = #{row.callbackUrl,jdbcType=VARCHAR},
       </if>
-      <if test="row.sort != null">
-        sort = #{row.sort,jdbcType=INTEGER},
+      <if test="row.clientLinkname != null">
+        client_linkname = #{row.clientLinkname,jdbcType=VARCHAR},
+      </if>
+      <if test="row.clientPhone != null">
+        client_phone = #{row.clientPhone,jdbcType=VARCHAR},
+      </if>
+      <if test="row.clientFilters != null">
+        client_filters = #{row.clientFilters,jdbcType=VARCHAR},
       </if>
       <if test="row.created != null">
         created = #{row.created,jdbcType=TIMESTAMP},
@@ -291,14 +314,16 @@
     </if>
   </update>
   <update id="updateByExample" parameterType="map">
-    update sms_menu
-    set id = #{row.id,jdbcType=INTEGER},
-      name = #{row.name,jdbcType=VARCHAR},
-      parent_id = #{row.parentId,jdbcType=BIGINT},
-      url = #{row.url,jdbcType=VARCHAR},
-      icon = #{row.icon,jdbcType=VARCHAR},
-      type = #{row.type,jdbcType=INTEGER},
-      sort = #{row.sort,jdbcType=INTEGER},
+    update client_business
+    set id = #{row.id,jdbcType=BIGINT},
+      corpname = #{row.corpname,jdbcType=VARCHAR},
+      apikey = #{row.apikey,jdbcType=VARCHAR},
+      ip_address = #{row.ipAddress,jdbcType=VARCHAR},
+      is_callback = #{row.isCallback,jdbcType=TINYINT},
+      callback_url = #{row.callbackUrl,jdbcType=VARCHAR},
+      client_linkname = #{row.clientLinkname,jdbcType=VARCHAR},
+      client_phone = #{row.clientPhone,jdbcType=VARCHAR},
+      client_filters = #{row.clientFilters,jdbcType=VARCHAR},
       created = #{row.created,jdbcType=TIMESTAMP},
       create_id = #{row.createId,jdbcType=BIGINT},
       updated = #{row.updated,jdbcType=TIMESTAMP},
@@ -312,26 +337,32 @@
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.cz.webmaster.entity.SmsMenu">
-    update sms_menu
+  <update id="updateByPrimaryKeySelective" parameterType="com.cz.webmaster.entity.ClientBusiness">
+    update client_business
     <set>
-      <if test="name != null">
-        name = #{name,jdbcType=VARCHAR},
+      <if test="corpname != null">
+        corpname = #{corpname,jdbcType=VARCHAR},
       </if>
-      <if test="parentId != null">
-        parent_id = #{parentId,jdbcType=BIGINT},
+      <if test="apikey != null">
+        apikey = #{apikey,jdbcType=VARCHAR},
       </if>
-      <if test="url != null">
-        url = #{url,jdbcType=VARCHAR},
+      <if test="ipAddress != null">
+        ip_address = #{ipAddress,jdbcType=VARCHAR},
       </if>
-      <if test="icon != null">
-        icon = #{icon,jdbcType=VARCHAR},
+      <if test="isCallback != null">
+        is_callback = #{isCallback,jdbcType=TINYINT},
       </if>
-      <if test="type != null">
-        type = #{type,jdbcType=INTEGER},
+      <if test="callbackUrl != null">
+        callback_url = #{callbackUrl,jdbcType=VARCHAR},
       </if>
-      <if test="sort != null">
-        sort = #{sort,jdbcType=INTEGER},
+      <if test="clientLinkname != null">
+        client_linkname = #{clientLinkname,jdbcType=VARCHAR},
+      </if>
+      <if test="clientPhone != null">
+        client_phone = #{clientPhone,jdbcType=VARCHAR},
+      </if>
+      <if test="clientFilters != null">
+        client_filters = #{clientFilters,jdbcType=VARCHAR},
       </if>
       <if test="created != null">
         created = #{created,jdbcType=TIMESTAMP},
@@ -361,16 +392,18 @@
         extend4 = #{extend4,jdbcType=VARCHAR},
       </if>
     </set>
-    where id = #{id,jdbcType=INTEGER}
+    where id = #{id,jdbcType=BIGINT}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.cz.webmaster.entity.SmsMenu">
-    update sms_menu
-    set name = #{name,jdbcType=VARCHAR},
-      parent_id = #{parentId,jdbcType=BIGINT},
-      url = #{url,jdbcType=VARCHAR},
-      icon = #{icon,jdbcType=VARCHAR},
-      type = #{type,jdbcType=INTEGER},
-      sort = #{sort,jdbcType=INTEGER},
+  <update id="updateByPrimaryKey" parameterType="com.cz.webmaster.entity.ClientBusiness">
+    update client_business
+    set corpname = #{corpname,jdbcType=VARCHAR},
+      apikey = #{apikey,jdbcType=VARCHAR},
+      ip_address = #{ipAddress,jdbcType=VARCHAR},
+      is_callback = #{isCallback,jdbcType=TINYINT},
+      callback_url = #{callbackUrl,jdbcType=VARCHAR},
+      client_linkname = #{clientLinkname,jdbcType=VARCHAR},
+      client_phone = #{clientPhone,jdbcType=VARCHAR},
+      client_filters = #{clientFilters,jdbcType=VARCHAR},
       created = #{created,jdbcType=TIMESTAMP},
       create_id = #{createId,jdbcType=BIGINT},
       updated = #{updated,jdbcType=TIMESTAMP},
@@ -380,25 +413,6 @@
       extend2 = #{extend2,jdbcType=VARCHAR},
       extend3 = #{extend3,jdbcType=VARCHAR},
       extend4 = #{extend4,jdbcType=VARCHAR}
-    where id = #{id,jdbcType=INTEGER}
+    where id = #{id,jdbcType=BIGINT}
   </update>
-
-    <!--    /**-->
-    <!--    * 根据用户id查询当前用户的一级和二级菜单-->
-    <!--    * @param id-->
-    <!--    * @return-->
-    <!--    */-->
-    <!--    List<Map<String, Object>> findMenuByUserId(@Param("userId") Integer id)-->
-    <select id="findMenuByUserId" resultType="java.util.Map">
-        select
-            m.id id, m.name, m.parent_id parentId, m.url, m.icon, m.type
-        from
-            sms_menu m
-                inner join sms_role_menu rm on m.id = rm.menu_id
-                inner join sms_user_role ur on ur.role_id = rm.role_id
-        where
-            ur.user_id = 1
-          and m.type in (0,1)
-        order by m.type
-    </select>
 </mapper>
