@@ -52,25 +52,25 @@ public class ElasticsearchServiceImpl implements SearchService {
 
     @Override
     public void index(String index, String id, String json) throws IOException {
-        //1、构建插入数据的Request
+        // 1、构建插入数据的Request
         IndexRequest request = new IndexRequest();
 
-        //2、给request对象封装索引信息，文档id，以及文档内容
+        // 2、给request对象封装索引信息，文档id，以及文档内容
         request.index(index);
         request.id(id);
         request.source(json, XContentType.JSON);
 
-        //3、将request信息发送给ES服务
+        // 3、将request信息发送给ES服务
         IndexResponse response = restHighLevelClient.index(request, RequestOptions.DEFAULT);
 
-        //4、校验添加是否成功
+        // 4、校验添加是否成功
         String result = response.getResult().getLowercase();
-        if(!CREATED.equals(result)){
+        if (!CREATED.equals(result)) {
             // 添加失败！！
-            log.error("【搜索模块-写入数据失败】 index = {},id = {},json = {},result = {}",index,id,json,result);
+            log.error("【搜索模块-写入数据失败】 index = {},id = {},json = {},result = {}", index, id, json, result);
             throw new SearchException(ExceptionEnums.SEARCH_INDEX_ERROR);
         }
-        log.info("【搜索模块-写入数据成功】 索引添加成功index = {},id = {},json = {},result = {}",index,id,json,result);
+        log.info("【搜索模块-写入数据成功】 索引添加成功index = {},id = {},json = {},result = {}", index, id, json, result);
     }
 
     @Override
@@ -88,7 +88,6 @@ public class ElasticsearchServiceImpl implements SearchService {
         // 直接返回信息
         return exists;
     }
-
 
     @Override
     public void update(String index, String id, Map<String, Object> doc) throws IOException {
@@ -132,4 +131,137 @@ public class ElasticsearchServiceImpl implements SearchService {
         }
     }
 
+    @Override
+    public Map<String, Object> findSmsByParameters(Map<String, Object> parameters) throws IOException {
+        // 1、声明SearchRequest(后期需要根据传递的时间指定查询哪些索引，如果没传，可以指定默认查询前三个月)
+        SearchRequest request = new SearchRequest(SearchUtils.getCurrYearIndex(), "");
+
+        // 2、封装查询条件
+        // 2.1 参数全部取出来
+        Object fromObj = parameters.get("from");
+        Object sizeObj = parameters.get("size");
+        Object contentObj = parameters.get("content");
+        Object mobileObj = parameters.get("mobile");
+        Object startTimeObj = parameters.get("starttime");
+        Object stopTimeObj = parameters.get("stoptime");
+        Object clientIDObj = parameters.get("clientID");
+
+        // 2.2 clientID需要单独操作
+        List<Long> clientIDList = null;
+        if (clientIDObj instanceof List) {
+            // 传递的是个集合
+            clientIDList = (List) clientIDObj;
+        } else if (!ObjectUtils.isEmpty(clientIDObj)) {
+            // 传递的不是集合转换为集合
+            clientIDList = Collections.singletonList(Long.parseLong(clientIDObj + ""));
+        }
+        // 2.3 条件封装
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+        // ========================封装查询条件到boolQuery========================================
+        // 关键字
+        if (!ObjectUtils.isEmpty(contentObj)) {
+            boolQuery.must(QueryBuilders.matchQuery("text", contentObj));
+            // 高亮。设置给sourceBuilder
+            HighlightBuilder highlightBuilder = new HighlightBuilder();
+            highlightBuilder.field("text");
+            highlightBuilder.preTags("<span style='color: red'>");
+            highlightBuilder.postTags("</span>");
+            highlightBuilder.fragmentSize(100);
+            sourceBuilder.highlighter(highlightBuilder);
+        }
+
+        // 手机号
+        if (!ObjectUtils.isEmpty(mobileObj)) {
+            boolQuery.must(QueryBuilders.prefixQuery("mobile", (String) mobileObj));
+        }
+
+        // 开始时间
+        if (!ObjectUtils.isEmpty(startTimeObj)) {
+            boolQuery.must(QueryBuilders.rangeQuery("sendTime").gte(startTimeObj));
+        }
+
+        // 结束时间
+        if (!ObjectUtils.isEmpty(stopTimeObj)) {
+            boolQuery.must(QueryBuilders.rangeQuery("sendTime").lte(stopTimeObj));
+        }
+
+        // 客户id
+        if (clientIDList != null) {
+            boolQuery.must(QueryBuilders.termsQuery("clientId", clientIDList.toArray(new Long[] {})));
+        }
+
+        // 分页查询
+        sourceBuilder.from(Integer.parseInt(fromObj + ""));
+        sourceBuilder.size(Integer.parseInt(sizeObj + ""));
+
+        // ========================封装查询条件到boolQuery========================================
+        sourceBuilder.query(boolQuery);
+        request.source(sourceBuilder);
+        // 3、执行查询
+        SearchResponse resp = restHighLevelClient.search(request, RequestOptions.DEFAULT);
+
+        // 4、封装数据
+        long total = resp.getHits().getTotalHits().value;
+        List<Map> rows = new ArrayList<>();
+        for (SearchHit hit : resp.getHits().getHits()) {
+            Map<String, Object> row = hit.getSourceAsMap();
+            List sendTime = (List) row.get("sendTime");
+            String sendTimeStr = listToDateString(sendTime);
+            row.put("sendTimeStr", sendTimeStr);
+            row.put("corpname", row.get("sign"));
+            HighlightField highlightField = hit.getHighlightFields().get("text");
+            if (highlightField != null) {
+                String textHighLight = highlightField.getFragments()[0].toString();
+                row.put("text", textHighLight);
+            }
+            rows.add(row);
+        }
+        // 5、返回数据
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", total);
+        result.put("rows", rows);
+        return result;
+    }
+
+    /**
+     * 将Elasticsearch返回的时间List转换为标准字符串格式 (yyyy-MM-dd HH:mm:ss)
+     * <p>
+     * Elasticsearch中时间字段在特定序列化配置下会返回数组形式：[年, 月, 日, 时, 分, 秒]
+     * 此方法解析该数组并手动拼接为标准时间字符串。
+     *
+     * @param sendTime 包含时间各分量的List，顺序为：年、月、日、时、分、秒
+     * @return 格式化后的日期字符串 "yyyy-MM-dd HH:mm:ss"
+     */
+    private String listToDateString(List sendTime) {
+        // 1. 防御性判断：如果集合为空或长度不足，返回空字符串或默认值
+        if (sendTime == null || sendTime.size() < 6) {
+            return "";
+        }
+
+        try {
+            // 2. 获取各项数值
+            Object year = sendTime.get(0);
+            Object month = sendTime.get(1);
+            Object day = sendTime.get(2);
+            Object hour = sendTime.get(3);
+            Object minute = sendTime.get(4);
+            Object second = sendTime.get(5);
+
+            // 3. 使用 String.format 自动补齐 0，更加优雅
+            // %02d 表示：如果是 1 位数则前面补 0，总共占据 2 位
+            return String.format("%s-%02d-%02d %02d:%02d:%02d",
+                    year,
+                    Integer.parseInt(month.toString()),
+                    Integer.parseInt(day.toString()),
+                    Integer.parseInt(hour.toString()),
+                    Integer.parseInt(minute.toString()),
+                    Integer.parseInt(second.toString()));
+
+        } catch (Exception e) {
+            // 打印异常日志，防止因为某条数据格式不对导致整个查询接口崩溃
+            log.error("解析日期列表出错: " + sendTime, e);
+            return "";
+        }
+    }
 }

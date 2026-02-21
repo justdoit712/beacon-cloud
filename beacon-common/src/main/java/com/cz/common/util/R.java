@@ -5,7 +5,7 @@ import com.cz.common.vo.ResultVO;
 
 /**
  * 封装ResultVO的工具
- * @author zjw
+ * @author cz
  * @description
  */
 public class R {
