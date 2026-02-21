@@ -10,6 +10,9 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.ZoneId;
+import java.util.Map;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -27,7 +30,16 @@ public class SmsWriteLogListener {
     public void consume(StandardSubmit submit, Channel channel, Message message) throws IOException {
         //1、调用搜索模块的添加方法，完成添加操作
         log.info("接收到存储日志的信息   submit = {}",submit);
-        searchService.index(INDEX + getYear(),submit.getSequenceId().toString(), JsonUtil.obj2JSON(submit));
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> doc = mapper.convertValue(submit, Map.class);
+        if (submit.getSendTime() != null) {
+            long sendTimeMillis = submit.getSendTime()
+                    .atZone(ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli();
+            doc.put("sendTimeMillis", sendTimeMillis);
+        }
+        searchService.index(INDEX + getYear(), submit.getSequenceId().toString(), JsonUtil.obj2JSON(doc));
 
 
         //2、手动ack

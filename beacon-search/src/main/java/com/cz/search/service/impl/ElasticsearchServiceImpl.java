@@ -178,12 +178,14 @@ public class ElasticsearchServiceImpl implements SearchService {
 
         // 开始时间
         if (!ObjectUtils.isEmpty(startTimeObj)) {
-            boolQuery.must(QueryBuilders.rangeQuery("sendTime").gte(startTimeObj));
+            boolQuery.must(QueryBuilders.rangeQuery("sendTimeMillis")
+                    .gte(Long.parseLong(startTimeObj.toString())));
         }
 
         // 结束时间
         if (!ObjectUtils.isEmpty(stopTimeObj)) {
-            boolQuery.must(QueryBuilders.rangeQuery("sendTime").lte(stopTimeObj));
+            boolQuery.must(QueryBuilders.rangeQuery("sendTimeMillis")
+                    .lte(Long.parseLong(stopTimeObj.toString())));
         }
 
         // 客户id
