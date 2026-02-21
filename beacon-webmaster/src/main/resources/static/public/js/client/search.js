@@ -4,6 +4,17 @@ $(function () {
         pagination: true,	//显示分页条
         sidePagination: 'server',//服务器端分页
         toolbar: '#toolbar',
+
+        responseHandler: function (res) {
+            if (res && res.code === 0) {
+                res.total = (typeof res.total === 'number') ? res.total : 0;
+                res.rows = Array.isArray(res.rows) ? res.rows : [];
+            } else {
+                return { total: 0, rows: [] };
+            }
+            return res;
+        },
+
         queryParams: function (params) {
             var temp = {   //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
                 size: params.limit,   //页面大小
@@ -57,6 +68,7 @@ $(function () {
             {field: 'srcNumber', title: '发送号'},
             {field: 'mobile', title: '手机号'},
             {field: 'text', title: '短信内容'}
+
         ]
     };
     $('#table').bootstrapTable(option);

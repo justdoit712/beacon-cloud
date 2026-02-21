@@ -20,10 +20,10 @@ public class ResultVO {
     @JsonInclude(value = JsonInclude.Include.NON_EMPTY)
     private Object data;
 
-    @JsonInclude(value = JsonInclude.Include.NON_EMPTY)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Long total;
 
-    @JsonInclude(value = JsonInclude.Include.NON_EMPTY)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Object rows;
 
 

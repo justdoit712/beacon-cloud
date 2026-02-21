@@ -100,7 +100,7 @@ public class SearchController {
         //3、判断返回的total，如果total为0，正常返回
         Long total = Long.parseLong(data.get("total") + "");
         if (total == 0) {
-            return R.ok(0L,null);
+            return R.ok(0L, new ArrayList<>());
         }
         //4、如果数据正常，做返回数据的封装，声明SearchSmsVO的实体类
         List<Map> list = (List<Map>) data.get("rows");
