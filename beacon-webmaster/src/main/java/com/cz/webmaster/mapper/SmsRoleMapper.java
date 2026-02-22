@@ -38,7 +38,7 @@ public interface SmsRoleMapper {
             "inner join \n" +
             "\tsms_user_role sur\n" +
             "on\n" +
-            "\tsr.id = sur.user_id\n" +
+            "\tsr.id = sur.role_id\n" +
             "where \n" +
             "  sur.user_id = #{userId}")
     Set<String> findRoleNameByUserId(@Param("userId") Integer userId);
