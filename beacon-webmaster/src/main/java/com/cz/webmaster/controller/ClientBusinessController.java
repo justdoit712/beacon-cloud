@@ -2,8 +2,6 @@ package com.cz.webmaster.controller;
 
 import com.cz.common.constant.WebMasterConstants;
 import com.cz.common.enums.ExceptionEnums;
-import com.cz.common.util.R;
-import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.entity.SmsUser;
 import com.cz.webmaster.service.ClientBusinessService;
@@ -17,7 +15,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -38,12 +38,15 @@ public class ClientBusinessController {
 
 
     @GetMapping("/sys/clientbusiness/all")
-    public ResultVO all(){
+    public Map<String, Object> all(){
         //1、拿到当前登录用户的信息
         SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if(smsUser == null){
             log.info("【获取客户信息】 用户未登录！！");
-            return R.error(ExceptionEnums.NOT_LOGIN);
+            Map<String, Object> result = new HashMap<>();
+            result.put("code", ExceptionEnums.NOT_LOGIN.getCode());
+            result.put("msg", ExceptionEnums.NOT_LOGIN.getMsg());
+            return result;
         }
         Integer userId = smsUser.getId();
         //2、查询当前用户的角色信息
@@ -65,7 +68,12 @@ public class ClientBusinessController {
             data.add(vo);
         }
         //4、响应数据
-        return R.ok(data);
+        Map<String, Object> result = new HashMap<>();
+        result.put("code", 0);
+        result.put("msg", "");
+        result.put("data", data);
+        result.put("sites", data);
+        return result;
     }
 
 

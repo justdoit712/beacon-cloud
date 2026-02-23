@@ -5,6 +5,8 @@ import com.cz.webmaster.entity.SmsRoleExample;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
@@ -43,4 +45,17 @@ public interface SmsRoleMapper {
             "  sur.user_id = #{userId}")
     Set<String> findRoleNameByUserId(@Param("userId") Integer userId);
 
+    @Select("select menu_id from sms_role_menu where role_id = #{roleId}")
+    List<Integer> findMenuIdsByRoleId(@Param("roleId") Integer roleId);
+
+    @Delete("delete from sms_role_menu where role_id = #{roleId}")
+    int deleteRoleMenuByRoleId(@Param("roleId") Integer roleId);
+
+    @Insert({"<script>",
+            "insert into sms_role_menu (role_id, menu_id) values ",
+            "<foreach collection='menuIds' item='menuId' separator=','>",
+            "(#{roleId}, #{menuId})",
+            "</foreach>",
+            "</script>"})
+    int insertRoleMenus(@Param("roleId") Integer roleId, @Param("menuIds") List<Integer> menuIds);
 }

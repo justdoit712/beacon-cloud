@@ -7,12 +7,14 @@ import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.dto.UserDTO;
 import com.cz.webmaster.entity.SmsUser;
 import com.cz.webmaster.service.SmsMenuService;
+import com.cz.webmaster.service.SmsUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import com.cz.common.util.R;
@@ -37,6 +39,9 @@ public class SmsUserController {
 
     @Autowired
     private SmsMenuService menuService;
+
+    @Autowired
+    private SmsUserService userService;
 
     /**
      * 登录功能
@@ -113,5 +118,31 @@ public class SmsUserController {
         }
         // 返回结果
         return R.ok(data);
+    }
+
+    /**
+     * 修改当前登录用户密码
+     *
+     * @param password    旧密码
+     * @param newPassword 新密码
+     * @return 结果
+     */
+    @PostMapping("/user/password")
+    public ResultVO updatePassword(@RequestParam("password") String password,
+                                   @RequestParam("newPassword") String newPassword) {
+        SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
+        if (smsUser == null) {
+            return R.error(ExceptionEnums.NOT_LOGIN);
+        }
+        if (!StringUtils.hasText(password) || !StringUtils.hasText(newPassword)) {
+            return R.error(ExceptionEnums.PARAMETER_ERROR);
+        }
+        boolean success = userService.updatePassword(smsUser.getId(), password, newPassword);
+        if (!success) {
+            return new ResultVO(-1, "原密码错误或修改失败");
+        }
+        ResultVO resultVO = R.ok();
+        resultVO.setMsg("修改成功");
+        return resultVO;
     }
 }
