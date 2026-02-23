@@ -65,6 +65,9 @@ public class SystemRoleController {
         if (form == null || !StringUtils.hasText(form.getName())) {
             return fail("角色名称不能为空");
         }
+        if (roleService.existsByName(form.getName(), null)) {
+            return fail("角色名称已存在");
+        }
         SmsRole role = toEntity(form);
         boolean success = roleService.save(role);
         return success ? ok("新增成功") : fail("新增失败");
@@ -74,6 +77,9 @@ public class SystemRoleController {
     public Map<String, Object> update(@RequestBody SysRoleForm form) {
         if (form == null || form.getId() == null) {
             return fail("角色id不能为空");
+        }
+        if (StringUtils.hasText(form.getName()) && roleService.existsByName(form.getName(), form.getId())) {
+            return fail("角色名称已存在");
         }
         SmsRole role = toEntity(form);
         boolean success = roleService.update(role);
@@ -128,7 +134,7 @@ public class SystemRoleController {
     private SmsRole toEntity(SysRoleForm form) {
         SmsRole role = new SmsRole();
         role.setId(form.getId());
-        role.setName(form.getName());
+        role.setName(form.getName() == null ? null : form.getName().trim());
         role.setExtend1(form.getRemark());
         if (form.getStatus() != null) {
             role.setExtend2(String.valueOf(form.getStatus()));

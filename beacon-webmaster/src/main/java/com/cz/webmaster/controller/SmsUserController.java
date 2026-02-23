@@ -53,6 +53,10 @@ public class SmsUserController {
     @PostMapping("/login")
     public ResultVO login(@RequestBody @Valid UserDTO userDTO, BindingResult bindingResult) {
 //        * 1、请求参数的非空校验
+        if (bindingResult.hasFieldErrors("captcha")) {
+            log.info("【认证操作】验证码参数不合法，userDTO = {}", userDTO);
+            return R.error(ExceptionEnums.KAPACHA_ERROR);
+        }
         if (bindingResult.hasErrors()) {
             // 参数不合法，响应对应的JSON信息
             log.info("【认证操作】参数不合法，userDTO = {}", userDTO);
@@ -60,7 +64,7 @@ public class SmsUserController {
         }
 //        * 2、基于验证码校验请求是否合理
         String realKaptcha = (String) SecurityUtils.getSubject().getSession().getAttribute(WebMasterConstants.KAPTCHA);
-        if (!userDTO.getCaptcha().equalsIgnoreCase(realKaptcha)) {
+        if (!StringUtils.hasText(realKaptcha) || !userDTO.getCaptcha().equalsIgnoreCase(realKaptcha)) {
             log.info("【认证操作】验证码不正确，kapacha = {}，realKaptcha = {}", userDTO.getCaptcha(), realKaptcha);
             return R.error(ExceptionEnums.KAPACHA_ERROR);
         }

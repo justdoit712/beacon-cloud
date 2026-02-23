@@ -60,6 +60,15 @@ public interface SmsRoleService {
     boolean update(SmsRole role);
 
     /**
+     * 校验角色名称是否已存在
+     *
+     * @param name      角色名称
+     * @param excludeId 需要排除的角色id（修改场景）
+     * @return true-已存在，false-不存在
+     */
+    boolean existsByName(String name, Integer excludeId);
+
+    /**
      * 删除角色
      *
      * @param ids 角色id集合

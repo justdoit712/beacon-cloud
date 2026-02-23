@@ -71,6 +71,21 @@ public class SmsRoleServiceImpl implements SmsRoleService {
     }
 
     @Override
+    public boolean existsByName(String name, Integer excludeId) {
+        if (!StringUtils.hasText(name)) {
+            return false;
+        }
+        SmsRoleExample example = new SmsRoleExample();
+        SmsRoleExample.Criteria criteria = example.createCriteria();
+        criteria.andIsDeleteEqualTo((byte) 0);
+        criteria.andNameEqualTo(name.trim());
+        if (excludeId != null) {
+            criteria.andIdNotEqualTo(excludeId);
+        }
+        return roleMapper.countByExample(example) > 0;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteBatch(List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
