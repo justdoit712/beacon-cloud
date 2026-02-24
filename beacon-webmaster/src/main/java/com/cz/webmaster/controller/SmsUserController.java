@@ -14,6 +14,7 @@ import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +36,9 @@ import java.util.Map;
 @RequestMapping("/sys")
 @Slf4j
 public class SmsUserController {
+
+    @Value("${system.test-kaptcha:}")
+    private String testKaptcha;
 
 
     @Autowired
@@ -64,7 +68,11 @@ public class SmsUserController {
         }
 //        * 2、基于验证码校验请求是否合理
         String realKaptcha = (String) SecurityUtils.getSubject().getSession().getAttribute(WebMasterConstants.KAPTCHA);
-        if (!StringUtils.hasText(realKaptcha) || !userDTO.getCaptcha().equalsIgnoreCase(realKaptcha)) {
+
+        // 【修改这里】：先判断系统有没有配置测试验证码，配置了再去比对
+        boolean isTestKaptcha = StringUtils.hasText(testKaptcha) && testKaptcha.equals(userDTO.getCaptcha());
+
+        if (!isTestKaptcha && (!StringUtils.hasText(realKaptcha) || !userDTO.getCaptcha().equalsIgnoreCase(realKaptcha))) {
             log.info("【认证操作】验证码不正确，kapacha = {}，realKaptcha = {}", userDTO.getCaptcha(), realKaptcha);
             return R.error(ExceptionEnums.KAPACHA_ERROR);
         }
@@ -122,6 +130,21 @@ public class SmsUserController {
         }
         // 返回结果
         return R.ok(data);
+    }
+
+    /**
+     * 退出登录
+     *
+     * @return 结果
+     */
+    @PostMapping("/logout")
+    public ResultVO logout() {
+        Subject subject = SecurityUtils.getSubject();
+        if (subject.isAuthenticated() || subject.isRemembered()) {
+            log.info("【退出登录】用户退出，principal = {}", subject.getPrincipal());
+            subject.logout();
+        }
+        return R.ok();
     }
 
     /**

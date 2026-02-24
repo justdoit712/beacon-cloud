@@ -37,3 +37,7 @@ shiro:
   loginUrl: /login.html
   # 没有权限的页面
   unauthorizedUrl: unauthorized.html
+
+system:
+  # 在本地开发环境，设置万能验证码为 1111
+  test-kaptcha: "1111"

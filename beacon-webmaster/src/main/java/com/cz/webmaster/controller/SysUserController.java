@@ -58,6 +58,9 @@ public class SysUserController {
         if (form == null || !StringUtils.hasText(form.getUsercode())) {
             return error("用户名不能为空");
         }
+        if (userService.findByUsername(form.getUsercode().trim()) != null) {
+            return error("用户名已存在");
+        }
         SmsUser user = toEntity(form);
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if (currentUser != null) {
@@ -72,6 +75,12 @@ public class SysUserController {
     public ResultVO update(@RequestBody SysUserForm form) {
         if (form == null || form.getId() == null) {
             return error("用户id不能为空");
+        }
+        if (StringUtils.hasText(form.getUsercode())) {
+            SmsUser existing = userService.findByUsername(form.getUsercode().trim());
+            if (existing != null && !existing.getId().equals(form.getId())) {
+                return error("用户名已存在");
+            }
         }
         SmsUser user = toEntity(form);
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();

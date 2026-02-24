@@ -73,6 +73,13 @@
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
 
+        <!--        导入hutool工具类-->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-dfa</artifactId>
+            <version>5.8.12</version>
+        </dependency>
+
     </dependencies>
 
     <build>

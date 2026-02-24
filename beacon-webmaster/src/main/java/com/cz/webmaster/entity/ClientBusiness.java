@@ -6,6 +6,7 @@ import java.util.Date;
 
 @ToString
 public class ClientBusiness {
+
     private Long id;
 
     private String corpname;
