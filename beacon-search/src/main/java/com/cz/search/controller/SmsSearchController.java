@@ -28,4 +28,9 @@ public class SmsSearchController {
         //2、返回数据
         return result;
     }
+
+    @PostMapping("search/sms/countSmsState")
+    public Map<String, Integer> countSmsState(@RequestBody Map<String, Object> parameters) throws IOException {
+        return searchService.countSmsState(parameters);
+    }
 }

@@ -22,6 +22,7 @@ public interface SearchClient {
     @PostMapping("/search/sms/list")
     Map<String,Object> findSmsByParameters(@RequestBody Map<String,Object> parameters);
 
-
+    @PostMapping("/search/sms/countSmsState") // 这里的路径跟你上面的 Controller 保持一致
+    Map<String, Integer> countSmsState(@RequestBody Map<String, Object> parameters);
 
 }

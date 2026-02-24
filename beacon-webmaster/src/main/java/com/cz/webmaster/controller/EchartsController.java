@@ -73,29 +73,15 @@ public class EchartsController {
             }
         }
 
-        params.put("from", 0);
-        params.put("size", 100000);
+        Map<String, Integer> stateCount = searchClient.countSmsState(params);
 
-        Map<String, Object> data = searchClient.findSmsByParameters(params);
-        List<Map<String, Object>> rows = extractRows(data);
-        if (rows == null || rows.isEmpty()) {
+        if (stateCount == null || stateCount.isEmpty()) {
             return buildPieResult(0, 0, 0);
         }
 
-        int waiting = 0;
-        int success = 0;
-        int fail = 0;
-
-        for (Map<String, Object> row : rows) {
-            int reportState = parseInt(row.get("reportState"), 0);
-            if (reportState == 1) {
-                success++;
-            } else if (reportState == 2) {
-                fail++;
-            } else {
-                waiting++;
-            }
-        }
+        int waiting = stateCount.getOrDefault("waiting", 0);
+        int success = stateCount.getOrDefault("success", 0);
+        int fail = stateCount.getOrDefault("fail", 0);
         return buildPieResult(waiting, success, fail);
     }
 

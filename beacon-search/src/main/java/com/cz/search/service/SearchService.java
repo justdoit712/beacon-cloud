@@ -38,4 +38,5 @@ public interface SearchService {
      */
     Map<String, Object> findSmsByParameters(Map<String, Object> parameters) throws IOException;
 
+    Map<String, Integer> countSmsState(Map<String, Object> parameters) throws IOException;
 }
