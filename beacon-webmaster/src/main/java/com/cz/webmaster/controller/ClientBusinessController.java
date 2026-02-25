@@ -145,6 +145,73 @@ public class ClientBusinessController {
         return result;
     }
 
+    @GetMapping("/pay")
+    public ResultVO pay(@RequestParam("jine") Long amount,
+                        @RequestParam(value = "clientId", required = false) Long clientId) {
+        if (amount == null || amount <= 0) {
+            return error("jine must be greater than 0");
+        }
+
+        SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
+        if (currentUser == null) {
+            return error(ExceptionEnums.NOT_LOGIN.getMsg());
+        }
+
+        Set<String> roleNameSet = roleService.getRoleName(currentUser.getId());
+        boolean isRoot = roleNameSet != null && roleNameSet.contains(WebMasterConstants.ROOT);
+
+        ClientBusiness target;
+        if (clientId == null) {
+            List<ClientBusiness> scope = isRoot
+                    ? clientBusinessService.findAll()
+                    : clientBusinessService.findByUserId(currentUser.getId());
+            if (scope == null || scope.isEmpty()) {
+                return error("no available client to pay");
+            }
+            target = scope.get(0);
+        } else {
+            target = clientBusinessService.findById(clientId);
+            if (target == null) {
+                return error("client not found");
+            }
+            if (!isRoot) {
+                List<ClientBusiness> scope = clientBusinessService.findByUserId(currentUser.getId());
+                boolean allowed = false;
+                for (ClientBusiness clientBusiness : scope) {
+                    if (target.getId().equals(clientBusiness.getId())) {
+                        allowed = true;
+                        break;
+                    }
+                }
+                if (!allowed) {
+                    return error(ExceptionEnums.SMS_NO_AUTHOR.getMsg());
+                }
+            }
+        }
+
+        long oldAmount = parseLong(target.getExtend4(), 0L);
+        long newAmount = oldAmount + amount;
+
+        ClientBusiness update = new ClientBusiness();
+        update.setId(target.getId());
+        update.setExtend4(String.valueOf(newAmount));
+        update.setUpdateId(currentUser.getId().longValue());
+        boolean success = clientBusinessService.update(update);
+        if (!success) {
+            return error("pay failed");
+        }
+
+        ResultVO resultVO = R.ok();
+        resultVO.setMsg("pay success");
+        Map<String, Object> data = new HashMap<>();
+        data.put("clientId", target.getId());
+        data.put("corpname", target.getCorpname());
+        data.put("amount", amount);
+        data.put("balance", newAmount);
+        resultVO.setData(data);
+        return resultVO;
+    }
+
     private ClientBusiness fromDetailForm(Map<String, Object> form) {
         ClientBusiness cb = new ClientBusiness();
         Object idObj = form.get("id");
@@ -223,6 +290,17 @@ public class ClientBusinessController {
         }
         try {
             return Integer.parseInt(String.valueOf(value));
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
+    private long parseLong(Object value, long defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(String.valueOf(value));
         } catch (Exception e) {
             return defaultValue;
         }

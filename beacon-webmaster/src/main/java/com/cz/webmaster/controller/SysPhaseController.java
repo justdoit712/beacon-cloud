@@ -1,0 +1,109 @@
+package com.cz.webmaster.controller;
+
+import com.cz.common.util.R;
+import com.cz.common.vo.ResultVO;
+import com.cz.webmaster.entity.SmsUser;
+import com.cz.webmaster.service.PhaseService;
+import org.apache.shiro.SecurityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/sys")
+public class SysPhaseController {
+
+    @Autowired
+    private PhaseService phaseService;
+
+    @GetMapping("/phase/list")
+    public ResultVO list(@RequestParam(defaultValue = "0") int offset,
+                         @RequestParam(defaultValue = "10") int limit,
+                         @RequestParam(value = "search", required = false) String keyword) {
+        PhaseService.PageResult result = phaseService.list(keyword, offset, limit);
+        return R.ok(result.getTotal(), result.getRows());
+    }
+
+    @GetMapping("/phase/info/{id}")
+    public Map<String, Object> info(@PathVariable("id") Long id) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("phase", phaseService.info(id));
+        return result;
+    }
+
+    @PostMapping("/phase/save")
+    public ResultVO save(@RequestBody Map<String, Object> body) {
+        String errorMsg = phaseService.validateForSave(body);
+        if (errorMsg != null) {
+            return R.error(errorMsg);
+        }
+        boolean success = phaseService.save(body, currentOperatorId());
+        return success ? success("save success") : R.error("save failed");
+    }
+
+    @PostMapping("/phase/update")
+    public ResultVO update(@RequestBody Map<String, Object> body) {
+        String errorMsg = phaseService.validateForUpdate(body);
+        if (errorMsg != null) {
+            return R.error(errorMsg);
+        }
+        boolean success = phaseService.update(body, currentOperatorId());
+        return success ? success("update success") : R.error("update failed");
+    }
+
+    @PostMapping("/phase/del")
+    public ResultVO del(@RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return R.error("ids is required");
+        }
+        boolean success = phaseService.deleteBatch(ids);
+        return success ? success("delete success") : R.error("delete failed");
+    }
+
+    @GetMapping("/provs/all")
+    public Map<String, Object> allProvs() {
+        List<Map<String, Object>> sites = phaseService.allProvinces();
+        Map<String, Object> result = new HashMap<>();
+        result.put("code", 0);
+        result.put("msg", "");
+        result.put("sites", sites);
+        result.put("data", sites);
+        return result;
+    }
+
+    @GetMapping("/citys/all/{provId}")
+    public Map<String, Object> allCitys(@PathVariable("provId") Long provId) {
+        List<Map<String, Object>> citys = phaseService.allCities(provId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("code", 0);
+        result.put("msg", "");
+        result.put("citys", citys);
+        result.put("data", citys);
+        return result;
+    }
+
+    private ResultVO success(String msg) {
+        ResultVO vo = R.ok();
+        vo.setMsg(msg);
+        return vo;
+    }
+
+    private Long currentOperatorId() {
+        Object principal = SecurityUtils.getSubject().getPrincipal();
+        if (!(principal instanceof SmsUser)) {
+            return null;
+        }
+        SmsUser user = (SmsUser) principal;
+        return user.getId() == null ? null : user.getId().longValue();
+    }
+}
+

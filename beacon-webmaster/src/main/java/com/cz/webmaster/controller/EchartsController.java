@@ -39,50 +39,36 @@ public class EchartsController {
 
     @GetMapping("/pie")
     public Map<String, Object> pie(@RequestParam Map<String, Object> params) {
-        SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
-        if (smsUser == null) {
-            return buildPieResult(0, 0, 0);
-        }
-
-        String clientIDStr = toStr(params.get("clientID"));
-        Long clientID = null;
-        if (StringUtils.hasText(clientIDStr)) {
-            clientID = Long.parseLong(clientIDStr);
-        }
-
-        Set<String> roleNames = roleService.getRoleName(smsUser.getId());
-        if (roleNames != null && !roleNames.contains(WebMasterConstants.ROOT)) {
-            List<ClientBusiness> clients = clientBusinessService.findByUserId(smsUser.getId());
-            if (clientID == null) {
-                List<Long> list = new ArrayList<>();
-                for (ClientBusiness client : clients) {
-                    list.add(client.getId());
-                }
-                params.put("clientID", list);
-            } else {
-                boolean allow = false;
-                for (ClientBusiness client : clients) {
-                    if (clientID.equals(client.getId())) {
-                        allow = true;
-                        break;
-                    }
-                }
-                if (!allow) {
-                    return buildPieResult(0, 0, 0);
-                }
-            }
-        }
-
-        Map<String, Integer> stateCount = searchClient.countSmsState(params);
-
-        if (stateCount == null || stateCount.isEmpty()) {
-            return buildPieResult(0, 0, 0);
-        }
-
+        Map<String, Integer> stateCount = queryStateCountWithPermission(params);
         int waiting = stateCount.getOrDefault("waiting", 0);
         int success = stateCount.getOrDefault("success", 0);
         int fail = stateCount.getOrDefault("fail", 0);
         return buildPieResult(waiting, success, fail);
+    }
+
+    @GetMapping("/line")
+    public Map<String, Object> line(@RequestParam Map<String, Object> params) {
+        Map<String, Integer> stateCount = queryStateCountWithPermission(params);
+
+        List<String> xAxis = new ArrayList<>();
+        xAxis.add("绛夊緟");
+        xAxis.add("鎴愬姛");
+        xAxis.add("澶辫触");
+
+        List<Integer> seriesData = new ArrayList<>();
+        seriesData.add(stateCount.getOrDefault("waiting", 0));
+        seriesData.add(stateCount.getOrDefault("success", 0));
+        seriesData.add(stateCount.getOrDefault("fail", 0));
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("xAxis", xAxis);
+        result.put("seriesData", seriesData);
+        return result;
+    }
+
+    @GetMapping("/bar")
+    public Map<String, Object> bar(@RequestParam Map<String, Object> params) {
+        return line(params);
     }
 
     private Map<String, Object> buildPieResult(int waiting, int success, int fail) {
@@ -109,30 +95,73 @@ public class EchartsController {
         return item;
     }
 
+    private Map<String, Integer> queryStateCountWithPermission(Map<String, Object> params) {
+        Map<String, Object> queryParams = params == null ? new HashMap<>() : new HashMap<>(params);
+        SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
+        if (smsUser == null) {
+            return emptyStateCount();
+        }
+
+        String clientIDStr = toStr(queryParams.get("clientID"));
+        Long clientID = null;
+        if (StringUtils.hasText(clientIDStr)) {
+            clientID = toLong(clientIDStr);
+        }
+
+        Set<String> roleNames = roleService.getRoleName(smsUser.getId());
+        if (roleNames != null && !roleNames.contains(WebMasterConstants.ROOT)) {
+            List<ClientBusiness> clients = clientBusinessService.findByUserId(smsUser.getId());
+            if (clientID == null) {
+                List<Long> list = new ArrayList<>();
+                for (ClientBusiness client : clients) {
+                    list.add(client.getId());
+                }
+                queryParams.put("clientID", list);
+            } else {
+                boolean allow = false;
+                for (ClientBusiness client : clients) {
+                    if (clientID.equals(client.getId())) {
+                        allow = true;
+                        break;
+                    }
+                }
+                if (!allow) {
+                    return emptyStateCount();
+                }
+            }
+        }
+
+        Map<String, Integer> stateCount = searchClient.countSmsState(queryParams);
+        if (stateCount == null || stateCount.isEmpty()) {
+            return emptyStateCount();
+        }
+        Map<String, Integer> result = new HashMap<>();
+        result.put("waiting", stateCount.getOrDefault("waiting", 0));
+        result.put("success", stateCount.getOrDefault("success", 0));
+        result.put("fail", stateCount.getOrDefault("fail", 0));
+        return result;
+    }
+
+    private Map<String, Integer> emptyStateCount() {
+        Map<String, Integer> result = new HashMap<>();
+        result.put("waiting", 0);
+        result.put("success", 0);
+        result.put("fail", 0);
+        return result;
+    }
+
     private String toStr(Object value) {
         return value == null ? null : String.valueOf(value);
     }
 
-    private int parseInt(Object value, int defaultValue) {
-        if (value == null) {
-            return defaultValue;
+    private Long toLong(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
         }
         try {
-            return Integer.parseInt(String.valueOf(value));
+            return Long.parseLong(value);
         } catch (Exception e) {
-            return defaultValue;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> extractRows(Map<String, Object> data) {
-        if (data == null) {
             return null;
         }
-        Object rowsObj = data.get("rows");
-        if (!(rowsObj instanceof List)) {
-            return null;
-        }
-        return (List<Map<String, Object>>) rowsObj;
     }
 }
