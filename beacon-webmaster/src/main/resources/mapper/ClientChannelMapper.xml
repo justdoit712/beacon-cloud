@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cz.webmaster.mapper.ClientChannelMapper">
+
+    <resultMap id="BaseResultMap" type="com.cz.webmaster.entity.ClientChannel">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="clientId" jdbcType="BIGINT" property="clientId"/>
+        <result column="channelId" jdbcType="BIGINT" property="channelId"/>
+        <result column="extendNumber" jdbcType="VARCHAR" property="extendNumber"/>
+        <result column="price" jdbcType="BIGINT" property="price"/>
+        <result column="corpName" jdbcType="VARCHAR" property="corpName"/>
+        <result column="channelName" jdbcType="VARCHAR" property="channelName"/>
+        <result column="created" jdbcType="TIMESTAMP" property="created"/>
+        <result column="createId" jdbcType="BIGINT" property="createId"/>
+        <result column="updated" jdbcType="TIMESTAMP" property="updated"/>
+        <result column="updateId" jdbcType="BIGINT" property="updateId"/>
+        <result column="isDelete" jdbcType="TINYINT" property="isDelete"/>
+    </resultMap>
+
+    <sql id="Base_Join_Column_List">
+        cc.id,
+        cc.client_id as clientId,
+        cc.channel_id as channelId,
+        cc.client_channel_number as extendNumber,
+        cc.client_channel_price as price,
+        cb.corpname as corpName,
+        c.channel_name as channelName,
+        cc.created,
+        cc.create_id as createId,
+        cc.updated,
+        cc.update_id as updateId,
+        cc.is_delete as isDelete
+    </sql>
+
+    <sql id="Search_Condition">
+        <if test="keyword != null and keyword != ''">
+            and (
+                cb.corpname like concat('%', #{keyword}, '%')
+                or c.channel_name like concat('%', #{keyword}, '%')
+                or cc.client_channel_number like concat('%', #{keyword}, '%')
+            )
+        </if>
+    </sql>
+
+    <select id="findListByPage" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Join_Column_List"/>
+        from client_channel cc
+        left join client_business cb on cc.client_id = cb.id and cb.is_delete = 0
+        left join channel c on cc.channel_id = c.id and c.is_delete = 0
+        where cc.is_delete = 0
+        <include refid="Search_Condition"/>
+        order by cc.id desc
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countByKeyword" resultType="java.lang.Long">
+        select count(1)
+        from client_channel cc
+        left join client_business cb on cc.client_id = cb.id and cb.is_delete = 0
+        left join channel c on cc.channel_id = c.id and c.is_delete = 0
+        where cc.is_delete = 0
+        <include refid="Search_Condition"/>
+    </select>
+
+    <select id="findById" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Join_Column_List"/>
+        from client_channel cc
+        left join client_business cb on cc.client_id = cb.id and cb.is_delete = 0
+        left join channel c on cc.channel_id = c.id and c.is_delete = 0
+        where cc.id = #{id}
+        and cc.is_delete = 0
+    </select>
+
+    <insert id="insertSelective" parameterType="com.cz.webmaster.entity.ClientChannel">
+        insert into client_channel
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="clientId != null">client_id,</if>
+            <if test="channelId != null">channel_id,</if>
+            <if test="extendNumber != null">client_channel_number,</if>
+            <if test="price != null">client_channel_price,</if>
+            is_available,
+            <if test="created != null">created,</if>
+            <if test="createId != null">create_id,</if>
+            <if test="updated != null">updated,</if>
+            <if test="updateId != null">update_id,</if>
+            <if test="isDelete != null">is_delete,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="clientId != null">#{clientId},</if>
+            <if test="channelId != null">#{channelId},</if>
+            <if test="extendNumber != null">#{extendNumber},</if>
+            <if test="price != null">#{price},</if>
+            0,
+            <if test="created != null">#{created},</if>
+            <if test="createId != null">#{createId},</if>
+            <if test="updated != null">#{updated},</if>
+            <if test="updateId != null">#{updateId},</if>
+            <if test="isDelete != null">#{isDelete},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.cz.webmaster.entity.ClientChannel">
+        update client_channel
+        <set>
+            <if test="clientId != null">client_id = #{clientId},</if>
+            <if test="channelId != null">channel_id = #{channelId},</if>
+            <if test="extendNumber != null">client_channel_number = #{extendNumber},</if>
+            <if test="price != null">client_channel_price = #{price},</if>
+            <if test="updated != null">updated = #{updated},</if>
+            <if test="updateId != null">update_id = #{updateId},</if>
+        </set>
+        where id = #{id}
+        and is_delete = 0
+    </update>
+
+    <update id="deleteBatch">
+        update client_channel
+        set is_delete = 1,
+        updated   = #{updated},
+        update_id = #{updateId}
+        where is_delete = 0
+        and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

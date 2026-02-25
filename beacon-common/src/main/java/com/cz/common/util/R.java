@@ -48,6 +48,24 @@ public class R {
         return new ResultVO(enums.getCode(),enums.getMsg());
     }
 
+    /**
+     * 失败，指定错误消息字符串 (默认错误码为 -1)
+     * @param msg
+     * @return
+     */
+    public static ResultVO error(String msg){
+        return new ResultVO(-1, msg);
+    }
+
+    /**
+     * 失败，指定自定义错误码和错误消息
+     * @param code
+     * @param msg
+     * @return
+     */
+    public static ResultVO error(int code, String msg){
+        return new ResultVO(code, msg);
+    }
 
 
 }

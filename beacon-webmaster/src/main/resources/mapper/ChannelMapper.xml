@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cz.webmaster.mapper.ChannelMapper">
+
+    <resultMap id="BaseResultMap" type="com.cz.webmaster.entity.Channel">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="channelName" jdbcType="VARCHAR" property="channelName"/>
+        <result column="channelType" jdbcType="INTEGER" property="channelType"/>
+        <result column="channelArea" jdbcType="VARCHAR" property="channelArea"/>
+        <result column="channelAreaCode" jdbcType="VARCHAR" property="channelAreaCode"/>
+        <result column="channelPrice" jdbcType="BIGINT" property="channelPrice"/>
+        <result column="channelIp" jdbcType="VARCHAR" property="channelIp"/>
+        <result column="channelPort" jdbcType="INTEGER" property="channelPort"/>
+        <result column="channelUsername" jdbcType="VARCHAR" property="channelUsername"/>
+        <result column="channelPassword" jdbcType="VARCHAR" property="channelPassword"/>
+        <result column="spNumber" jdbcType="VARCHAR" property="spNumber"/>
+        <result column="protocolType" jdbcType="INTEGER" property="protocolType"/>
+        <result column="isAvailable" jdbcType="TINYINT" property="isAvailable"/>
+        <result column="created" jdbcType="TIMESTAMP" property="created"/>
+        <result column="createId" jdbcType="BIGINT" property="createId"/>
+        <result column="updated" jdbcType="TIMESTAMP" property="updated"/>
+        <result column="updateId" jdbcType="BIGINT" property="updateId"/>
+        <result column="isDelete" jdbcType="TINYINT" property="isDelete"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,
+        channel_name as channelName,
+        channel_type as channelType,
+        channel_area as channelArea,
+        channel_area_code as channelAreaCode,
+        channel_price as channelPrice,
+        channel_ip as channelIp,
+        channel_port as channelPort,
+        channel_username as channelUsername,
+        channel_password as channelPassword,
+        channel__number as spNumber,
+        channel_protocal as protocolType,
+        is_available as isAvailable,
+        created,
+        create_id as createId,
+        updated,
+        update_id as updateId,
+        is_delete as isDelete
+    </sql>
+
+    <sql id="Search_Condition">
+        <if test="keyword != null and keyword != ''">
+            and (
+                channel_name like concat('%', #{keyword}, '%')
+                or channel__number like concat('%', #{keyword}, '%')
+            )
+        </if>
+    </sql>
+
+    <select id="findListByPage" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from channel
+        where is_delete = 0
+        <include refid="Search_Condition"/>
+        order by id desc
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countByKeyword" resultType="java.lang.Long">
+        select count(1)
+        from channel
+        where is_delete = 0
+        <include refid="Search_Condition"/>
+    </select>
+
+    <select id="findById" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from channel
+        where id = #{id}
+        and is_delete = 0
+    </select>
+
+    <select id="findAllActive" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from channel
+        where is_delete = 0
+        order by id desc
+    </select>
+
+    <insert id="insertSelective" parameterType="com.cz.webmaster.entity.Channel">
+        insert into channel
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="channelName != null">channel_name,</if>
+            <if test="channelType != null">channel_type,</if>
+            <if test="channelArea != null">channel_area,</if>
+            <if test="channelAreaCode != null">channel_area_code,</if>
+            <if test="channelPrice != null">channel_price,</if>
+            <if test="channelIp != null">channel_ip,</if>
+            <if test="channelPort != null">channel_port,</if>
+            <if test="channelUsername != null">channel_username,</if>
+            <if test="channelPassword != null">channel_password,</if>
+            <if test="spNumber != null">channel__number,</if>
+            <if test="protocolType != null">channel_protocal,</if>
+            <if test="isAvailable != null">is_available,</if>
+            <if test="created != null">created,</if>
+            <if test="createId != null">create_id,</if>
+            <if test="updated != null">updated,</if>
+            <if test="updateId != null">update_id,</if>
+            <if test="isDelete != null">is_delete,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="channelName != null">#{channelName},</if>
+            <if test="channelType != null">#{channelType},</if>
+            <if test="channelArea != null">#{channelArea},</if>
+            <if test="channelAreaCode != null">#{channelAreaCode},</if>
+            <if test="channelPrice != null">#{channelPrice},</if>
+            <if test="channelIp != null">#{channelIp},</if>
+            <if test="channelPort != null">#{channelPort},</if>
+            <if test="channelUsername != null">#{channelUsername},</if>
+            <if test="channelPassword != null">#{channelPassword},</if>
+            <if test="spNumber != null">#{spNumber},</if>
+            <if test="protocolType != null">#{protocolType},</if>
+            <if test="isAvailable != null">#{isAvailable},</if>
+            <if test="created != null">#{created},</if>
+            <if test="createId != null">#{createId},</if>
+            <if test="updated != null">#{updated},</if>
+            <if test="updateId != null">#{updateId},</if>
+            <if test="isDelete != null">#{isDelete},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.cz.webmaster.entity.Channel">
+        update channel
+        <set>
+            <if test="channelName != null">channel_name = #{channelName},</if>
+            <if test="channelType != null">channel_type = #{channelType},</if>
+            <if test="channelArea != null">channel_area = #{channelArea},</if>
+            <if test="channelAreaCode != null">channel_area_code = #{channelAreaCode},</if>
+            <if test="channelPrice != null">channel_price = #{channelPrice},</if>
+            <if test="channelIp != null">channel_ip = #{channelIp},</if>
+            <if test="channelPort != null">channel_port = #{channelPort},</if>
+            <if test="channelUsername != null">channel_username = #{channelUsername},</if>
+            <if test="channelPassword != null">channel_password = #{channelPassword},</if>
+            <if test="spNumber != null">channel__number = #{spNumber},</if>
+            <if test="protocolType != null">channel_protocal = #{protocolType},</if>
+            <if test="isAvailable != null">is_available = #{isAvailable},</if>
+            <if test="updated != null">updated = #{updated},</if>
+            <if test="updateId != null">update_id = #{updateId},</if>
+        </set>
+        where id = #{id}
+        and is_delete = 0
+    </update>
+
+    <update id="deleteBatch">
+        update channel
+        set is_delete = 1,
+        updated   = #{updated},
+        update_id = #{updateId}
+        where is_delete = 0
+        and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>
