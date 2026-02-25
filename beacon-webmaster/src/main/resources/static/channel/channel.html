@@ -50,9 +50,51 @@
                 </div>
             </div>
             <div class="form-group">
+                <div class="col-sm-2 control-label">通道地区</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="channel.channelarea" placeholder="如：北京 北京"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">地区号段</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="channel.channelareacode" placeholder="如：010"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">通道成本(厘/条)</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="channel.channelprice" placeholder="如：10"/>
+                </div>
+            </div>
+            <div class="form-group">
                 <div class="col-sm-2 control-label">账户接入号</div>
                 <div class="col-sm-10">
                     <input type="text" class="form-control" v-model="channel.spnumber" placeholder="账户接入号"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">通道IP</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="channel.channelip" placeholder="如：120.16.11.228"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">通道端口</div>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="channel.channelport" placeholder="如：8150"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">通道账号</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="channel.channelusername" placeholder="通道账号"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">通道密码</div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="channel.channelpassword" placeholder="通道密码"/>
                 </div>
             </div>
             <div class="form-group">
@@ -61,6 +103,13 @@
                     <input type="radio" value="1" v-model="channel.protocaltype">cmpp
                     <input type="radio" value="2" v-model="channel.protocaltype">sgip
                     <input type="radio" value="3" v-model="channel.protocaltype">smgp
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">启用状态</div>
+                <div class="col-sm-10">
+                    <input type="radio" value="0" v-model="channel.isavailable">停用
+                    <input type="radio" value="1" v-model="channel.isavailable">启用
                 </div>
             </div>
             <div class="form-group">

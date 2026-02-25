@@ -1,12 +1,7 @@
 package com.cz.cache.controller;
 
-import com.msb.framework.redis.RedisClient;
+import com.cz.cache.redis.LocalRedisClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.web.bind.annotation.*;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -20,7 +15,7 @@ import java.util.Map;
 public class TestController {
 
     @Autowired
-    private RedisClient redisClient;
+    private LocalRedisClient redisClient;
 
 
     // 写测试   hash结构

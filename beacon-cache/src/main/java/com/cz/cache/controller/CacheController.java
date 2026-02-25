@@ -1,20 +1,22 @@
 package com.cz.cache.controller;
 
-import com.msb.framework.redis.RedisClient;
-import lombok.extern.slf4j.Slf4j;
+import com.cz.cache.redis.LocalRedisClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Set;
 
 @RestController
-@Slf4j
 public class CacheController {
+    private static final Logger log = LoggerFactory.getLogger(CacheController.class);
+
     @Autowired
-    private RedisClient redisClient;
+    private LocalRedisClient redisClient;
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 

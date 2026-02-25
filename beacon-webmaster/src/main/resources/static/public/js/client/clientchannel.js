@@ -39,6 +39,38 @@ var vm = new Vue({
         clientchannel: {}
     },
     methods: {
+        loadSites: function () {
+            $.get("../sys/clientbusiness/all", function (r) {
+                if (r && r.code === 0 && $.isArray(r.sites)) {
+                    vm.sites = r.sites;
+                    if (vm.sites.length === 0) {
+                        layer.alert("未查询到可用客户数据，请先维护客户信息");
+                    }
+                } else {
+                    vm.sites = [];
+                    layer.alert((r && r.msg) ? r.msg : "客户下拉数据加载失败");
+                }
+            }).fail(function () {
+                vm.sites = [];
+                layer.alert("客户下拉数据加载失败，请稍后重试");
+            });
+        },
+        loadChannelSites: function () {
+            $.get("../sys/channel/all", function (r) {
+                if (r && r.code === 0 && $.isArray(r.channelsites)) {
+                    vm.channelsites = r.channelsites;
+                    if (vm.channelsites.length === 0) {
+                        layer.alert("未查询到可用通道数据，请先维护通道信息");
+                    }
+                } else {
+                    vm.channelsites = [];
+                    layer.alert((r && r.msg) ? r.msg : "通道下拉数据加载失败");
+                }
+            }).fail(function () {
+                vm.channelsites = [];
+                layer.alert("通道下拉数据加载失败，请稍后重试");
+            });
+        },
         del: function () {
             var rows = getSelectedRows();
             if (rows == null) {
@@ -77,12 +109,8 @@ var vm = new Vue({
             vm.showList = false;
             vm.title = "新增";
             vm.clientchannel = {};
-            $.get("../sys/clientbusiness/all", function (r) {
-                vm.sites = r.sites;
-            });
-            $.get("../sys/channel/all", function (r) {
-                vm.channelsites = r.channelsites;
-            });
+            vm.loadSites();
+            vm.loadChannelSites();
         },
         update: function (event) {
             var id = 'id';
@@ -97,14 +125,8 @@ var vm = new Vue({
                 vm.clientchannel = r.clientchannel;
             });
 
-            $.get("../sys/clientbusiness/all", function(r){
-                vm.sites = r.sites;
-            });
-            $.get("../sys/channel/all", function(r){
-                vm.channelsites = r.channelsites;
-            });
-
-
+            vm.loadSites();
+            vm.loadChannelSites();
         },
         saveOrUpdate: function (event) {
             var url = vm.clientchannel.id == null ? "../sys/clientchannel/save" : "../sys/clientchannel/update";

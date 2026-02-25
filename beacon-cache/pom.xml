@@ -35,13 +35,9 @@
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
         <!--        data系列的redis依赖-->
-        <!--<dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
-        </dependency>-->
-        <dependency>
-            <groupId>com.msb.cloud</groupId>
-            <artifactId>horse-framework-starter-redis</artifactId>
         </dependency>
         <!--        为了访问缓存模块，需要配置OpenFeign-->
 

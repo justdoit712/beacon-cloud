@@ -34,13 +34,17 @@ function getSelectedRow() {
 }
 
 function hasPermission(permission) {
-    // if (window.parent.permissions.indexOf(permission) > -1) {
-    //     return true;
-    // } else {
-    //     return false;
-    // }
+    var p = null;
+    if (window.parent && $.isArray(window.parent.permissions)) {
+        p = window.parent.permissions;
+    } else if ($.isArray(window.permissions)) {
+        p = window.permissions;
+    }
+    if (!p) {
+        return true;
+    }
+    return p.indexOf(permission) > -1;
 }
-
 
 function doTask(id, msg, url) {
     var rows = getSelectedRows();
