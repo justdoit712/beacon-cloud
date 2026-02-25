@@ -16,6 +16,7 @@ import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,6 +33,7 @@ import java.util.Set;
  */
 @RestController
 @Slf4j
+@RequestMapping("/sys/search")
 public class SearchController {
 
     @Autowired
@@ -43,7 +45,7 @@ public class SearchController {
     @Autowired
     private ClientBusinessService clientBusinessService;
 
-    @GetMapping("/sys/search/list")
+    @GetMapping("/list")
     public ResultVO list(@RequestParam Map map) {
         //1、判断当前登录用户的角色，能否查询对应的客户信息
         //1.1 查看用户是否登录

@@ -19,7 +19,7 @@ import java.util.Map;
  * 角色管理接口
  */
 @RestController
-@RequestMapping("/system/role")
+@RequestMapping("/sys/role")
 public class SystemRoleController {
 
     @Autowired
@@ -60,8 +60,8 @@ public class SystemRoleController {
         return result;
     }
 
-    @PostMapping("/add")
-    public Map<String, Object> add(@RequestBody SysRoleForm form) {
+    @PostMapping("/save")
+    public Map<String, Object> save(@RequestBody SysRoleForm form) {
         if (form == null || !StringUtils.hasText(form.getName())) {
             return fail("角色名称不能为空");
         }
@@ -86,7 +86,7 @@ public class SystemRoleController {
         return success ? ok("修改成功") : fail("修改失败");
     }
 
-    @PostMapping("/delete")
+    @PostMapping("/del")
     public Map<String, Object> delete(@RequestBody List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
             return fail("请选择要删除的数据");
@@ -95,7 +95,7 @@ public class SystemRoleController {
         return success ? ok("删除成功") : fail("删除失败");
     }
 
-    @GetMapping("/menu_tree")
+    @GetMapping("/menu/tree")
     public Map<String, Object> menuTree() {
         List<SmsMenu> menus = menuService.findAll();
         List<Map<String, Object>> menuList = new ArrayList<>();
@@ -119,12 +119,12 @@ public class SystemRoleController {
         return result;
     }
 
-    @GetMapping("/role_menu/{roleId}")
+    @GetMapping("/menu/{roleId}")
     public List<Integer> roleMenu(@PathVariable("roleId") Integer roleId) {
         return roleService.findMenuIdsByRoleId(roleId);
     }
 
-    @GetMapping("/assign_menu")
+    @PostMapping("/menu/assign")
     public Map<String, Object> assignMenu(@RequestParam("roleId") Integer roleId,
                                           @RequestParam(value = "menuIds", required = false) List<Integer> menuIds) {
         boolean success = roleService.assignMenu(roleId, menuIds);

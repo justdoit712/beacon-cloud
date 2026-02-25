@@ -81,7 +81,7 @@
             user: {},
             error: false,
             errorMsg: '',
-            src: 'captcha.jpg'
+            src: '/sys/auth/captcha.jpg'
         },
         beforeCreate: function () {
             if (self != top) {
@@ -90,7 +90,7 @@
         },
         methods: {
             refreshCode: function () {
-                this.src = "captcha.jpg?t=" + $.now();
+                this.src = "/sys/auth/captcha.jpg?t=" + $.now();
             },
             login: function (event) {
 

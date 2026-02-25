@@ -133,21 +133,6 @@ public class SmsUserController {
     }
 
     /**
-     * 退出登录
-     *
-     * @return 结果
-     */
-    @PostMapping("/logout")
-    public ResultVO logout() {
-        Subject subject = SecurityUtils.getSubject();
-        if (subject.isAuthenticated() || subject.isRemembered()) {
-            log.info("【退出登录】用户退出，principal = {}", subject.getPrincipal());
-            subject.logout();
-        }
-        return R.ok();
-    }
-
-    /**
      * 修改当前登录用户密码
      *
      * @param password    旧密码

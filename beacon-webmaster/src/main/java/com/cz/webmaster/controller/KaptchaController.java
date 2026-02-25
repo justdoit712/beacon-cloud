@@ -7,6 +7,7 @@ import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.imageio.ImageIO;
 import javax.servlet.ServletOutputStream;
@@ -19,6 +20,7 @@ import java.io.IOException;
  * @description
  */
 @Controller
+@RequestMapping("/sys/auth")
 public class KaptchaController {
 
     private final String JPG = "jpg";

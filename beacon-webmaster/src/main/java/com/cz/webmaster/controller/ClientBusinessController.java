@@ -30,6 +30,7 @@ import java.util.Set;
  */
 @RestController
 @Slf4j
+@RequestMapping("/sys/clientbusiness")
 public class ClientBusinessController {
 
 
@@ -40,7 +41,7 @@ public class ClientBusinessController {
     private ClientBusinessService clientBusinessService;
 
 
-    @GetMapping("/sys/clientbusiness/list")
+    @GetMapping("/list")
     public ResultVO list(@RequestParam Map<String, Object> params) {
         int offset = parseInt(params.get("offset"), 0);
         int limit = parseInt(params.get("limit"), 10);
@@ -59,7 +60,7 @@ public class ClientBusinessController {
         return R.ok(total, rows);
     }
 
-    @GetMapping("/sys/clientbusiness/info/{id}")
+    @GetMapping("/info/{id}")
     public Map<String, Object> info(@PathVariable("id") Long id) {
         ClientBusiness cb = clientBusinessService.findById(id);
         Map<String, Object> result = new HashMap<>();
@@ -67,7 +68,7 @@ public class ClientBusinessController {
         return result;
     }
 
-    @PostMapping("/sys/clientbusiness/save")
+    @PostMapping("/save")
     public ResultVO save(@RequestBody Map<String, Object> form) {
         if (form == null || !StringUtils.hasText(toStr(form.get("corpname")))) {
             return error("公司名称不能为空");
@@ -82,7 +83,7 @@ public class ClientBusinessController {
         return success ? success("新增成功") : error("新增失败");
     }
 
-    @PostMapping("/sys/clientbusiness/update")
+    @PostMapping("/update")
     public ResultVO update(@RequestBody Map<String, Object> form) {
         if (form == null || form.get("id") == null) {
             return error("客户id不能为空");
@@ -96,7 +97,7 @@ public class ClientBusinessController {
         return success ? success("修改成功") : error("修改失败");
     }
 
-    @PostMapping("/sys/clientbusiness/del")
+    @PostMapping("/del")
     public ResultVO delete(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return error("请选择要删除的数据");
@@ -105,7 +106,7 @@ public class ClientBusinessController {
         return success ? success("删除成功") : error("删除失败");
     }
 
-    @GetMapping("/sys/clientbusiness/all")
+    @GetMapping("/all")
     public Map<String, Object> all(){
         //1、拿到当前登录用户的信息
         SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
