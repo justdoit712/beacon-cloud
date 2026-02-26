@@ -74,7 +74,7 @@ public class ClientBusinessServiceImpl implements ClientBusinessService {
 
         // 3. 业务默认值填充：如果未指定过滤器策略，默认赋予“黑名单、敏感词、路由”三大基础校验策略
         if (!StringUtils.hasText(clientBusiness.getClientFilters())) {
-            clientBusiness.setClientFilters("black,dirtyword,route");
+            clientBusiness.setClientFilters("blackGlobal,blackClient,dirtyword,route");
         }
 
         // 4. 审计字段填充：统一设置创建时间和更新时间为当前系统时间
