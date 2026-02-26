@@ -38,7 +38,7 @@ public class IPCheckFilter implements CheckFilter {
         //2. 如果IP白名单为null，直接放行，或者包含，修改逻辑判断。
         // 如果客户未设置IP白名单，认为客户认为什么IP都可以访问
         // 如果设置了IP白名单，才需要去做一个校验
-        if(CollectionUtils.isEmpty(ip)|| ip.contains(submit.getRealIP())){
+        if(CollectionUtils.isEmpty(ip)|| ip.contains(submit.getRealIp())){
             log.info("【接口模块-校验ip】  客户端请求IP合法！");
             return;
         }

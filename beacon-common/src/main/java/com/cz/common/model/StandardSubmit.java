@@ -1,6 +1,5 @@
 package com.cz.common.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
@@ -9,7 +8,6 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -109,7 +107,7 @@ public class StandardSubmit implements Serializable {
     /**
      * 真实ip
      */
-    private String realIP;
+    private String realIp;
 
     /**
      * 客户端请求携带的apikey
@@ -124,7 +122,7 @@ public class StandardSubmit implements Serializable {
     /**
      * 短信签名ID
      */
-    private Long SignId;
+    private Long signId;
 
     /**
      * 是否是转码短信

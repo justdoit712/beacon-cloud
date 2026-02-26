@@ -67,7 +67,7 @@ public class SmsController {
             return R.error(ExceptionEnums.PARAMETER_ERROR.getCode(), firstError(bindingResult));
         }
 
-        String realIp = getRealIP(req);
+        String realIp = getRealIp(req);
         StandardSubmit submit = buildSubmit(singleSendForm.getApikey(), null, singleSendForm.getMobile(),
                 singleSendForm.getText(), singleSendForm.getState(), singleSendForm.getUid(), realIp);
 
@@ -93,7 +93,7 @@ public class SmsController {
             return R.error(ExceptionEnums.ERROR_APIKEY.getCode(), ExceptionEnums.ERROR_APIKEY.getMsg());
         }
 
-        String realIp = StringUtils.hasText(form.getRealIp()) ? form.getRealIp() : getRealIP(req);
+        String realIp = StringUtils.hasText(form.getRealIp()) ? form.getRealIp() : getRealIp(req);
         StandardSubmit submit = buildSubmit(form.getApikey(), clientId, form.getMobile(), form.getText(),
                 form.getState(), form.getUid(), realIp);
         return enqueue(submit);
@@ -126,7 +126,7 @@ public class SmsController {
         submit.setText(text);
         submit.setState(state == null ? 1 : state);
         submit.setUid(uid);
-        submit.setRealIP(realIp);
+        submit.setRealIp(realIp);
         return submit;
     }
 
@@ -157,7 +157,7 @@ public class SmsController {
     /**
      * Get the real request IP from configured headers, fallback to remote address.
      */
-    private String getRealIP(HttpServletRequest req) {
+    private String getRealIp(HttpServletRequest req) {
         if (!StringUtils.hasText(headers)) {
             return req.getRemoteAddr();
         }
