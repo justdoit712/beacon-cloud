@@ -399,6 +399,6 @@
         where
             ur.user_id = #{userId}
           and m.type in (0,1)
-        order by m.type
+        order by m.type asc, m.sort asc, m.id asc
     </select>
 </mapper>
