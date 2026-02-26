@@ -1,15 +1,15 @@
 package com.cz.webmaster.service;
 
-import java.util.Map;
+import com.cz.webmaster.dto.SmsSendForm;
+import com.cz.webmaster.vo.SmsBatchSendVO;
 
 public interface SmsManageService {
 
-    String validateForSave(Map<String, Object> body);
+    String validateForSave(SmsSendForm form);
 
-    String validateForUpdate(Map<String, Object> body);
+    String validateForUpdate(SmsSendForm form);
 
-    boolean save(Map<String, Object> body, Long operatorId);
+    SmsBatchSendVO save(SmsSendForm form, Long operatorId);
 
-    boolean update(Map<String, Object> body, Long operatorId);
+    SmsBatchSendVO update(SmsSendForm form, Long operatorId);
 }
-

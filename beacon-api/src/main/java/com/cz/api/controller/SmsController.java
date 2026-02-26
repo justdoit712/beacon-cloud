@@ -1,15 +1,19 @@
 package com.cz.api.controller;
 
-
+import com.cz.api.client.BeaconCacheClient;
 import com.cz.api.filter.CheckFilterContext;
+import com.cz.api.form.InternalSingleSendForm;
 import com.cz.api.form.SingleSendForm;
+import com.cz.api.utils.R;
 import com.cz.api.vo.ResultVO;
-import com.cz.common.model.StandardSubmit;
+import com.cz.common.constant.CacheConstant;
 import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.enums.ExceptionEnums;
+import com.cz.common.model.StandardSubmit;
 import com.cz.common.util.SnowFlakeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
@@ -17,22 +21,28 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.cz.api.utils.R;
+
 import javax.servlet.http.HttpServletRequest;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-
 import java.time.LocalDateTime;
-
+import java.util.Map;
 
 @RestController
 @RequestMapping("/sms")
 @Slf4j
 public class SmsController {
 
-    @Value("${headers}")
+    @Value("${headers:}")
     private String headers;
+
+    /**
+     * When configured, calls to internal send endpoint must provide the same token
+     * in header `X-Internal-Token`.
+     */
+    @Value("${internal.sms.token:}")
+    private String internalSmsToken;
 
     @Autowired
     private CheckFilterContext checkFilterContext;
@@ -43,82 +53,131 @@ public class SmsController {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    @Autowired
+    private BeaconCacheClient cacheClient;
 
     private static final String UNKNOWN = "unknown";
     private static final String X_FORWARDED_FOR = "x-forwarded-for";
 
-
-    @PostMapping(value = "/single_send",produces = "application/json;charset=utf-8")
-    public ResultVO singleSend(@RequestBody @Validated SingleSendForm singleSendForm, BindingResult bindingResult, HttpServletRequest req){
-        //1. 校验参数
-        if (bindingResult.hasErrors()){
-            String msg = bindingResult.getFieldError().getDefaultMessage();
-            log.info("【接口模块-单条短信Controller】 参数不合法 msg = {}",msg);
-            return R.error(ExceptionEnums.PARAMETER_ERROR.getCode(),msg);
+    @PostMapping(value = "/single_send", produces = "application/json;charset=utf-8")
+    public ResultVO singleSend(@RequestBody @Validated SingleSendForm singleSendForm,
+                               BindingResult bindingResult,
+                               HttpServletRequest req) {
+        if (bindingResult.hasErrors()) {
+            return R.error(ExceptionEnums.PARAMETER_ERROR.getCode(), firstError(bindingResult));
         }
-        //     获取真实ip
-        String ip = getRealIP(req);
 
-        //     构建标准提交对象，各种封装校验
-        StandardSubmit submit = new StandardSubmit();
-        submit.setRealIP(ip);
-        submit.setApiKey(singleSendForm.getApikey());
-        submit.setMobile(singleSendForm.getMobile());
-        submit.setText(singleSendForm.getText());
-        submit.setState(singleSendForm.getState());
-        submit.setUid(singleSendForm.getUid());
+        String realIp = getRealIP(req);
+        StandardSubmit submit = buildSubmit(singleSendForm.getApikey(), null, singleSendForm.getMobile(),
+                singleSendForm.getText(), singleSendForm.getState(), singleSendForm.getUid(), realIp);
 
-        //    调用策略模式的校验链
+        // Keep original external checks for public API.
         checkFilterContext.check(submit);
+        return enqueue(submit);
+    }
 
-        //     基于雪花算法生成唯一id，并添加到StandardSubmit对象中
+    @PostMapping(value = "/internal/single_send", produces = "application/json;charset=utf-8")
+    public ResultVO internalSingleSend(@RequestBody @Validated InternalSingleSendForm form,
+                                       BindingResult bindingResult,
+                                       HttpServletRequest req,
+                                       @RequestHeader(value = "X-Internal-Token", required = false) String requestToken) {
+        if (bindingResult.hasErrors()) {
+            return R.error(ExceptionEnums.PARAMETER_ERROR.getCode(), firstError(bindingResult));
+        }
+        if (StringUtils.hasText(internalSmsToken) && !internalSmsToken.equals(requestToken)) {
+            return R.error(-403, "internal token invalid");
+        }
+
+        Long clientId = resolveClientId(form.getApikey());
+        if (clientId == null) {
+            return R.error(ExceptionEnums.ERROR_APIKEY.getCode(), ExceptionEnums.ERROR_APIKEY.getMsg());
+        }
+
+        String realIp = StringUtils.hasText(form.getRealIp()) ? form.getRealIp() : getRealIP(req);
+        StandardSubmit submit = buildSubmit(form.getApikey(), clientId, form.getMobile(), form.getText(),
+                form.getState(), form.getUid(), realIp);
+        return enqueue(submit);
+    }
+
+    private ResultVO enqueue(StandardSubmit submit) {
         submit.setSequenceId(snowFlakeUtil.nextId());
         submit.setSendTime(LocalDateTime.now());
-        //     发送到MQ，交给策略模块处理
 
-        rabbitTemplate.convertAndSend(RabbitMQConstants.SMS_PRE_SEND,submit,new CorrelationData(submit.getSequenceId().toString()));
+        rabbitTemplate.convertAndSend(RabbitMQConstants.SMS_PRE_SEND, submit,
+                new CorrelationData(submit.getSequenceId().toString()));
 
+        ResultVO result = R.ok();
+        result.setUid(submit.getUid());
+        result.setSid(String.valueOf(submit.getSequenceId()));
+        return result;
+    }
 
-        return R.ok();
+    private StandardSubmit buildSubmit(String apiKey,
+                                       Long clientId,
+                                       String mobile,
+                                       String text,
+                                       Integer state,
+                                       String uid,
+                                       String realIp) {
+        StandardSubmit submit = new StandardSubmit();
+        submit.setApiKey(apiKey);
+        submit.setClientId(clientId);
+        submit.setMobile(mobile);
+        submit.setText(text);
+        submit.setState(state == null ? 1 : state);
+        submit.setUid(uid);
+        submit.setRealIP(realIp);
+        return submit;
+    }
+
+    private Long resolveClientId(String apiKey) {
+        Map clientBusiness = cacheClient.hGetAll(CacheConstant.CLIENT_BUSINESS + apiKey);
+        if (clientBusiness == null || clientBusiness.isEmpty()) {
+            return null;
+        }
+        Object id = clientBusiness.get("id");
+        if (id == null) {
+            return null;
+        }
+        try {
+            return Long.parseLong(String.valueOf(id));
+        } catch (NumberFormatException ex) {
+            log.warn("invalid client id in cache for apiKey={}, value={}", apiKey, id);
+            return null;
+        }
+    }
+
+    private String firstError(BindingResult bindingResult) {
+        if (bindingResult.getFieldError() == null) {
+            return ExceptionEnums.PARAMETER_ERROR.getMsg();
+        }
+        return bindingResult.getFieldError().getDefaultMessage();
     }
 
     /**
-     * 获取客户端真实的IP地址
-     * @param req
-     * @return
+     * Get the real request IP from configured headers, fallback to remote address.
      */
     private String getRealIP(HttpServletRequest req) {
-        // 1. 防御性编程：如果配置未读取到，直接返回远端地址
-        if (StringUtils.isEmpty(headers)) {
+        if (!StringUtils.hasText(headers)) {
             return req.getRemoteAddr();
         }
         String ip;
-
-        // 2. 遍历配置文件中定义的所有请求头
         for (String header : headers.split(",")) {
-            // 去除配置文件中可能存在的空格
             header = header.trim();
-            if (StringUtils.isEmpty(header)) {
+            if (!StringUtils.hasText(header)) {
                 continue;
             }
-            // 基于请求头获取 IP 地址
             ip = req.getHeader(header);
-            // 验证 IP 有效性：不为空，且不是 "unknown"
-            if (!StringUtils.isEmpty(ip) && !UNKNOWN.equalsIgnoreCase(ip)) {
-                // 特殊处理 x-forwarded-for：可能包含多个 IP，取第一个
+            if (StringUtils.hasText(ip) && !UNKNOWN.equalsIgnoreCase(ip)) {
                 if (X_FORWARDED_FOR.equalsIgnoreCase(header)) {
-                    // 多次反向代理后会有多个ip值，第一个ip才是真实ip
                     int index = ip.indexOf(",");
                     if (index != -1) {
                         return ip.substring(0, index).trim();
                     }
                 }
-                // 如果不是 x-forwarded-for 或者没有逗号，直接返回
                 return ip;
             }
         }
-
-        // 6. 如果所有请求头都无法获取有效 IP，回退到基础方式
         return req.getRemoteAddr();
     }
 }

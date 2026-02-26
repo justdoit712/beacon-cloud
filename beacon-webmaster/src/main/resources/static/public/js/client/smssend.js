@@ -1,43 +1,75 @@
 $(function () {
-    $.get("../sys/clientbusiness/all", function (r) {
-        vm.sites = r.sites;
-    });
+    vm.init();
 });
+
 var vm = new Vue({
-    el:'#dtapp',
-    data:{
-        showList: true,
-        title: null,
+    el: '#dtapp',
+    data: {
+        title: 'SMS Send',
         sites: [],
-        sms:{}
+        sms: {
+            clientId: '',
+            mobile: '',
+            content: '',
+            state: 1
+        }
     },
-    methods:{
-        add: function(){
-            vm.showList = false;
-            vm.title = "新增";
-            vm.sms = {parentName:null,parentId:0,type:1,orderNum:0};
+    methods: {
+        init: function () {
+            this.loadSites();
         },
-        saveOrUpdate: function (event) {
-            var url = vm.sms.id == null ? "../sys/sms/save" : "../sys/sms/update";
-            $.ajax({
-                type: "POST",
-                url: url,
-                data: JSON.stringify(vm.sms),
-                success: function(r){
-                    if(r.code === 0){
-                        layer.alert(r.msg, function(index){
-                            layer.close(index);
-                            vm.reload();
-                        });
-                    }else{
-                        layer.alert(r.msg);
-                    }
+        loadSites: function () {
+            $.get('../sys/clientbusiness/all', function (r) {
+                if (!r || r.code !== 0) {
+                    layer.alert(r && r.msg ? r.msg : 'load clients failed');
+                    return;
+                }
+                vm.sites = r.sites || [];
+                if (!vm.sms.clientId && vm.sites.length > 0) {
+                    vm.sms.clientId = vm.sites[0].id;
                 }
             });
         },
-        reload: function (event) {
-            vm.showList = true;
-            $("#table").bootstrapTable('refresh');
+        saveOrUpdate: function () {
+            if (!vm.sms.clientId) {
+                layer.alert('client is required');
+                return;
+            }
+            if (!vm.sms.mobile || !vm.sms.mobile.trim()) {
+                layer.alert('mobile is required');
+                return;
+            }
+            if (!vm.sms.content || !vm.sms.content.trim()) {
+                layer.alert('content is required');
+                return;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: '../sys/sms/save',
+                data: JSON.stringify(vm.sms),
+                success: function (r) {
+                    if (!r) {
+                        layer.alert('empty response');
+                        return;
+                    }
+
+                    var summary = r.data || {};
+                    var msg = r.msg || 'request finished';
+                    if (summary.total != null) {
+                        msg += '\nTotal: ' + summary.total + ', Success: ' + summary.success + ', Failed: ' + summary.failed;
+                    }
+
+                    if (r.code === 0) {
+                        layer.alert(msg);
+                    } else {
+                        layer.alert(msg);
+                    }
+                },
+                error: function () {
+                    layer.alert('request failed');
+                }
+            });
         }
     }
 });

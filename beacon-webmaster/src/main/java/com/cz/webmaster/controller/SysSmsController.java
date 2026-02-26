@@ -3,13 +3,13 @@ package com.cz.webmaster.controller;
 import com.cz.common.util.R;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.controller.support.OperatorContextUtils;
+import com.cz.webmaster.dto.SmsSendForm;
 import com.cz.webmaster.service.SmsManageService;
+import com.cz.webmaster.vo.SmsBatchSendVO;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/sys/sms")
@@ -22,22 +22,37 @@ public class SysSmsController {
     }
 
     @PostMapping("/save")
-    public ResultVO save(@RequestBody Map<String, Object> body) {
-        String errorMsg = smsManageService.validateForSave(body);
+    public ResultVO save(@RequestBody SmsSendForm form) {
+        String errorMsg = smsManageService.validateForSave(form);
         if (errorMsg != null) {
             return R.error(errorMsg);
         }
-        boolean success = smsManageService.save(body, OperatorContextUtils.currentOperatorId());
-        return success ? R.ok("send success") : R.error("send failed");
+        SmsBatchSendVO summary = smsManageService.save(form, OperatorContextUtils.currentOperatorId());
+        return toResult(summary);
     }
 
     @PostMapping("/update")
-    public ResultVO update(@RequestBody Map<String, Object> body) {
-        String errorMsg = smsManageService.validateForUpdate(body);
+    public ResultVO update(@RequestBody SmsSendForm form) {
+        String errorMsg = smsManageService.validateForUpdate(form);
         if (errorMsg != null) {
             return R.error(errorMsg);
         }
-        boolean success = smsManageService.update(body, OperatorContextUtils.currentOperatorId());
-        return success ? R.ok("update success") : R.error("update failed");
+        SmsBatchSendVO summary = smsManageService.update(form, OperatorContextUtils.currentOperatorId());
+        return toResult(summary);
+    }
+
+    private ResultVO toResult(SmsBatchSendVO summary) {
+        if (summary == null) {
+            return R.error("send failed");
+        }
+        String message = summary.getMessage() == null ? "send failed" : summary.getMessage();
+        ResultVO resultVO;
+        if (summary.getSuccess() == null || summary.getSuccess() <= 0) {
+            resultVO = R.error(message);
+        } else {
+            resultVO = R.ok(message);
+        }
+        resultVO.setData(summary);
+        return resultVO;
     }
 }
