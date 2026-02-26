@@ -16,21 +16,27 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 /**
- * 1小时发送3条的限流规则
- * @author zjw
- * @description
+ * Captcha throttling in one filter: minute + hour + day.
  */
 @Service("limitOneHour")
 @Slf4j
 public class LimitOneHourStrategyFilter implements StrategyFilter {
 
-    private final String UTC = "+8";
+    private static final String UTC = "+8";
 
-    private final long ONE_HOUR = 60 * 1000 * 60 - 1;
+    private static final long ONE_MINUTE = 60 * 1000L - 1;
 
-    private final int RETRY_COUNT = 2;
+    private static final long ONE_HOUR = 60 * 60 * 1000L - 1;
 
-    private final int LIMIT_HOUR = 3;
+    private static final long ONE_DAY = 24 * 60 * 60 * 1000L - 1;
+
+    private static final int RETRY_COUNT = 2;
+
+    private static final int LIMIT_MINUTE = 1;
+
+    private static final int LIMIT_HOUR = 3;
+
+    private static final int LIMIT_DAY = 10;
 
     @Autowired
     private BeaconCacheClient cacheClient;
@@ -38,56 +44,85 @@ public class LimitOneHourStrategyFilter implements StrategyFilter {
     @Autowired
     private ErrorSendMsgUtil sendMsgUtil;
 
-
     @Override
     public void strategy(StandardSubmit submit) {
-        // 判断短信类型不是验证码类的，直接结束方法
-        if(submit.getState() != SmsConstant.CODE_TYPE){
+        if (submit.getState() != SmsConstant.CODE_TYPE) {
             return;
         }
-        //1、基于submit获取短信的发送时间
+
         LocalDateTime sendTime = submit.getSendTime();
-        //2、基于LocalDateTime获取到时间的毫秒值
         long sendTimeMilli = sendTime.toInstant(ZoneOffset.of(UTC)).toEpochMilli();
-        submit.setOneHourLimitMilli(sendTimeMilli);
-        //3、基于submit获取客户标识以及手机号信息
+
         Long clientId = submit.getClientId();
         String mobile = submit.getMobile();
 
-        //4、优先将当前短信发送信息插入到Redis的ZSet结构中 zadd
+        minuteLimit(submit, clientId, mobile, sendTimeMilli);
+        hourLimit(submit, clientId, mobile, sendTimeMilli);
+        dayLimit(submit, clientId, mobile, sendTimeMilli);
+    }
+
+    private void minuteLimit(StandardSubmit submit, Long clientId, String mobile, long sendTimeMilli) {
+        String key = CacheConstant.LIMIT_MINUTES + clientId + CacheConstant.SEPARATE + mobile;
+        if (!Boolean.TRUE.equals(cacheClient.zadd(key, sendTimeMilli, sendTimeMilli))) {
+            reject(submit, mobile, ExceptionEnums.ONE_MINUTE_LIMIT, "【策略模块-一分钟限流策略】 插入失败，满足一分钟限流规则，无法发送！");
+        }
+
+        long start = sendTimeMilli - ONE_MINUTE;
+        int count = cacheClient.zRangeByScoreCount(key, (double) start, (double) sendTimeMilli);
+        if (count > LIMIT_MINUTE) {
+            cacheClient.zRemove(key, String.valueOf(sendTimeMilli));
+            reject(submit, mobile, ExceptionEnums.ONE_MINUTE_LIMIT, "【策略模块-一分钟限流策略】 计数超限，无法发送！");
+        }
+    }
+
+    private void hourLimit(StandardSubmit submit, Long clientId, String mobile, long sendTimeMilli) {
         String key = CacheConstant.LIMIT_HOURS + clientId + CacheConstant.SEPARATE + mobile;
+        long member = tryInsertWithRetry(key, sendTimeMilli, ExceptionEnums.ONE_HOUR_LIMIT, submit, mobile,
+                "【策略模块-一小时限流策略】 插入失败，满足一小时限流规则，无法发送！");
 
-        //5、如果插入失败，需要重新的将毫秒值做改变，尝试重新插入
-        int retry = 0;
-        while(!cacheClient.zadd(key, submit.getOneHourLimitMilli(), submit.getOneHourLimitMilli())){
-            // 发送失败,尝试重试
-            if(retry == RETRY_COUNT) break;
-            retry++;
-            // 插入失败，是因为存储的member不允许重复，既然重复了，将时间向后移动，移动到当前系统时间
-            submit.setOneHourLimitMilli(System.currentTimeMillis());
+        long start = member - ONE_HOUR;
+        int count = cacheClient.zRangeByScoreCount(key, (double) start, (double) member);
+        if (count > LIMIT_HOUR) {
+            cacheClient.zRemove(key, String.valueOf(member));
+            reject(submit, mobile, ExceptionEnums.ONE_HOUR_LIMIT, "【策略模块-一小时限流策略】 计数超限，无法发送！");
         }
-        // 如果retry为2，代表已经重试了2次，但是依然没有成功
-        if(retry == RETRY_COUNT){
-            log.info("【策略模块-一小时限流策略】  插入失败！ 满足一小时限流规则，无法发送！");
-            submit.setErrorMsg(ExceptionEnums.ONE_HOUR_LIMIT + ",mobile = " + mobile);
-            sendMsgUtil.sendWriteLog(submit);
-            sendMsgUtil.sendPushReport(submit);
-            throw new StrategyException(ExceptionEnums.ONE_HOUR_LIMIT);
+    }
+
+    private void dayLimit(StandardSubmit submit, Long clientId, String mobile, long sendTimeMilli) {
+        String key = CacheConstant.LIMIT_DAYS + clientId + CacheConstant.SEPARATE + mobile;
+        long member = tryInsertWithRetry(key, sendTimeMilli, ExceptionEnums.ONE_DAY_LIMIT, submit, mobile,
+                "【策略模块-一天限流策略】 插入失败，满足一天限流规则，无法发送！");
+
+        long start = member - ONE_DAY;
+        int count = cacheClient.zRangeByScoreCount(key, (double) start, (double) member);
+        if (count > LIMIT_DAY) {
+            cacheClient.zRemove(key, String.valueOf(member));
+            reject(submit, mobile, ExceptionEnums.ONE_DAY_LIMIT, "【策略模块-一天限流策略】 计数超限，无法发送！");
         }
-        // 没有重试2次，3次之内，将数据正常的插入了。基于zrangebyscore做范围查询
-        long start = submit.getOneHourLimitMilli() - ONE_HOUR;
-        int count = cacheClient.zRangeByScoreCount(key, Double.parseDouble(start + ""), Double.parseDouble(submit.getOneHourLimitMilli() + ""));
+    }
 
-        if(count > LIMIT_HOUR){
-            log.info("【策略模块-一小时限流策略】  插入失败！ 满足一小时限流规则，无法发送！");
-            cacheClient.zRemove(key,submit.getOneHourLimitMilli() + "");
-            submit.setErrorMsg(ExceptionEnums.ONE_HOUR_LIMIT + ",mobile = " + mobile);
-            sendMsgUtil.sendWriteLog(submit);
-            sendMsgUtil.sendPushReport(submit);
-            throw new StrategyException(ExceptionEnums.ONE_HOUR_LIMIT);
+    private long tryInsertWithRetry(String key,
+                                    long initialMember,
+                                    ExceptionEnums exceptionEnums,
+                                    StandardSubmit submit,
+                                    String mobile,
+                                    String failLog) {
+        long member = initialMember;
+        for (int retry = 0; retry <= RETRY_COUNT; retry++) {
+            if (Boolean.TRUE.equals(cacheClient.zadd(key, member, member))) {
+                return member;
+            }
+            member = System.currentTimeMillis() + retry + 1;
         }
+        reject(submit, mobile, exceptionEnums, failLog);
+        return member;
+    }
 
-        log.info("【策略模块-一小时限流策略】  一小时限流规则通过，可以发送！");
-
+    private void reject(StandardSubmit submit, String mobile, ExceptionEnums exceptionEnums, String logMsg) {
+        log.info(logMsg);
+        submit.setErrorMsg(exceptionEnums + ",mobile = " + mobile);
+        sendMsgUtil.sendWriteLog(submit);
+        sendMsgUtil.sendPushReport(submit);
+        throw new StrategyException(exceptionEnums);
     }
 }

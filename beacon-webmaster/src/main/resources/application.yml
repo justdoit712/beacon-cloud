@@ -41,7 +41,4 @@ shiro:
 system:
   # 在本地开发环境，设置万能验证码为 1111
   test-kaptcha: "1111"
-sms:
-  internal:
-    # optional token for calling beacon-api /sms/internal/single_send
-    token: ""
+
