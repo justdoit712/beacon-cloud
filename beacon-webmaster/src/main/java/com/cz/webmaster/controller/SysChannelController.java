@@ -8,9 +8,14 @@ import com.cz.webmaster.service.ChannelService;
 import com.cz.webmaster.vo.ChannelVO;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,8 +26,11 @@ import java.util.Map;
 @RequestMapping("/sys/channel")
 public class SysChannelController {
 
-    @Autowired
-    private ChannelService channelService;
+    private final ChannelService channelService;
+
+    public SysChannelController(ChannelService channelService) {
+        this.channelService = channelService;
+    }
 
     @GetMapping("/list")
     public ResultVO list(@RequestParam(defaultValue = "0") int offset,
@@ -79,7 +87,7 @@ public class SysChannelController {
                 || !StringUtils.hasText(channelVO.getChannelArea())
                 || channelVO.getChannelPrice() == null
                 || channelVO.getProtocolType() == null) {
-            return new ResultVO(-1, "通道名称、通道类型、通道地区、通道成本、协议类型不能为空");
+            return R.error("通道名称、通道类型、通道地区、通道成本、协议类型不能为空");
         }
 
         Channel entity = new Channel();
@@ -90,13 +98,13 @@ public class SysChannelController {
             entity.setCreateId(currentUser.getId().longValue());
             entity.setUpdateId(currentUser.getId().longValue());
         }
-        return channelService.save(entity) ? R.ok("新增成功") : new ResultVO(-1, "新增失败");
+        return channelService.save(entity) ? R.ok("新增成功") : R.error("新增失败");
     }
 
     @PostMapping("/update")
     public ResultVO update(@RequestBody ChannelVO channelVO) {
         if (channelVO == null || channelVO.getId() == null) {
-            return new ResultVO(-1, "通道id不能为空");
+            return R.error("通道id不能为空");
         }
 
         Channel entity = new Channel();
@@ -106,16 +114,16 @@ public class SysChannelController {
         if (currentUser != null) {
             entity.setUpdateId(currentUser.getId().longValue());
         }
-        return channelService.update(entity) ? R.ok("修改成功") : new ResultVO(-1, "修改失败");
+        return channelService.update(entity) ? R.ok("修改成功") : R.error("修改失败");
     }
 
     @PostMapping("/del")
     public ResultVO delete(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            return new ResultVO(-1, "请选择要删除的数据");
+            return R.error("请选择要删除的数据");
         }
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         Long updateId = currentUser == null ? null : currentUser.getId().longValue();
-        return channelService.deleteBatch(ids, updateId) ? R.ok("删除成功") : new ResultVO(-1, "删除失败");
+        return channelService.deleteBatch(ids, updateId) ? R.ok("删除成功") : R.error("删除失败");
     }
 }

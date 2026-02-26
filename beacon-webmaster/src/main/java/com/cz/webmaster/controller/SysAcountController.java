@@ -2,10 +2,8 @@ package com.cz.webmaster.controller;
 
 import com.cz.common.util.R;
 import com.cz.common.vo.ResultVO;
-import com.cz.webmaster.entity.SmsUser;
+import com.cz.webmaster.controller.support.OperatorContextUtils;
 import com.cz.webmaster.service.AcountService;
-import org.apache.shiro.SecurityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -22,8 +20,11 @@ import java.util.Map;
 @RequestMapping("/sys/acount")
 public class SysAcountController {
 
-    @Autowired
-    private AcountService acountService;
+    private final AcountService acountService;
+
+    public SysAcountController(AcountService acountService) {
+        this.acountService = acountService;
+    }
 
     @GetMapping("/list")
     public ResultVO list(@RequestParam(defaultValue = "0") int offset,
@@ -35,9 +36,7 @@ public class SysAcountController {
 
     @GetMapping("/info/{id}")
     public Map<String, Object> info(@PathVariable("id") Long id) {
-        Map<String, Object> result = new HashMap<>();
-        result.put("acount", acountService.info(id));
-        return result;
+        return Collections.singletonMap("acount", acountService.info(id));
     }
 
     @PostMapping("/save")
@@ -46,8 +45,8 @@ public class SysAcountController {
         if (errorMsg != null) {
             return R.error(errorMsg);
         }
-        boolean success = acountService.save(body, currentOperatorId());
-        return success ? success("save success") : R.error("save failed");
+        boolean success = acountService.save(body, OperatorContextUtils.currentOperatorId());
+        return success ? R.ok("save success") : R.error("save failed");
     }
 
     @PostMapping("/update")
@@ -56,8 +55,8 @@ public class SysAcountController {
         if (errorMsg != null) {
             return R.error(errorMsg);
         }
-        boolean success = acountService.update(body, currentOperatorId());
-        return success ? success("update success") : R.error("update failed");
+        boolean success = acountService.update(body, OperatorContextUtils.currentOperatorId());
+        return success ? R.ok("update success") : R.error("update failed");
     }
 
     @PostMapping("/del")
@@ -66,22 +65,6 @@ public class SysAcountController {
             return R.error("ids is required");
         }
         boolean success = acountService.deleteBatch(ids);
-        return success ? success("delete success") : R.error("delete failed");
-    }
-
-    private ResultVO success(String msg) {
-        ResultVO vo = R.ok();
-        vo.setMsg(msg);
-        return vo;
-    }
-
-    private Long currentOperatorId() {
-        Object principal = SecurityUtils.getSubject().getPrincipal();
-        if (!(principal instanceof SmsUser)) {
-            return null;
-        }
-        SmsUser user = (SmsUser) principal;
-        return user.getId() == null ? null : user.getId().longValue();
+        return success ? R.ok("delete success") : R.error("delete failed");
     }
 }
-

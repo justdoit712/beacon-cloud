@@ -8,9 +8,14 @@ import com.cz.webmaster.service.ClientChannelService;
 import com.cz.webmaster.vo.ClientChannelVO;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,8 +29,11 @@ import java.util.Map;
 @RequestMapping("/sys/clientchannel")
 public class SysClientChannelController {
 
-    @Autowired
-    private ClientChannelService clientChannelService;
+    private final ClientChannelService clientChannelService;
+
+    public SysClientChannelController(ClientChannelService clientChannelService) {
+        this.clientChannelService = clientChannelService;
+    }
 
     @GetMapping("/list")
     public ResultVO list(@RequestParam(defaultValue = "0") int offset,
@@ -66,7 +74,7 @@ public class SysClientChannelController {
                 || clientChannelVO.getChannelId() == null
                 || !StringUtils.hasText(clientChannelVO.getExtendNumber())
                 || clientChannelVO.getPrice() == null) {
-            return new ResultVO(-1, "所属客户、所属通道、扩展号、价格不能为空");
+            return R.error("所属客户、所属通道、扩展号、价格不能为空");
         }
 
         ClientChannel entity = new ClientChannel();
@@ -78,13 +86,13 @@ public class SysClientChannelController {
             entity.setUpdateId(currentUser.getId().longValue());
         }
 
-        return clientChannelService.save(entity) ? R.ok("新增成功") : new ResultVO(-1, "新增失败");
+        return clientChannelService.save(entity) ? R.ok("新增成功") : R.error("新增失败");
     }
 
     @PostMapping("/update")
     public ResultVO update(@RequestBody ClientChannelVO clientChannelVO) {
         if (clientChannelVO == null || clientChannelVO.getId() == null) {
-            return new ResultVO(-1, "客户通道id不能为空");
+            return R.error("客户通道id不能为空");
         }
 
         ClientChannel entity = new ClientChannel();
@@ -95,19 +103,19 @@ public class SysClientChannelController {
             entity.setUpdateId(currentUser.getId().longValue());
         }
 
-        return clientChannelService.update(entity) ? R.ok("修改成功") : new ResultVO(-1, "修改失败");
+        return clientChannelService.update(entity) ? R.ok("修改成功") : R.error("修改失败");
     }
 
     @PostMapping("/del")
     public ResultVO delete(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            return new ResultVO(-1, "请选择要删除的数据");
+            return R.error("请选择要删除的数据");
         }
 
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         Long updateId = currentUser == null ? null : currentUser.getId().longValue();
 
         boolean result = clientChannelService.deleteBatch(ids, updateId);
-        return result ? R.ok("删除成功") : new ResultVO(-1, "删除失败");
+        return result ? R.ok("删除成功") : R.error("删除失败");
     }
 }

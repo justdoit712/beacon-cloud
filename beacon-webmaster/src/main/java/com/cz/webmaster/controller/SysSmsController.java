@@ -2,10 +2,8 @@ package com.cz.webmaster.controller;
 
 import com.cz.common.util.R;
 import com.cz.common.vo.ResultVO;
-import com.cz.webmaster.entity.SmsUser;
+import com.cz.webmaster.controller.support.OperatorContextUtils;
 import com.cz.webmaster.service.SmsManageService;
-import org.apache.shiro.SecurityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,8 +15,11 @@ import java.util.Map;
 @RequestMapping("/sys/sms")
 public class SysSmsController {
 
-    @Autowired
-    private SmsManageService smsManageService;
+    private final SmsManageService smsManageService;
+
+    public SysSmsController(SmsManageService smsManageService) {
+        this.smsManageService = smsManageService;
+    }
 
     @PostMapping("/save")
     public ResultVO save(@RequestBody Map<String, Object> body) {
@@ -26,8 +27,8 @@ public class SysSmsController {
         if (errorMsg != null) {
             return R.error(errorMsg);
         }
-        boolean success = smsManageService.save(body, currentOperatorId());
-        return success ? success("send success") : R.error("send failed");
+        boolean success = smsManageService.save(body, OperatorContextUtils.currentOperatorId());
+        return success ? R.ok("send success") : R.error("send failed");
     }
 
     @PostMapping("/update")
@@ -36,23 +37,7 @@ public class SysSmsController {
         if (errorMsg != null) {
             return R.error(errorMsg);
         }
-        boolean success = smsManageService.update(body, currentOperatorId());
-        return success ? success("update success") : R.error("update failed");
-    }
-
-    private ResultVO success(String msg) {
-        ResultVO vo = R.ok();
-        vo.setMsg(msg);
-        return vo;
-    }
-
-    private Long currentOperatorId() {
-        Object principal = SecurityUtils.getSubject().getPrincipal();
-        if (!(principal instanceof SmsUser)) {
-            return null;
-        }
-        SmsUser user = (SmsUser) principal;
-        return user.getId() == null ? null : user.getId().longValue();
+        boolean success = smsManageService.update(body, OperatorContextUtils.currentOperatorId());
+        return success ? R.ok("update success") : R.error("update failed");
     }
 }
-

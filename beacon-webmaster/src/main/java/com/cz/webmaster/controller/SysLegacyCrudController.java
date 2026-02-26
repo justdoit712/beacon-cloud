@@ -2,10 +2,8 @@ package com.cz.webmaster.controller;
 
 import com.cz.common.util.R;
 import com.cz.common.vo.ResultVO;
-import com.cz.webmaster.entity.SmsUser;
+import com.cz.webmaster.controller.support.OperatorContextUtils;
 import com.cz.webmaster.service.LegacyCrudService;
-import org.apache.shiro.SecurityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,8 +22,11 @@ public class SysLegacyCrudController {
 
     private static final String FAMILY_PATTERN = "activity|apimapping|grayrelease|publicparams|black|notify|searchparams|message|apigatewayfilter|stragetyfilter|limit|smstemp";
 
-    @Autowired
-    private LegacyCrudService legacyCrudService;
+    private final LegacyCrudService legacyCrudService;
+
+    public SysLegacyCrudController(LegacyCrudService legacyCrudService) {
+        this.legacyCrudService = legacyCrudService;
+    }
 
     @GetMapping("/{family:" + FAMILY_PATTERN + "}/list")
     public ResultVO list(@PathVariable("family") String family,
@@ -51,9 +52,9 @@ public class SysLegacyCrudController {
         if (validateError != null) {
             return R.error(validateError);
         }
-        Long operatorId = currentOperatorId();
+        Long operatorId = OperatorContextUtils.currentOperatorId();
         boolean success = legacyCrudService.save(family, body, operatorId);
-        return success ? success("save success") : R.error("save failed");
+        return success ? R.ok("save success") : R.error("save failed");
     }
 
     @PostMapping("/{family:" + FAMILY_PATTERN + "}/update")
@@ -62,9 +63,9 @@ public class SysLegacyCrudController {
         if (validateError != null) {
             return R.error(validateError);
         }
-        Long operatorId = currentOperatorId();
+        Long operatorId = OperatorContextUtils.currentOperatorId();
         boolean success = legacyCrudService.update(family, body, operatorId);
-        return success ? success("update success") : R.error("update failed");
+        return success ? R.ok("update success") : R.error("update failed");
     }
 
     @PostMapping("/{family:" + FAMILY_PATTERN + "}/del")
@@ -73,22 +74,6 @@ public class SysLegacyCrudController {
             return R.error("ids is required");
         }
         boolean success = legacyCrudService.deleteBatch(family, ids);
-        return success ? success("delete success") : R.error("delete failed");
-    }
-
-    private ResultVO success(String msg) {
-        ResultVO resultVO = R.ok();
-        resultVO.setMsg(msg);
-        return resultVO;
-    }
-
-    private Long currentOperatorId() {
-        Object principal = SecurityUtils.getSubject().getPrincipal();
-        if (!(principal instanceof SmsUser)) {
-            return null;
-        }
-        SmsUser user = (SmsUser) principal;
-        return user.getId() == null ? null : user.getId().longValue();
+        return success ? R.ok("delete success") : R.error("delete failed");
     }
 }
-

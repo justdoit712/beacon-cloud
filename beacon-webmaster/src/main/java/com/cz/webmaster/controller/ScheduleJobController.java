@@ -4,7 +4,6 @@ import com.cz.common.util.R;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.entity.ScheduleJob;
 import com.cz.webmaster.service.ScheduleJobService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,8 +20,11 @@ import java.util.Map;
 @RequestMapping({"/schedule/job", "/sys/job"})
 public class ScheduleJobController {
 
-    @Autowired
-    private ScheduleJobService scheduleJobService;
+    private final ScheduleJobService scheduleJobService;
+
+    public ScheduleJobController(ScheduleJobService scheduleJobService) {
+        this.scheduleJobService = scheduleJobService;
+    }
 
     @GetMapping("/list")
     public ResultVO list(@RequestParam(defaultValue = "0") int offset,
@@ -44,7 +46,7 @@ public class ScheduleJobController {
     public ResultVO save(@RequestBody ScheduleJob scheduleJob) {
         try {
             boolean success = scheduleJobService.save(scheduleJob);
-            return success ? success("save success") : R.error("save failed");
+            return success ? R.ok("save success") : R.error("save failed");
         } catch (Exception e) {
             return R.error(e.getMessage());
         }
@@ -54,7 +56,7 @@ public class ScheduleJobController {
     public ResultVO update(@RequestBody ScheduleJob scheduleJob) {
         try {
             boolean success = scheduleJobService.update(scheduleJob);
-            return success ? success("update success") : R.error("update failed");
+            return success ? R.ok("update success") : R.error("update failed");
         } catch (Exception e) {
             return R.error(e.getMessage());
         }
@@ -64,7 +66,7 @@ public class ScheduleJobController {
     public ResultVO del(@RequestBody List<Long> jobIds) {
         try {
             boolean success = scheduleJobService.deleteBatch(jobIds);
-            return success ? success("delete success") : R.error("delete failed");
+            return success ? R.ok("delete success") : R.error("delete failed");
         } catch (Exception e) {
             return R.error(e.getMessage());
         }
@@ -74,7 +76,7 @@ public class ScheduleJobController {
     public ResultVO pause(@RequestBody List<Long> jobIds) {
         try {
             boolean success = scheduleJobService.pauseBatch(jobIds);
-            return success ? success("pause success") : R.error("pause failed");
+            return success ? R.ok("pause success") : R.error("pause failed");
         } catch (Exception e) {
             return R.error(e.getMessage());
         }
@@ -84,7 +86,7 @@ public class ScheduleJobController {
     public ResultVO resume(@RequestBody List<Long> jobIds) {
         try {
             boolean success = scheduleJobService.resumeBatch(jobIds);
-            return success ? success("resume success") : R.error("resume failed");
+            return success ? R.ok("resume success") : R.error("resume failed");
         } catch (Exception e) {
             return R.error(e.getMessage());
         }
@@ -94,15 +96,9 @@ public class ScheduleJobController {
     public ResultVO run(@RequestBody List<Long> jobIds) {
         try {
             boolean success = scheduleJobService.runBatch(jobIds);
-            return success ? success("run success") : R.error("run failed");
+            return success ? R.ok("run success") : R.error("run failed");
         } catch (Exception e) {
             return R.error(e.getMessage());
         }
-    }
-
-    private ResultVO success(String msg) {
-        ResultVO resultVO = R.ok();
-        resultVO.setMsg(msg);
-        return resultVO;
     }
 }

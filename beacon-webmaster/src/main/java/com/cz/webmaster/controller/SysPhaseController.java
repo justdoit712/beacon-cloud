@@ -2,10 +2,8 @@ package com.cz.webmaster.controller;
 
 import com.cz.common.util.R;
 import com.cz.common.vo.ResultVO;
-import com.cz.webmaster.entity.SmsUser;
+import com.cz.webmaster.controller.support.OperatorContextUtils;
 import com.cz.webmaster.service.PhaseService;
-import org.apache.shiro.SecurityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,8 +20,11 @@ import java.util.Map;
 @RequestMapping("/sys")
 public class SysPhaseController {
 
-    @Autowired
-    private PhaseService phaseService;
+    private final PhaseService phaseService;
+
+    public SysPhaseController(PhaseService phaseService) {
+        this.phaseService = phaseService;
+    }
 
     @GetMapping("/phase/list")
     public ResultVO list(@RequestParam(defaultValue = "0") int offset,
@@ -46,8 +47,8 @@ public class SysPhaseController {
         if (errorMsg != null) {
             return R.error(errorMsg);
         }
-        boolean success = phaseService.save(body, currentOperatorId());
-        return success ? success("save success") : R.error("save failed");
+        boolean success = phaseService.save(body, OperatorContextUtils.currentOperatorId());
+        return success ? R.ok("save success") : R.error("save failed");
     }
 
     @PostMapping("/phase/update")
@@ -56,8 +57,8 @@ public class SysPhaseController {
         if (errorMsg != null) {
             return R.error(errorMsg);
         }
-        boolean success = phaseService.update(body, currentOperatorId());
-        return success ? success("update success") : R.error("update failed");
+        boolean success = phaseService.update(body, OperatorContextUtils.currentOperatorId());
+        return success ? R.ok("update success") : R.error("update failed");
     }
 
     @PostMapping("/phase/del")
@@ -66,7 +67,7 @@ public class SysPhaseController {
             return R.error("ids is required");
         }
         boolean success = phaseService.deleteBatch(ids);
-        return success ? success("delete success") : R.error("delete failed");
+        return success ? R.ok("delete success") : R.error("delete failed");
     }
 
     @GetMapping("/provs/all")
@@ -90,20 +91,4 @@ public class SysPhaseController {
         result.put("data", citys);
         return result;
     }
-
-    private ResultVO success(String msg) {
-        ResultVO vo = R.ok();
-        vo.setMsg(msg);
-        return vo;
-    }
-
-    private Long currentOperatorId() {
-        Object principal = SecurityUtils.getSubject().getPrincipal();
-        if (!(principal instanceof SmsUser)) {
-            return null;
-        }
-        SmsUser user = (SmsUser) principal;
-        return user.getId() == null ? null : user.getId().longValue();
-    }
 }
-
