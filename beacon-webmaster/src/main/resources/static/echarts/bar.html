@@ -1,46 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-    <script src="../public/libs/jquery.min.js"></script>
-    <script src="../public/plugins/echarts/echarts.min.js"></script>
-    <script>
-        $(function () {
-            //1,初始化echarts
-            var myEcharts = echarts.init(document.getElementById("bar"));
-            //2,设置图形显示的数据选项
-            var option = {
-                xAxis: {
-                    type: 'category',
-                    data: []
-                },
-                yAxis: {
-                    type: 'value'
-                },
-                series: [{
-                    data: [],
-                    type: 'bar'
-                }]
-            };
-
-            $.get("/sys/echarts/bar", function (r) {
-                //把真数据赋值给option
-                option.xAxis.data = r.xAxis;
-                option.series[0].data = r.seriesData;
-                //3,把option设置给echarts对象  显示柱状图
-                myEcharts.setOption(option);
-            });
-        });
-    </script>
-
+    <title>Bar Chart</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <link rel="stylesheet" href="../public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../public/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../public/css/main.css">
+    <link rel="stylesheet" href="../public/css/theme.css">
 </head>
-<body>
-
-
-<div id="bar" style="width: 600px;height: 600px;">
-
+<body class="ops-page">
+<div class="ops-page-container">
+    <div class="ops-page-layout">
+        <div class="panel panel-default ops-list-panel">
+            <div class="panel-heading ops-list-heading">
+                <span class="ops-list-title">Bar Chart</span>
+            </div>
+            <div class="panel-body">
+                <div id="bar" class="ops-chart-canvas"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
+<script src="../public/libs/jquery.min.js"></script>
+<script src="../public/plugins/echarts/echarts.min.js"></script>
+<script>
+    $(function () {
+        var myEcharts = echarts.init(document.getElementById("bar"));
+        var option = {
+            xAxis: {
+                type: 'category',
+                data: []
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                data: [],
+                type: 'bar'
+            }]
+        };
+
+        $.get('/sys/echarts/bar', function (r) {
+            option.xAxis.data = r.xAxis || [];
+            option.series[0].data = r.seriesData || [];
+            myEcharts.setOption(option);
+        });
+
+        $(window).on('resize', function () {
+            myEcharts.resize();
+        });
+    });
+</script>
 </body>
 </html>
