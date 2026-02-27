@@ -18,16 +18,17 @@ function getSelectedRows() {
 
 //选择一条记录
 function getSelectedRow() {
+    var emptyRow = {};
     //返回所有选择的行，当没有选择的记录时，返回一个空数组
     var rows = $("#table").bootstrapTable('getSelections');
     if (rows.length == 0) {
         layer.alert('请选择一条记录');
-        return;
+        return emptyRow;
     }
 
     if (rows.length > 1) {
         layer.alert("只能选择一条记录");
-        return;
+        return emptyRow;
     }
 
     return rows[0];
