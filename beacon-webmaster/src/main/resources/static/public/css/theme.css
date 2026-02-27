@@ -1,0 +1,341 @@
+/*
+ * UI theme design tokens.
+ * Step scope: S1-01 (tokens only, no component-level styling yet)
+ */
+:root {
+    /* Brand and semantic colors */
+    --color-primary: #3c8dbc;
+    --color-primary-hover: #367fa9;
+    --color-primary-active: #2f6f92;
+    --color-success: #00a65a;
+    --color-danger: #dd4b39;
+    --color-warning: #f39c12;
+    --color-info: #00c0ef;
+
+    /* Surface, border, and text colors */
+    --color-bg-page: #f4f6f9;
+    --color-bg-surface: #ffffff;
+    --color-bg-muted: #f8fafc;
+    --color-border-default: #d9dee5;
+    --color-border-strong: #c5ced8;
+    --color-text-primary: #303133;
+    --color-text-secondary: #606266;
+    --color-text-muted: #909399;
+    --color-text-inverse: #ffffff;
+
+    /* Radius scale */
+    --radius-xs: 2px;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-round: 999px;
+
+    /* Shadow scale */
+    --shadow-xs: 0 1px 2px rgba(31, 45, 61, 0.08);
+    --shadow-sm: 0 4px 10px rgba(31, 45, 61, 0.1);
+    --shadow-md: 0 8px 20px rgba(31, 45, 61, 0.12);
+    --shadow-lg: 0 14px 30px rgba(31, 45, 61, 0.16);
+
+    /* Spacing scale */
+    --space-0: 0;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+}
+
+/* Buttons */
+.btn {
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    box-shadow: none;
+    font-weight: 500;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn:focus,
+.btn.focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(60, 141, 188, 0.2);
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-text-inverse);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    color: var(--color-text-inverse);
+}
+
+.btn-primary:active,
+.btn-primary.active {
+    background-color: var(--color-primary-active);
+    border-color: var(--color-primary-active);
+    color: var(--color-text-inverse);
+}
+
+.btn-success {
+    background-color: var(--color-success);
+    border-color: var(--color-success);
+    color: var(--color-text-inverse);
+}
+
+.btn-success:hover,
+.btn-success:focus {
+    background-color: #009451;
+    border-color: #009451;
+    color: var(--color-text-inverse);
+}
+
+.btn-danger {
+    background-color: var(--color-danger);
+    border-color: var(--color-danger);
+    color: var(--color-text-inverse);
+}
+
+.btn-danger:hover,
+.btn-danger:focus {
+    background-color: #c64232;
+    border-color: #c64232;
+    color: var(--color-text-inverse);
+}
+
+.btn-warning {
+    background-color: var(--color-warning);
+    border-color: var(--color-warning);
+    color: #ffffff;
+}
+
+.btn-warning:hover,
+.btn-warning:focus {
+    background-color: #de8f0f;
+    border-color: #de8f0f;
+    color: #ffffff;
+}
+
+.btn-info {
+    background-color: var(--color-info);
+    border-color: var(--color-info);
+    color: var(--color-text-inverse);
+}
+
+.btn-info:hover,
+.btn-info:focus {
+    background-color: #00abd6;
+    border-color: #00abd6;
+    color: var(--color-text-inverse);
+}
+
+.btn-default {
+    background-color: var(--color-bg-surface);
+    border-color: var(--color-border-default);
+    color: var(--color-text-primary);
+}
+
+.btn-default:hover,
+.btn-default:focus {
+    background-color: var(--color-bg-muted);
+    border-color: var(--color-border-strong);
+    color: var(--color-text-primary);
+}
+
+.btn.disabled,
+.btn[disabled],
+fieldset[disabled] .btn {
+    opacity: 0.6;
+    box-shadow: none;
+}
+
+/* Form controls */
+.form-control {
+    height: 36px;
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-surface);
+    box-shadow: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+textarea.form-control {
+    height: auto;
+    min-height: 72px;
+}
+
+.form-control::placeholder {
+    color: var(--color-text-muted);
+}
+
+.form-control:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(60, 141, 188, 0.16);
+}
+
+.form-group {
+    margin-bottom: var(--space-4);
+}
+
+.input-group-addon {
+    border: 1px solid var(--color-border-default);
+    background-color: var(--color-bg-muted);
+    color: var(--color-text-secondary);
+}
+
+/* Panels */
+.panel {
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+    background-color: var(--color-bg-surface);
+}
+
+.panel-default > .panel-heading {
+    background-color: var(--color-bg-muted);
+    border-bottom: 1px solid var(--color-border-default);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    border-top-left-radius: var(--radius-md);
+    border-top-right-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+}
+
+.panel-body {
+    padding: var(--space-4);
+}
+
+.panel-footer {
+    background-color: var(--color-bg-muted);
+    border-top: 1px solid var(--color-border-default);
+}
+
+/* Tables */
+.table {
+    color: var(--color-text-primary);
+}
+
+.table > thead > tr > th {
+    background-color: var(--color-bg-muted);
+    color: var(--color-text-secondary);
+    border-bottom: 1px solid var(--color-border-strong);
+    font-weight: 600;
+}
+
+.table > tbody > tr > td {
+    border-top: 1px solid #edf1f5;
+}
+
+.table-hover > tbody > tr:hover {
+    background-color: #f7fbff;
+}
+
+.fixed-table-container {
+    border-color: var(--color-border-default);
+    border-radius: var(--radius-md);
+}
+
+.fixed-table-container tbody .selected td {
+    background-color: #eef7ff;
+}
+
+.fixed-table-loading {
+    background-color: rgba(255, 255, 255, 0.75);
+}
+
+/* Pagination */
+.pagination > li > a,
+.pagination > li > span {
+    color: var(--color-text-secondary);
+    background-color: var(--color-bg-surface);
+    border: 1px solid var(--color-border-default);
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.pagination > li > a:hover,
+.pagination > li > span:hover,
+.pagination > li > a:focus,
+.pagination > li > span:focus {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    background-color: #f3faff;
+}
+
+.pagination > .active > a,
+.pagination > .active > span,
+.pagination > .active > a:hover,
+.pagination > .active > span:hover,
+.pagination > .active > a:focus,
+.pagination > .active > span:focus {
+    color: var(--color-text-inverse);
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.pagination > .disabled > a,
+.pagination > .disabled > span,
+.pagination > .disabled > a:hover,
+.pagination > .disabled > span:hover {
+    color: var(--color-text-muted);
+    background-color: var(--color-bg-muted);
+    border-color: var(--color-border-default);
+}
+
+/* Labels */
+.label {
+    display: inline-block;
+    padding: 0.35em 0.7em;
+    border-radius: var(--radius-round);
+    font-weight: 500;
+}
+
+.label-default {
+    background-color: #b9c3cf;
+}
+
+.label-primary {
+    background-color: var(--color-primary);
+}
+
+.label-success {
+    background-color: var(--color-success);
+}
+
+.label-info {
+    background-color: var(--color-info);
+}
+
+.label-warning {
+    background-color: var(--color-warning);
+}
+
+.label-danger {
+    background-color: var(--color-danger);
+}
+
+/* Layer modal title */
+.layui-layer {
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-md) !important;
+    overflow: hidden;
+}
+
+.layui-layer .layui-layer-title {
+    background: var(--color-bg-muted);
+    color: var(--color-text-primary);
+    border-bottom: 1px solid var(--color-border-default);
+    font-weight: 600;
+    height: 42px;
+    line-height: 42px;
+    padding: 0 var(--space-4);
+}
