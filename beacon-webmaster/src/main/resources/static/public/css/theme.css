@@ -1042,6 +1042,64 @@ textarea.form-control {
     min-width: 88px;
 }
 
+/* Activity page Element bridge */
+.activity-form-bridge .activity-element-wrap {
+    position: relative;
+}
+
+.activity-form-bridge .activity-date-picker,
+.activity-form-bridge .activity-date-picker.el-date-editor.el-input {
+    width: 100%;
+}
+
+.activity-form-bridge .el-input__inner {
+    height: 36px;
+    line-height: 36px;
+    border-color: var(--color-border-default);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+}
+
+.activity-form-bridge .el-input__inner:hover {
+    border-color: var(--color-border-strong);
+}
+
+.activity-form-bridge .el-input__inner:focus {
+    border-color: var(--color-primary);
+}
+
+.activity-form-bridge .el-date-editor .el-input__icon {
+    line-height: 36px;
+}
+
+.activity-form-bridge .el-upload {
+    display: block;
+}
+
+.activity-form-bridge .activity-upload-tip {
+    margin-top: var(--space-2);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    color: var(--color-text-muted);
+}
+
+.activity-form-bridge .activity-upload-tip .el-button {
+    margin: 0;
+}
+
+/* Keep default visual order: primary first, secondary second */
+.layui-layer .layui-layer-btn {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+}
+
+.layui-layer .layui-layer-btn a {
+    margin: 0;
+}
+
 /* Layer button consistency */
 .layui-layer .layui-layer-btn {
     padding: var(--space-2) var(--space-4) var(--space-4);
