@@ -7,6 +7,12 @@ $(function () {
         search: true,
         toolbar: '#toolbar',
         striped: true,     //设置为true会有隔行变色效果
+        formatLoadingMessage: function () {
+            return '数据加载中，请稍候...';
+        },
+        formatNoMatches: function () {
+            return '暂无数据，请调整筛选条件';
+        },
         //idField: 'menuId',
         columns: [
             {
@@ -36,9 +42,40 @@ var vm = new Vue({
     data: {
         showList: true,
         title: null,
-        client: {}
+        client: {},
+        formErrors: {},
+        saving: false
     },
     methods: {
+        clearValidation: function () {
+            vm.formErrors = {};
+        },
+        validateForm: function () {
+            var errors = {};
+            var mobileReg = /^[0-9+\-]{6,20}$/;
+            var emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!vm.client.corpname || $.trim(vm.client.corpname) === '') {
+                errors.corpname = '请输入公司名称';
+            }
+
+            if (!vm.client.linkman || $.trim(vm.client.linkman) === '') {
+                errors.linkman = '请输入联系人';
+            }
+
+            if (!vm.client.mobile || $.trim(vm.client.mobile) === '') {
+                errors.mobile = '请输入手机号';
+            } else if (!mobileReg.test($.trim(vm.client.mobile))) {
+                errors.mobile = '手机号格式不正确';
+            }
+
+            if (vm.client.email && !emailReg.test($.trim(vm.client.email))) {
+                errors.email = '邮箱格式不正确';
+            }
+
+            vm.formErrors = errors;
+            return Object.keys(errors).length === 0;
+        },
         del: function () {
             var rows = getSelectedRows();
             if (rows == null) {
@@ -77,6 +114,8 @@ var vm = new Vue({
             vm.showList = false;
             vm.title = "新增";
             vm.client = {};
+            vm.saving = false;
+            vm.clearValidation();
         },
         update: function (event) {
             var id = 'id';
@@ -89,10 +128,21 @@ var vm = new Vue({
                 vm.showList = false;
                 vm.title = "修改";
                 vm.client = r.client;
+                vm.saving = false;
+                vm.clearValidation();
             });
         },
         saveOrUpdate: function (event) {
+            if (vm.saving) {
+                return;
+            }
+
+            if (!vm.validateForm()) {
+                return;
+            }
+
             var url = vm.client.id == null ? "../sys/client/save" : "../sys/client/update";
+            vm.saving = true;
             $.ajax({
                 type: "POST",
                 url: url,
@@ -106,10 +156,15 @@ var vm = new Vue({
                     } else {
                         layer.alert(r.msg);
                     }
+                },
+                complete: function () {
+                    vm.saving = false;
                 }
             });
         },
         reload: function (event) {
+            vm.saving = false;
+            vm.clearValidation();
             vm.showList = true;
             $("#table").bootstrapTable('refresh');
         }
