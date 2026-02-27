@@ -8,6 +8,7 @@ import com.cz.common.util.CMPP2DeliverUtil;
 import com.cz.common.util.CMPPDeliverMapUtil;
 import com.cz.smsgateway.client.BeaconCacheClient;
 import com.cz.smsgateway.util.SpringUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
@@ -15,6 +16,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  * @author cz
  * @description
  */
+@Slf4j
 public class DeliverRunnable implements Runnable {
 
     private RabbitTemplate rabbitTemplate = SpringUtil.getBeanByClass(RabbitTemplate.class);
@@ -36,6 +38,11 @@ public class DeliverRunnable implements Runnable {
     public void run() {
         //1、基于msgId拿到临时存储的Report对象
         StandardReport report = CMPPDeliverMapUtil.remove(msgId + "");
+        if (report == null) {
+            log.warn("cmpp deliver repo miss, msgId={}, stat={}, deliverCacheSize={}",
+                    msgId, stat, CMPPDeliverMapUtil.size());
+            return;
+        }
 
         //2、确认当前短信发送的最终状态
         if(!StringUtils.isEmpty(stat) && stat.equals(DELIVRD)){

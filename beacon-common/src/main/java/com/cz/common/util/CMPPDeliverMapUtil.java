@@ -1,30 +1,48 @@
 package com.cz.common.util;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.cz.common.model.StandardReport;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.Duration;
 
 /**
  * 用于CMPP的状态回到时，获取核心信息的方式
  * @author cz
  * @description
  */
-public class CMPPDeliverMapUtil {
+public final class CMPPDeliverMapUtil {
 
-    private static ConcurrentHashMap<String, StandardReport> map = new ConcurrentHashMap<>();
+    private static final Cache<String, StandardReport> CACHE = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(10))
+            .maximumSize(500_000)
+            .build();
 
+    private CMPPDeliverMapUtil() {
+    }
 
-    public static void put(String msgId,StandardReport submit){
-        map.put(msgId,submit);
+    public static void put(String msgId, StandardReport submit){
+        if (msgId == null) {
+            return;
+        }
+        CACHE.put(msgId, submit);
     }
 
     public static StandardReport get(String msgId){
-        return map.get(msgId);
+        if (msgId == null) {
+            return null;
+        }
+        return CACHE.getIfPresent(msgId);
     }
 
     public static StandardReport remove(String msgId){
-        return map.remove(msgId);
+        if (msgId == null) {
+            return null;
+        }
+        return CACHE.asMap().remove(msgId);
     }
 
-
+    public static long size() {
+        return CACHE.estimatedSize();
+    }
 }

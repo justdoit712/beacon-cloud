@@ -9,6 +9,7 @@ import com.cz.common.util.CMPPDeliverMapUtil;
 import com.cz.common.util.CMPPSubmitRepoMapUtil;
 import com.cz.smsgateway.netty4.entity.CmppSubmitResp;
 import com.cz.smsgateway.util.SpringUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 
@@ -17,6 +18,7 @@ import org.springframework.beans.BeanUtils;
  * @author zjw
  * @description
  */
+@Slf4j
 public class SubmitRepoRunnable implements Runnable {
 
     private RabbitTemplate rabbitTemplate = SpringUtil.getBeanByClass(RabbitTemplate.class);
@@ -34,6 +36,12 @@ public class SubmitRepoRunnable implements Runnable {
         StandardReport report = null;
         //1、拿到自增ID，并且从ConcurrentHashMap中获取到存储的submit
         StandardSubmit submit = CMPPSubmitRepoMapUtil.remove(submitResp.getSequenceId());
+        if (submit == null) {
+            log.warn("cmpp submit repo miss, sequenceId={}, msgId={}, result={}, submitCacheSize={}",
+                    submitResp.getSequenceId(), submitResp.getMsgId(), submitResp.getResult(),
+                    CMPPSubmitRepoMapUtil.size());
+            return;
+        }
 
         //2、根据运营商返回的result，确认短信状态并且封装submit
         int result = submitResp.getResult();
