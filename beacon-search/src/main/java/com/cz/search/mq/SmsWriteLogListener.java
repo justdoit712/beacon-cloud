@@ -39,7 +39,7 @@ public class SmsWriteLogListener {
                     .toEpochMilli();
             doc.put("sendTimeMillis", sendTimeMillis);
         }
-        searchService.index(INDEX + getYear(), submit.getSequenceId().toString(), JsonUtil.obj2JSON(doc));
+        searchService.index(INDEX + getYear(), submit.getSequenceId().toString(), JsonUtil.toJson(doc));
 
 
         //2、手动ack

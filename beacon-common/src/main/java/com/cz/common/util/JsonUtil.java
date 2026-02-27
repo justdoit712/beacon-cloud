@@ -2,21 +2,27 @@ package com.cz.common.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
- * @author zjw
+ * @author cz
  * @description
  */
-public class JsonUtil {
+public final class JsonUtil {
 
-    private static ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-    public static String obj2JSON(Object obj){
+    private JsonUtil() {
+    }
+
+    public static String toJson(Object obj){
         try {
-            return objectMapper.writeValueAsString(obj);
+            return OBJECT_MAPPER.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            throw new RuntimeException("转换JSON失败！");
+            throw new IllegalStateException("serialize object to json failed", e);
         }
     }
 

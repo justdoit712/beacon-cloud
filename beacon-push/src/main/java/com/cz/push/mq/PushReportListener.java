@@ -100,17 +100,18 @@ public class PushReportListener {
         // 声明返回结果，默认为false
         boolean flag = false;
 
-        //1、声明发送的参数
-        String body = JsonUtil.obj2JSON(report);
-
         //2、声明RestTemplate的模板代码
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
         try {
+            //1、声明发送的参数
+            String body = JsonUtil.toJson(report);
             log.info("【推送模块-推送状态报告】 第{}次推送状态报告开始！report = {}",report.getResendCount() + 1,report);
             String result = restTemplate.postForObject("http://" + report.getCallbackUrl(), new HttpEntity<>(body, httpHeaders), String.class);
             flag = SUCCESS.equals(result);
-        } catch (RestClientException e) {
+        } catch (RestClientException | IllegalStateException e) {
+            log.warn("【推送模块-推送状态报告】 推送失败 callbackUrl={}, sequenceId={}, resendCount={}, error={}",
+                    report.getCallbackUrl(), report.getSequenceId(), report.getResendCount(), e.getMessage());
         }
         //3、得到响应后，确认是否为SUCCESS
         return flag;
