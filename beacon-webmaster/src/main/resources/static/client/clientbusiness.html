@@ -13,28 +13,37 @@
     <link rel="stylesheet" href="../public/css/theme.css">
     <link rel="stylesheet" href="../public/css/index.css">
 </head>
-<body>
-<div id="dtapp" v-cloak>
+<body class="ops-page">
+<div id="dtapp" class="ops-page-container" v-cloak>
 
-    <div v-show="showList">
-        <div id="toolbar">
-            <button class="btn btn-success " type="button" @click="add">
-                <i class="fa fa-plus"></i>&nbsp;&nbsp;<span class="bold">新增</span>
-            </button>
-            <button class="btn btn-success " type="button" @click="update">
-                <i class="fa fa-pencil-square-o"></i>&nbsp;&nbsp;<span class="bold">修改</span>
-            </button>
-            <button class="btn btn-danger " type="button" @click="del">
-                <i class="fa fa-remove"></i>&nbsp;&nbsp;<span class="bold">删除</span>
-            </button>
+    <div v-show="showList" class="ops-page-layout">
+        <div class="panel panel-default ops-list-panel">
+            <div class="panel-heading ops-list-heading">
+                <span class="ops-list-title">客户接入列表</span>
+            </div>
+            <div class="panel-body">
+                <div id="toolbar" class="ops-toolbar">
+                    <button class="btn btn-success" type="button" @click="add">
+                        <i class="fa fa-plus"></i>&nbsp;&nbsp;<span class="bold">新增</span>
+                    </button>
+                    <button class="btn btn-success" type="button" @click="update">
+                        <i class="fa fa-pencil-square-o"></i>&nbsp;&nbsp;<span class="bold">修改</span>
+                    </button>
+                    <button class="btn btn-danger" type="button" @click="del">
+                        <i class="fa fa-remove"></i>&nbsp;&nbsp;<span class="bold">删除</span>
+                    </button>
+                    <button class="btn btn-default" type="button" @click="reload">
+                        <i class="fa fa-refresh"></i>&nbsp;&nbsp;<span class="bold">刷新</span>
+                    </button>
+                </div>
+                <table id="table" class="ops-table"></table>
+            </div>
         </div>
-
-        <table id="table"></table>
     </div>
 
-    <div v-show="!showList" class="panel panel-default page-form-layout">
+    <div v-show="!showList" class="panel panel-default page-form-layout ops-form-panel">
         <div class="panel-heading">{{title}}</div>
-        <form class="form-horizontal">
+        <form class="form-horizontal ops-form">
             <div class="form-group">
                 <div class="col-sm-2 control-label">公司名称</div>
                 <div class="col-sm-10">
@@ -62,8 +71,10 @@
             <div class="form-group">
                 <div class="col-sm-2 control-label">是否返回</div>
                 <div class="col-sm-10">
-                    <input type="radio" value="1" v-model="clientbusiness.isreturnstatus">返回
-                    <input type="radio" value="0" v-model="clientbusiness.isreturnstatus">不返回
+                    <div class="ops-inline-options">
+                        <label><input type="radio" value="1" v-model="clientbusiness.isreturnstatus">返回</label>
+                        <label><input type="radio" value="0" v-model="clientbusiness.isreturnstatus">不返回</label>
+                    </div>
                 </div>
             </div>
             <div class="form-group">
@@ -82,15 +93,19 @@
             <div class="form-group">
                 <div class="col-sm-2 control-label">使用方式</div>
                 <div class="col-sm-10">
-                    <input type="radio" value="1" v-model="clientbusiness.usertype">http
-                    <input type="radio" value="2" v-model="clientbusiness.usertype">WEB
+                    <div class="ops-inline-options">
+                        <label><input type="radio" value="1" v-model="clientbusiness.usertype">http</label>
+                        <label><input type="radio" value="2" v-model="clientbusiness.usertype">WEB</label>
+                    </div>
                 </div>
             </div>
             <div class="form-group">
                 <div class="col-sm-2 control-label">开通状态</div>
                 <div class="col-sm-10">
-                    <input type="radio" value="0" v-model="clientbusiness.state">没开通
-                    <input type="radio" value="1" v-model="clientbusiness.state">开通
+                    <div class="ops-inline-options">
+                        <label><input type="radio" value="0" v-model="clientbusiness.state">没开通</label>
+                        <label><input type="radio" value="1" v-model="clientbusiness.state">开通</label>
+                    </div>
                 </div>
             </div>
             <div class="form-group">
@@ -106,10 +121,12 @@
                     <input type="text" class="form-control" v-model="clientbusiness.money" placeholder="0"/>
                 </div>
             </div>
-            <div class="form-group">
+            <div class="form-group ops-form-actions">
                 <div class="col-sm-2 control-label"></div>
-                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
-                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+                <div class="col-sm-10">
+                    <button type="button" class="btn btn-primary" @click="saveOrUpdate">确定</button>
+                    <button type="button" class="btn btn-default ml-10" @click="reload">返回</button>
+                </div>
             </div>
         </form>
     </div>

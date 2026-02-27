@@ -912,3 +912,199 @@ textarea.form-control {
         font-size: 24px;
     }
 }
+
+/* Business pages layout */
+.ops-page {
+    margin: 0;
+    min-height: 100vh;
+    padding: var(--space-4);
+    background: linear-gradient(180deg, #f3f7fb 0%, #f7f9fc 100%);
+}
+
+.ops-page-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.ops-page-layout {
+    margin-bottom: var(--space-4);
+}
+
+.ops-list-panel,
+.ops-form-panel {
+    border: 1px solid #dce4ee;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+    overflow: hidden;
+}
+
+.ops-list-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ops-list-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2d3d;
+}
+
+.ops-list-panel .panel-body {
+    padding: var(--space-4);
+}
+
+.ops-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.ops-toolbar .btn {
+    min-width: 88px;
+}
+
+.ops-list-panel .fixed-table-toolbar {
+    margin-bottom: var(--space-3);
+}
+
+.ops-list-panel .fixed-table-container {
+    border-radius: var(--radius-md);
+}
+
+.ops-list-panel .fixed-table-container thead th {
+    height: 42px;
+}
+
+.ops-list-panel .fixed-table-container tbody td {
+    height: 40px;
+    vertical-align: middle;
+}
+
+.ops-list-panel .fixed-table-pagination {
+    margin-top: var(--space-3);
+}
+
+.ops-form-panel .panel-heading {
+    font-size: 16px;
+}
+
+.ops-form-panel .form-horizontal {
+    width: 100%;
+    max-width: 860px;
+    padding-top: var(--space-5);
+    padding-bottom: var(--space-4);
+}
+
+.ops-form-panel .form-group {
+    margin-bottom: var(--space-4);
+}
+
+.ops-form-panel .control-label {
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    padding-top: 8px;
+}
+
+.ops-inline-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding-top: 7px;
+}
+
+.ops-inline-options label {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.ops-inline-options input[type="radio"] {
+    margin-right: var(--space-1);
+}
+
+.ops-form-panel select.form-control {
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, #7f93a8 50%), linear-gradient(135deg, #7f93a8 50%, transparent 50%);
+    background-position: calc(100% - 16px) 15px, calc(100% - 11px) 15px;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 30px;
+}
+
+.ops-form-actions .col-sm-10 {
+    display: flex;
+    align-items: center;
+}
+
+.ops-form-actions .btn {
+    min-width: 88px;
+}
+
+/* Layer button consistency */
+.layui-layer .layui-layer-btn {
+    padding: var(--space-2) var(--space-4) var(--space-4);
+}
+
+.layui-layer .layui-layer-btn a {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border-default);
+    height: 32px;
+    line-height: 30px;
+    padding: 0 var(--space-4);
+    font-weight: 500;
+}
+
+.layui-layer .layui-layer-btn .layui-layer-btn0 {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+}
+
+.layui-layer .layui-layer-btn .layui-layer-btn0:hover {
+    background-color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+}
+
+.layui-layer .layui-layer-btn .layui-layer-btn1 {
+    background-color: #ffffff;
+    border-color: var(--color-border-default);
+    color: var(--color-text-secondary);
+}
+
+.layui-layer .layui-layer-btn .layui-layer-btn1:hover {
+    background-color: var(--color-bg-muted);
+    border-color: var(--color-border-strong);
+}
+
+@media (min-width: 768px) {
+    .ops-form-panel.page-form-layout .col-sm-2 {
+        width: 22%;
+        padding-left: 0;
+        padding-right: var(--space-3);
+    }
+
+    .ops-form-panel.page-form-layout .col-sm-10 {
+        width: 78%;
+        padding-left: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    .ops-page {
+        padding: var(--space-3);
+    }
+
+    .ops-form-panel .form-horizontal {
+        max-width: 100%;
+    }
+
+    .ops-form-actions .col-sm-10 {
+        padding-top: var(--space-2);
+    }
+
+    .ops-form-actions .btn {
+        min-width: 72px;
+    }
+}
