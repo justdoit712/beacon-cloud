@@ -32,9 +32,6 @@
                     <button v-if="hasPermission('sys:user:delete')" class="btn btn-danger" type="button" @click="del">
                         <i class="fa fa-remove"></i>&nbsp;&nbsp;<span class="bold">删除</span>
                     </button>
-                    <button class="btn btn-default" type="button" @click="reload">
-                        <i class="fa fa-refresh"></i>&nbsp;&nbsp;<span class="bold">刷新</span>
-                    </button>
                 </div>
                 <!--展示菜单列表--->
                 <table id="table" class="ops-table"></table>
