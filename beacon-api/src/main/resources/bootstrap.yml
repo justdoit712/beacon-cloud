@@ -15,3 +15,10 @@ spring:
         server-addr: 192.168.88.128:8848
         file-extension: yml
         # beacon-api-dev.yml
+
+cache:
+  client:
+    auth:
+      enabled: true
+      caller: beacon-api
+      secret: cache_api_secret

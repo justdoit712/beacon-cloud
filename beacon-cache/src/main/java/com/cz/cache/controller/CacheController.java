@@ -1,13 +1,19 @@
 package com.cz.cache.controller;
 
 import com.cz.cache.redis.LocalRedisClient;
+import com.cz.cache.redis.RedisScanService;
+import com.cz.cache.security.CacheSecurityProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,6 +25,10 @@ public class CacheController {
     private LocalRedisClient redisClient;
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private RedisScanService redisScanService;
+    @Autowired
+    private CacheSecurityProperties cacheSecurityProperties;
 
     @PostMapping(value = "/cache/hmset/{key}")
     public void hmset(@PathVariable(value = "key")String key, @RequestBody Map<String,Object> map){
@@ -139,12 +149,35 @@ public class CacheController {
         return result;
     }
 
-    @PostMapping(value = "/cache/keys/{pattern}")
-    public Set<String> keys(@PathVariable String pattern){
-        log.info("【缓存模块】 keys方法，根据pattern查询所有key的信息， pattern = {}", pattern);
-        Set<String> keys = redisTemplate.keys(pattern);
-        log.info("【缓存模块】 keys方法，根据pattern查询所有key的信息， pattern = {},查询出全部的keys信息，keys = {}", pattern, keys);
+    @GetMapping(value = "/cache/keys")
+    public Set<String> keys(@RequestParam("pattern") String pattern,
+                            @RequestParam(value = "count", defaultValue = "1000") Integer count){
+        if (!isAllowedPattern(pattern)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "pattern not allowed");
+        }
+        log.info("【缓存模块】 keys方法，根据pattern扫描key的信息， pattern = {}, count = {}", pattern, count);
+        Set<String> keys = redisScanService.scan(pattern, count);
+        log.info("【缓存模块】 keys方法，根据pattern扫描key的信息， pattern = {}, 查询出的keys数量 = {}", pattern, keys.size());
         return keys;
     }
 
+    private boolean isAllowedPattern(String pattern) {
+        if (!StringUtils.hasText(pattern)) {
+            return false;
+        }
+        List<String> allowList = cacheSecurityProperties.getKeyPatternAllowList();
+        if (allowList == null || allowList.isEmpty()) {
+            return false;
+        }
+        for (String allowed : allowList) {
+            if (!StringUtils.hasText(allowed)) {
+                continue;
+            }
+            String prefix = allowed.replace("*", "");
+            if (pattern.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

@@ -2,6 +2,7 @@ package com.cz.cache.controller;
 
 import com.cz.cache.redis.LocalRedisClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -12,6 +13,7 @@ import java.util.Map;
  * @description
  */
 @RestController
+@ConditionalOnProperty(prefix = "cache.security", name = "test-api-enabled", havingValue = "true")
 public class TestController {
 
     @Autowired

@@ -1,12 +1,13 @@
 package com.cz.strategy.client;
 
+import com.cz.strategy.config.CacheFeignAuthConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.Set;
 
-@FeignClient(value = "beacon-cache")
+@FeignClient(value = "beacon-cache", configuration = CacheFeignAuthConfig.class)
 public interface BeaconCacheClient {
 
     @GetMapping("/cache/hget/{key}/{field}")

@@ -21,3 +21,10 @@ server:
 mybatis:
   configuration:
     map-underscore-to-camel-case: true
+
+cache:
+  client:
+    auth:
+      enabled: true
+      caller: beacon-test
+      secret: cache_test_secret

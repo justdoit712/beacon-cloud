@@ -37,3 +37,10 @@ spring:
           socketFactory:
             port: 465
             class: javax.net.ssl.SSLSocketFactory
+
+cache:
+  client:
+    auth:
+      enabled: true
+      caller: beacon-monitor
+      secret: cache_monitor_secret

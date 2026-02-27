@@ -17,3 +17,10 @@ spring:
         file-extension: yml
         # beacon-api-dev.yml
 
+cache:
+  client:
+    auth:
+      enabled: true
+      caller: beacon-smsgateway
+      secret: cache_smsgateway_secret
+

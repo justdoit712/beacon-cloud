@@ -1,5 +1,6 @@
 package com.cz.smsgateway.client;
 
+import com.cz.smsgateway.config.CacheFeignAuthConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -8,7 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
  * @author cz
  * @description
  */
-@FeignClient(value = "beacon-cache")
+@FeignClient(value = "beacon-cache", configuration = CacheFeignAuthConfig.class)
 public interface BeaconCacheClient {
 
     @GetMapping("/cache/hget/{key}/{field}")

@@ -1,5 +1,6 @@
 package com.cz.test.client;
 
+import com.cz.test.config.CacheFeignAuthConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -8,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Map;
 
-@FeignClient(value = "beacon-cache")
+@FeignClient(value = "beacon-cache", configuration = CacheFeignAuthConfig.class)
 public interface CacheClient {
 
     @PostMapping(value = "/cache/hmset/{key}")

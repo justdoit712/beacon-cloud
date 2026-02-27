@@ -15,3 +15,33 @@ spring:
         server-addr: 192.168.88.128:8848
         file-extension: yml
         # beacon-cache-dev.yml
+
+cache:
+  security:
+    enabled: true
+    test-api-enabled: false
+    max-time-skew-seconds: 300
+    key-pattern-allow-list:
+      - client_balance:*
+      - channel:*
+    caller-secrets:
+      beacon-api: cache_api_secret
+      beacon-strategy: cache_strategy_secret
+      beacon-monitor: cache_monitor_secret
+      beacon-smsgateway: cache_smsgateway_secret
+      beacon-test: cache_test_secret
+    caller-permissions:
+      beacon-api:
+        - READ
+      beacon-strategy:
+        - READ
+        - WRITE
+      beacon-monitor:
+        - READ
+        - KEYS
+      beacon-smsgateway:
+        - READ
+      beacon-test:
+        - READ
+        - WRITE
+        - TEST
