@@ -78,7 +78,6 @@ var vm = new Vue({
                 var ids = new Array();
                 //遍历所有选择的行数据，取每条数据对应的ID
                 $.each(rows, function (i, row) {
-                    console.log(row[id]);
                     ids.push(row[id]);
                 });
 
