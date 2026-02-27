@@ -45,61 +45,65 @@
         <form class="form-horizontal ops-form">
 
             <div class="form-group">
-                <div class="col-sm-2 control-label">用户名</div>
+                <label class="col-sm-2 control-label" for="user-usercode">用户名</label>
                 <div class="col-sm-10">
-                    <input type="text" class="form-control" :class="{'is-invalid': formErrors.usercode}" v-model="user.usercode" placeholder="用户名"/>
-                    <p class="ops-field-error" v-if="formErrors.usercode">{{formErrors.usercode}}</p>
+                    <input id="user-usercode" type="text" class="form-control" :class="{'is-invalid': formErrors.usercode}" :aria-describedby="formErrors.usercode ? 'user-usercode-error' : null" v-model="user.usercode" placeholder="用户名"/>
+                    <p id="user-usercode-error" class="ops-field-error" v-if="formErrors.usercode">{{formErrors.usercode}}</p>
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label">密码</div>
+                <label class="col-sm-2 control-label" for="user-password">密码</label>
                 <div class="col-sm-10">
-                    <input type="password" class="form-control" :class="{'is-invalid': formErrors.password}" v-model="user.password" placeholder="密码"/>
-                    <p class="ops-field-error" v-if="formErrors.password">{{formErrors.password}}</p>
+                    <input id="user-password" type="password" class="form-control" :class="{'is-invalid': formErrors.password}" :aria-describedby="formErrors.password ? 'user-password-error' : null" v-model="user.password" placeholder="密码"/>
+                    <p id="user-password-error" class="ops-field-error" v-if="formErrors.password">{{formErrors.password}}</p>
                 </div>
             </div>
 
 
             <div class="form-group">
-                <div class="col-sm-2 control-label">邮箱</div>
+                <label class="col-sm-2 control-label" for="user-email">邮箱</label>
                 <div class="col-sm-10">
-                    <input type="text" class="form-control" :class="{'is-invalid': formErrors.email}" v-model="user.email" placeholder="邮箱"/>
-                    <p class="ops-field-error" v-if="formErrors.email">{{formErrors.email}}</p>
+                    <input id="user-email" type="text" class="form-control" :class="{'is-invalid': formErrors.email}" :aria-describedby="formErrors.email ? 'user-email-error' : null" v-model="user.email" placeholder="邮箱"/>
+                    <p id="user-email-error" class="ops-field-error" v-if="formErrors.email">{{formErrors.email}}</p>
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label">真实姓名</div>
+                <label class="col-sm-2 control-label" for="user-real-name">真实姓名</label>
                 <div class="col-sm-10">
-                    <input type="text" class="form-control" :class="{'is-invalid': formErrors.realName}" v-model="user.realName" placeholder="真实姓名"/>
-                    <p class="ops-field-error" v-if="formErrors.realName">{{formErrors.realName}}</p>
+                    <input id="user-real-name" type="text" class="form-control" :class="{'is-invalid': formErrors.realName}" :aria-describedby="formErrors.realName ? 'user-real-name-error' : null" v-model="user.realName" placeholder="真实姓名"/>
+                    <p id="user-real-name-error" class="ops-field-error" v-if="formErrors.realName">{{formErrors.realName}}</p>
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label">状态</div>
+                <div id="user-type-label" class="col-sm-2 control-label">类型</div>
                 <div class="col-sm-10">
-                    <div class="ops-inline-options">
-                        <label><input type="radio" value="1" v-model="user.type">管理员</label>
-                        <label><input type="radio" value="2" v-model="user.type">普通用户</label>
+                    <div class="ops-inline-options" role="radiogroup" aria-labelledby="user-type-label">
+                        <input id="user-type-admin" type="radio" value="1" v-model="user.type">
+                        <label for="user-type-admin">管理员</label>
+                        <input id="user-type-normal" type="radio" value="2" v-model="user.type">
+                        <label for="user-type-normal">普通用户</label>
                     </div>
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label">状态</div>
+                <div id="user-status-label" class="col-sm-2 control-label">状态</div>
                 <div class="col-sm-10">
-                    <div class="ops-inline-options">
-                        <label><input type="radio" value="0" v-model="user.status">无效</label>
-                        <label><input type="radio" value="1" v-model="user.status">有效</label>
+                    <div class="ops-inline-options" role="radiogroup" aria-labelledby="user-status-label">
+                        <input id="user-status-invalid" type="radio" value="0" v-model="user.status">
+                        <label for="user-status-invalid">无效</label>
+                        <input id="user-status-valid" type="radio" value="1" v-model="user.status">
+                        <label for="user-status-valid">有效</label>
                     </div>
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label">所属客户</div>
+                <label class="col-sm-2 control-label" for="user-clientid">所属客户</label>
                 <div class="col-sm-10">
-                    <select class="form-control" :class="{'is-invalid': formErrors.clientid}" v-model="user.clientid" name="sites" id="sites">
+                    <select id="user-clientid" class="form-control" :class="{'is-invalid': formErrors.clientid}" :aria-describedby="formErrors.clientid ? 'user-clientid-error' : null" v-model="user.clientid" name="sites">
                         <option value="">请选择所属客户</option>
                         <option v-for="item in sites" :value="item.id">{{ item.corpname }}</option>
                     </select>
-                    <p class="ops-field-error" v-if="formErrors.clientid">{{formErrors.clientid}}</p>
+                    <p id="user-clientid-error" class="ops-field-error" v-if="formErrors.clientid">{{formErrors.clientid}}</p>
                 </div>
             </div>
             <div class="form-group ops-form-actions">

@@ -30,27 +30,30 @@
     <!-- /.login-logo -->
     <div class="login-box-body login-theme-card">
         <p class="login-box-msg login-theme-msg">用户登录</p>
-        <div v-if="error" class="alert alert-danger alert-dismissible login-error-tip">
+        <div v-if="error" class="alert alert-danger alert-dismissible login-error-tip" role="alert" aria-live="assertive">
             <h4 class="login-error-text"><i class="fa fa-exclamation-triangle"></i> {{errorMsg}}</h4>
         </div>
         <div class="form-group has-feedback login-field">
-            <input type="text" class="form-control" v-model="user.username" @keyup.enter="login" autocomplete="username" placeholder="账号">
+            <label for="login-username" class="sr-only">账号</label>
+            <input id="login-username" type="text" class="form-control" v-model="user.username" @keyup.enter="login" autocomplete="username" placeholder="账号">
             <span class="glyphicon glyphicon-user form-control-feedback"></span>
         </div>
         <div class="form-group has-feedback login-field">
-            <input type="password" class="form-control" v-model="user.password" @keyup.enter="login" autocomplete="current-password" placeholder="密码">
+            <label for="login-password" class="sr-only">密码</label>
+            <input id="login-password" type="password" class="form-control" v-model="user.password" @keyup.enter="login" autocomplete="current-password" placeholder="密码">
             <span class="glyphicon glyphicon-lock form-control-feedback"></span>
         </div>
         <div class="form-group has-feedback login-field">
-            <input type="text" class="form-control" v-model="user.captcha" @keyup.enter="login" autocomplete="off" placeholder="验证码">
+            <label for="login-captcha" class="sr-only">验证码</label>
+            <input id="login-captcha" type="text" class="form-control" v-model="user.captcha" @keyup.enter="login" autocomplete="off" placeholder="验证码">
             <span class="glyphicon glyphicon-warning-sign form-control-feedback"></span>
         </div>
         <div class="form-group has-feedback login-captcha-row">
-            <img alt="如果看不清楚，请单击图片刷新！" class="pointer login-captcha-img" :src="src" @click="refreshCode">
-            <a href="javascript:;" class="login-captcha-refresh" @click="refreshCode">点击刷新</a>
+            <img alt="如果看不清楚，请单击图片刷新！" class="pointer login-captcha-img" :src="src" @click="refreshCode" @keyup.enter="refreshCode" tabindex="0">
+            <button type="button" class="login-captcha-refresh" @click="refreshCode">点击刷新</button>
         </div>
         <div class="checkbox text-left login-remember-row">
-            <label><input type="checkbox" v-model="user.rememberMe" value="true">记住我</label>
+            <label for="login-remember"><input id="login-remember" type="checkbox" v-model="user.rememberMe" value="true">记住我</label>
         </div>
 
         <div class="row login-action-row">
