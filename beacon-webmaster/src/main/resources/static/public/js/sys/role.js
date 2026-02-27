@@ -48,6 +48,13 @@ var vm = new Vue({
         role: {}
     },
     methods: {
+        getSelectedRoleId: function () {
+            var selectedRow = getSelectedRow();
+            if (!selectedRow || selectedRow.id == null) {
+                return null;
+            }
+            return selectedRow.id;
+        },
         del: function () {
 
             //var rows = getSelectedRows();
@@ -99,8 +106,7 @@ var vm = new Vue({
             vm.role = {};
         },
         update: function (event) {
-            var id = 'id';
-            var roleId = getSelectedRow()[id];//common.js
+            var roleId = vm.getSelectedRoleId();
             if (roleId == null) {
                 return;
             }
@@ -134,12 +140,11 @@ var vm = new Vue({
             $("#table").bootstrapTable('refresh');
         },
         menuTree: function () {
-            var id = 'id';
-            var roleId = getSelectedRow()[id];//common.js
+            var roleId = vm.getSelectedRoleId();
             if (roleId == null) {
                 return;
             }
-            vm.getMenu();
+            vm.getMenu(roleId);
             layer.open({
                 type: 1,
                 offset: '50px',
@@ -175,8 +180,13 @@ var vm = new Vue({
                 }
             });
         },
-        getMenu: function () {
-            var roleId = getSelectedRow()["id"];//common.js
+        getMenu: function (roleId) {
+            if (roleId == null) {
+                roleId = vm.getSelectedRoleId();
+                if (roleId == null) {
+                    return;
+                }
+            }
             var setting = {
                 data: {
                     simpleData: {
