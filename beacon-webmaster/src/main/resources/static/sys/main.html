@@ -2,9 +2,80 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
     <title>控制台</title>
+    <link rel="stylesheet" href="../public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../public/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../public/css/main.css">
+    <link rel="stylesheet" href="../public/css/theme.css">
 </head>
-<body>
-<img src="../json/sms.jpg" align="center"  >
+<body class="console-page">
+<div class="console-dashboard">
+    <section class="console-hero">
+        <div class="console-hero-copy">
+            <p class="console-eyebrow">Beacon Webmaster</p>
+            <h1>欢迎使用烽火云短信平台</h1>
+            <p class="console-subtitle">集中查看关键指标，快速进入高频页面。</p>
+        </div>
+        <div class="console-hero-visual">
+            <img src="../json/sms.jpg" alt="短信平台封面图">
+        </div>
+    </section>
+
+    <section class="console-section">
+        <div class="console-section-head">
+            <h2>指标概览</h2>
+            <span>占位数据可在后续接入实时统计</span>
+        </div>
+        <div class="console-kpi-grid">
+            <article class="console-kpi-card">
+                <p class="console-kpi-label">今日提交</p>
+                <p class="console-kpi-value">--</p>
+                <p class="console-kpi-meta">较昨日 --</p>
+            </article>
+            <article class="console-kpi-card">
+                <p class="console-kpi-label">发送成功率</p>
+                <p class="console-kpi-value">--%</p>
+                <p class="console-kpi-meta">近 24 小时</p>
+            </article>
+            <article class="console-kpi-card">
+                <p class="console-kpi-label">待处理任务</p>
+                <p class="console-kpi-value">--</p>
+                <p class="console-kpi-meta">任务池概览</p>
+            </article>
+            <article class="console-kpi-card">
+                <p class="console-kpi-label">异常告警</p>
+                <p class="console-kpi-value">--</p>
+                <p class="console-kpi-meta">系统状态</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="console-section">
+        <div class="console-section-head">
+            <h2>常用入口</h2>
+            <span>点击后在主框架中打开页面</span>
+        </div>
+        <div class="console-shortcut-grid">
+            <a class="console-shortcut-item" href="../index.html#sys/user.html" target="_top">
+                <i class="fa fa-users"></i>
+                <span>用户管理</span>
+            </a>
+            <a class="console-shortcut-item" href="../index.html#client/client.html" target="_top">
+                <i class="fa fa-briefcase"></i>
+                <span>客户管理</span>
+            </a>
+            <a class="console-shortcut-item" href="../index.html#channel/channel.html" target="_top">
+                <i class="fa fa-random"></i>
+                <span>渠道管理</span>
+            </a>
+            <a class="console-shortcut-item" href="../index.html#activity/activity.html" target="_top">
+                <i class="fa fa-bullhorn"></i>
+                <span>活动管理</span>
+            </a>
+        </div>
+    </section>
+</div>
 </body>
 </html>

@@ -10,30 +10,38 @@
     <link rel="stylesheet" href="../public/plugins/bootstrap-table/bootstrap-table.min.css">
     <link rel="stylesheet" href="../public/plugins/ztree/css/metroStyle/metroStyle.css">
     <link rel="stylesheet" href="../public/css/main.css">
+    <link rel="stylesheet" href="../public/css/theme.css">
     <link rel="stylesheet" href="../public/css/index.css">
 </head>
-<body>
-<div id="dtapp" v-cloak>
+<body class="ops-page">
+<div id="dtapp" class="ops-page-container" v-cloak>
 
-    <div v-show="showList">
-        <div id="toolbar">
-            <button class="btn btn-success " type="button" @click="add">
-                <i class="fa fa-plus"></i>&nbsp;&nbsp;<span class="bold">新增</span>
-            </button>
-            <button class="btn btn-success " type="button" @click="update">
-                <i class="fa fa-pencil-square-o"></i>&nbsp;&nbsp;<span class="bold">修改</span>
-            </button>
-            <button class="btn btn-danger " type="button" @click="del">
-                <i class="fa fa-remove"></i>&nbsp;&nbsp;<span class="bold">删除</span>
-            </button>
+    <div v-show="showList" class="ops-page-layout">
+        <div class="panel panel-default ops-list-panel">
+            <div class="panel-heading ops-list-heading">
+                <span class="ops-list-title">活动列表</span>
+            </div>
+            <div class="panel-body">
+                <div id="toolbar" class="ops-toolbar">
+                    <button class="btn btn-success" type="button" @click="add">
+                        <i class="fa fa-plus"></i>&nbsp;&nbsp;<span class="bold">新增</span>
+                    </button>
+                    <button class="btn btn-success" type="button" @click="update">
+                        <i class="fa fa-pencil-square-o"></i>&nbsp;&nbsp;<span class="bold">修改</span>
+                    </button>
+                    <button class="btn btn-danger" type="button" @click="del">
+                        <i class="fa fa-remove"></i>&nbsp;&nbsp;<span class="bold">删除</span>
+                    </button>
+                </div>
+
+                <table id="table" class="ops-table"></table>
+            </div>
         </div>
-
-        <table id="table"></table>
     </div>
 
-    <div v-show="!showList" class="panel panel-default">
+    <div v-show="!showList" class="panel panel-default page-form-layout ops-form-panel activity-form-bridge">
         <div class="panel-heading">{{title}}</div>
-        <form class="form-horizontal">
+        <form class="form-horizontal ops-form">
             <div class="form-group">
                 <div class="col-sm-2 control-label">标 题</div>
                 <div class="col-sm-10">
@@ -48,14 +56,14 @@
             </div>
             <div class="form-group">
                 <div class="col-sm-2 control-label">图片</div>
-                <div class="col-sm-10">
+                <div class="col-sm-10 activity-element-wrap">
                     <el-upload
                             action="http://localhost:8080/ytupload"
                             accept="image/jpeg,image/gif,image/png"
                             :on-success="handleSuccess"
                             name="mypic">
-                        <div slot="tip" class="el-upload__tip">请上传图片格式文件
-                            <el-button size="small" type="primary" style="text-align:right">自动上传</el-button>
+                        <div slot="tip" class="el-upload__tip activity-upload-tip">请上传图片格式文件
+                            <el-button size="small" type="primary">自动上传</el-button>
                         </div>
                     </el-upload>
                 </div>
@@ -68,8 +76,9 @@
             </div>
             <div class="form-group">
                 <div class="col-sm-2 control-label">开始时间</div>
-                <div class="col-sm-10">
+                <div class="col-sm-10 activity-element-wrap">
                     <el-date-picker
+                            class="activity-date-picker"
                             v-model="activity.beginTime"
                             type="datetime"
                             format="yyyy-MM-dd HH:mm"
@@ -81,8 +90,9 @@
             </div>
             <div class="form-group">
                 <div class="col-sm-2 control-label">结束时间</div>
-                <div class="col-sm-10">
+                <div class="col-sm-10 activity-element-wrap">
                     <el-date-picker
+                            class="activity-date-picker"
                             v-model="activity.endTime"
                             type="datetime"
                             format="yyyy-MM-dd HH:mm"
@@ -104,10 +114,12 @@
                     <input type="text" class="form-control" v-model="activity.seoKeywords"/>
                 </div>
             </div>
-            <div class="form-group">
+            <div class="form-group ops-form-actions">
                 <div class="col-sm-2 control-label"></div>
-                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
-                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+                <div class="col-sm-10">
+                    <button type="button" class="btn btn-primary" @click="saveOrUpdate">确定</button>
+                    <button type="button" class="btn btn-default ml-10" @click="reload">返回</button>
+                </div>
             </div>
         </form>
     </div>

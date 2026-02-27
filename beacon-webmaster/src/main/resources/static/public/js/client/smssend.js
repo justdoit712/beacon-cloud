@@ -5,7 +5,7 @@ $(function () {
 var vm = new Vue({
     el: '#dtapp',
     data: {
-        title: 'SMS Send',
+        title: '短信发送',
         sites: [],
         sms: {
             clientId: '',
@@ -21,7 +21,7 @@ var vm = new Vue({
         loadSites: function () {
             $.get('../sys/clientbusiness/all', function (r) {
                 if (!r || r.code !== 0) {
-                    layer.alert(r && r.msg ? r.msg : 'load clients failed');
+                    layer.alert(r && r.msg ? r.msg : '加载客户列表失败');
                     return;
                 }
                 vm.sites = r.sites || [];
@@ -32,15 +32,15 @@ var vm = new Vue({
         },
         saveOrUpdate: function () {
             if (!vm.sms.clientId) {
-                layer.alert('client is required');
+                layer.alert('请选择客户');
                 return;
             }
             if (!vm.sms.mobile || !vm.sms.mobile.trim()) {
-                layer.alert('mobile is required');
+                layer.alert('手机号不能为空');
                 return;
             }
             if (!vm.sms.content || !vm.sms.content.trim()) {
-                layer.alert('content is required');
+                layer.alert('短信内容不能为空');
                 return;
             }
 
@@ -50,14 +50,14 @@ var vm = new Vue({
                 data: JSON.stringify(vm.sms),
                 success: function (r) {
                     if (!r) {
-                        layer.alert('empty response');
+                        layer.alert('接口返回为空');
                         return;
                     }
 
                     var summary = r.data || {};
-                    var msg = r.msg || 'request finished';
+                    var msg = r.msg || '请求已完成';
                     if (summary.total != null) {
-                        msg += '\nTotal: ' + summary.total + ', Success: ' + summary.success + ', Failed: ' + summary.failed;
+                        msg += '\n总数: ' + summary.total + '，成功: ' + summary.success + '，失败: ' + summary.failed;
                     }
 
                     if (r.code === 0) {
@@ -67,9 +67,10 @@ var vm = new Vue({
                     }
                 },
                 error: function () {
-                    layer.alert('request failed');
+                    layer.alert('请求失败，请稍后重试');
                 }
             });
         }
     }
 });
+

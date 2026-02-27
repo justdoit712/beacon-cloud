@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
 <title>搜索短信</title>
@@ -10,14 +10,16 @@
 <link rel="stylesheet" href="../public/plugins/bootstrap-table/bootstrap-table.min.css">
 <link rel="stylesheet" href="../public/plugins/ztree/css/metroStyle/metroStyle.css">
 <link rel="stylesheet" href="../public/css/main.css">
-<link rel="stylesheet" href="../public/css/index.css">
+<link rel="stylesheet" href="../public/css/theme.css">
 </head>
-<body>
-<div id="dtapp" v-cloak>
+<body class="ops-page">
+<div id="dtapp" class="ops-page-container" v-cloak>
 
-    <div>
-        <div class="panel panel-default">
-            <div class="panel-heading">查询条件</div>
+    <div class="ops-page-layout">
+        <div class="panel panel-default ops-list-panel">
+            <div class="panel-heading ops-list-heading">
+                <span class="ops-list-title">查询条件</span>
+            </div>
             <div class="panel-body">
                 <form id="formSearch" class="form-inline">
                     <div class="form-group">
@@ -34,8 +36,8 @@
                         <input type="date" class="form-control" id="stoptime">
                     </div>
                     <div class="form-group">
-                        <label >公司</label>
-                        <select class="form-control" id="clientID" >
+                        <label>公司</label>
+                        <select class="form-control" id="clientID">
                             <option value="">请选择</option>
                             <option :value="item.id" v-for="item in sites">{{item.corpname}}</option>
                         </select>
@@ -44,9 +46,18 @@
                 </form>
             </div>
         </div>
-        <table id="table"></table>
     </div>
 
+    <div class="ops-page-layout">
+        <div class="panel panel-default ops-list-panel">
+            <div class="panel-heading ops-list-heading">
+                <span class="ops-list-title">短信搜索结果</span>
+            </div>
+            <div class="panel-body">
+                <table id="table" class="ops-table"></table>
+            </div>
+        </div>
+    </div>
 
 </div>
 

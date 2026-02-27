@@ -48,12 +48,12 @@ html {
         margin-left: 10px !important;
     }
 
-    .col-sm-10 {
+    .page-form-layout .col-sm-10 {
         width: 70%;
         padding-left: 0px;
     }
 
-    .col-sm-2 {
+    .page-form-layout .col-sm-2 {
         width: 24%;
     }
 }
@@ -74,7 +74,7 @@ tbody > tr > th {
     background-color: #f5f5f5;
 }
 
-.row {
+.page-form-layout .row {
     border-top: 1px solid #ddd;
     margin: 0;
     padding: 20px 2px 0px 2px;
@@ -85,12 +85,12 @@ tbody > tr > th {
     padding-right: 0px;
 }
 
-.form-horizontal .form-group {
+.page-form-layout .form-horizontal .form-group {
     margin-left: 0px;
     margin-right: 0px;
 }
 
-.form-horizontal {
+.page-form-layout .form-horizontal {
     width: 550px;
     padding-top: 20px;
 }
