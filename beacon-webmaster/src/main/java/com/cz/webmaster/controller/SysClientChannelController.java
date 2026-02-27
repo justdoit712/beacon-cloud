@@ -1,6 +1,6 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.entity.ClientChannel;
 import com.cz.webmaster.entity.SmsUser;
@@ -50,7 +50,7 @@ public class SysClientChannelController {
             voList.add(vo);
         }
 
-        return R.ok(total, voList);
+        return Result.ok(total, voList);
     }
 
     @GetMapping("/info/{id}")
@@ -74,7 +74,7 @@ public class SysClientChannelController {
                 || clientChannelVO.getChannelId() == null
                 || !StringUtils.hasText(clientChannelVO.getExtendNumber())
                 || clientChannelVO.getPrice() == null) {
-            return R.error("所属客户、所属通道、扩展号、价格不能为空");
+            return Result.error("所属客户、所属通道、扩展号、价格不能为空");
         }
 
         ClientChannel entity = new ClientChannel();
@@ -86,13 +86,13 @@ public class SysClientChannelController {
             entity.setUpdateId(currentUser.getId().longValue());
         }
 
-        return clientChannelService.save(entity) ? R.ok("新增成功") : R.error("新增失败");
+        return clientChannelService.save(entity) ? Result.ok("新增成功") : Result.error("新增失败");
     }
 
     @PostMapping("/update")
     public ResultVO update(@RequestBody ClientChannelVO clientChannelVO) {
         if (clientChannelVO == null || clientChannelVO.getId() == null) {
-            return R.error("客户通道id不能为空");
+            return Result.error("客户通道id不能为空");
         }
 
         ClientChannel entity = new ClientChannel();
@@ -103,19 +103,20 @@ public class SysClientChannelController {
             entity.setUpdateId(currentUser.getId().longValue());
         }
 
-        return clientChannelService.update(entity) ? R.ok("修改成功") : R.error("修改失败");
+        return clientChannelService.update(entity) ? Result.ok("修改成功") : Result.error("修改失败");
     }
 
     @PostMapping("/del")
     public ResultVO delete(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            return R.error("请选择要删除的数据");
+            return Result.error("请选择要删除的数据");
         }
 
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         Long updateId = currentUser == null ? null : currentUser.getId().longValue();
 
         boolean result = clientChannelService.deleteBatch(ids, updateId);
-        return result ? R.ok("删除成功") : R.error("删除失败");
+        return result ? Result.ok("删除成功") : Result.error("删除失败");
     }
 }
+

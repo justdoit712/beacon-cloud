@@ -1,8 +1,8 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
 import com.cz.common.constant.WebMasterConstants;
 import com.cz.common.enums.ExceptionEnums;
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.client.SearchClient;
 import com.cz.webmaster.controller.support.ControllerValueUtils;
@@ -51,7 +51,7 @@ public class SearchController {
         SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if (smsUser == null) {
             log.info("【搜索短信信息】用户未登录");
-            return R.error(ExceptionEnums.NOT_LOGIN);
+            return Result.error(ExceptionEnums.NOT_LOGIN);
         }
 
         Map<String, Object> queryParams = params == null ? new HashMap<String, Object>() : new HashMap<>(params);
@@ -60,7 +60,7 @@ public class SearchController {
         if (StringUtils.hasText(clientIdStr)) {
             clientId = ControllerValueUtils.parseLong(clientIdStr);
             if (clientId == null) {
-                return R.error("clientID must be numeric");
+                return Result.error("clientID must be numeric");
             }
         }
 
@@ -83,7 +83,7 @@ public class SearchController {
                 }
                 if (!allowed) {
                     log.info("【搜索短信信息】用户权限不足, userId={}, clientId={}", smsUser.getId(), clientId);
-                    return R.error(ExceptionEnums.SMS_NO_AUTHOR);
+                    return Result.error(ExceptionEnums.SMS_NO_AUTHOR);
                 }
             }
         }
@@ -91,7 +91,7 @@ public class SearchController {
         Map<String, Object> data = searchClient.findSmsByParameters(queryParams);
         long total = ControllerValueUtils.parseInt(data == null ? null : data.get("total"), 0);
         if (total <= 0) {
-            return R.ok(0L, new ArrayList<>());
+            return Result.ok(0L, new ArrayList<>());
         }
 
         Object rowsObj = data.get("rows");
@@ -111,6 +111,7 @@ public class SearchController {
             }
         }
 
-        return R.ok(total, rows);
+        return Result.ok(total, rows);
     }
 }
+

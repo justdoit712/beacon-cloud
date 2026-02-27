@@ -1,8 +1,8 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
 import com.cz.common.constant.WebMasterConstants;
 import com.cz.common.enums.ExceptionEnums;
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.converter.ClientBusinessConverter;
 import com.cz.webmaster.dto.ClientBusinessForm;
@@ -64,7 +64,7 @@ public class ClientBusinessController {
         for (ClientBusiness cb : list.subList(fromIndex, toIndex)) {
             rows.add(ClientBusinessConverter.toDetailVO(cb));
         }
-        return R.ok(total, rows);
+        return Result.ok(total, rows);
     }
 
     @GetMapping("/info/{id}")
@@ -76,7 +76,7 @@ public class ClientBusinessController {
     @PostMapping("/save")
     public ResultVO save(@RequestBody ClientBusinessForm form) {
         if (form == null || !StringUtils.hasText(form.getCorpname())) {
-            return R.error("公司名称不能为空");
+            return Result.error("公司名称不能为空");
         }
         ClientBusiness cb = ClientBusinessConverter.toEntity(form);
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
@@ -85,13 +85,13 @@ public class ClientBusinessController {
             cb.setUpdateId(currentUser.getId().longValue());
         }
         boolean success = clientBusinessService.save(cb);
-        return success ? R.ok("新增成功") : R.error("新增失败");
+        return success ? Result.ok("新增成功") : Result.error("新增失败");
     }
 
     @PostMapping("/update")
     public ResultVO update(@RequestBody ClientBusinessForm form) {
         if (form == null || form.getId() == null) {
-            return R.error("客户id不能为空");
+            return Result.error("客户id不能为空");
         }
         ClientBusiness cb = ClientBusinessConverter.toEntity(form);
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
@@ -99,16 +99,16 @@ public class ClientBusinessController {
             cb.setUpdateId(currentUser.getId().longValue());
         }
         boolean success = clientBusinessService.update(cb);
-        return success ? R.ok("修改成功") : R.error("修改失败");
+        return success ? Result.ok("修改成功") : Result.error("修改失败");
     }
 
     @PostMapping("/del")
     public ResultVO delete(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            return R.error("请选择要删除的数据");
+            return Result.error("请选择要删除的数据");
         }
         boolean success = clientBusinessService.deleteBatch(ids);
-        return success ? R.ok("删除成功") : R.error("删除失败");
+        return success ? Result.ok("删除成功") : Result.error("删除失败");
     }
 
     @GetMapping("/all")
@@ -151,12 +151,12 @@ public class ClientBusinessController {
     public ResultVO pay(@RequestParam("jine") Long amount,
                         @RequestParam(value = "clientId", required = false) Long clientId) {
         if (amount == null || amount <= 0) {
-            return R.error("jine must be greater than 0");
+            return Result.error("jine must be greater than 0");
         }
 
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if (currentUser == null) {
-            return R.error(ExceptionEnums.NOT_LOGIN.getMsg());
+            return Result.error(ExceptionEnums.NOT_LOGIN.getMsg());
         }
 
         Set<String> roleNameSet = roleService.getRoleName(currentUser.getId());
@@ -168,13 +168,13 @@ public class ClientBusinessController {
                     ? clientBusinessService.findAll()
                     : clientBusinessService.findByUserId(currentUser.getId());
             if (scope == null || scope.isEmpty()) {
-                return R.error("no available client to pay");
+                return Result.error("no available client to pay");
             }
             target = scope.get(0);
         } else {
             target = clientBusinessService.findById(clientId);
             if (target == null) {
-                return R.error("client not found");
+                return Result.error("client not found");
             }
             if (!isRoot) {
                 List<ClientBusiness> scope = clientBusinessService.findByUserId(currentUser.getId());
@@ -186,7 +186,7 @@ public class ClientBusinessController {
                     }
                 }
                 if (!allowed) {
-                    return R.error(ExceptionEnums.SMS_NO_AUTHOR.getMsg());
+                    return Result.error(ExceptionEnums.SMS_NO_AUTHOR.getMsg());
                 }
             }
         }
@@ -208,10 +208,10 @@ public class ClientBusinessController {
         update.setUpdateId(currentUser.getId().longValue());
         boolean success = clientBusinessService.update(update);
         if (!success) {
-            return R.error("pay failed");
+            return Result.error("pay failed");
         }
 
-        ResultVO resultVO = R.ok("pay success");
+        ResultVO resultVO = Result.ok("pay success");
         Map<String, Object> data = new HashMap<>();
         data.put("clientId", target.getId());
         data.put("corpname", target.getCorpname());
@@ -221,3 +221,4 @@ public class ClientBusinessController {
         return resultVO;
     }
 }
+

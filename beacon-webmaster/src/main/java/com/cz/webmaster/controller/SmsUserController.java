@@ -1,8 +1,8 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
 import com.cz.common.constant.WebMasterConstants;
 import com.cz.common.enums.ExceptionEnums;
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.dto.UserDTO;
 import com.cz.webmaster.entity.SmsUser;
@@ -52,18 +52,18 @@ public class SmsUserController {
     public ResultVO login(@RequestBody @Valid UserDTO userDTO, BindingResult bindingResult) {
         if (bindingResult.hasFieldErrors("captcha")) {
             log.info("【认证操作】验证码参数不合法, userDTO={}", userDTO);
-            return R.error(ExceptionEnums.KAPACHA_ERROR);
+            return Result.error(ExceptionEnums.KAPACHA_ERROR);
         }
         if (bindingResult.hasErrors()) {
             log.info("【认证操作】参数不合法, userDTO={}", userDTO);
-            return R.error(ExceptionEnums.PARAMETER_ERROR);
+            return Result.error(ExceptionEnums.PARAMETER_ERROR);
         }
 
         String realKaptcha = (String) SecurityUtils.getSubject().getSession().getAttribute(WebMasterConstants.KAPTCHA);
         boolean isTestKaptcha = StringUtils.hasText(testKaptcha) && testKaptcha.equals(userDTO.getCaptcha());
         if (!isTestKaptcha && (!StringUtils.hasText(realKaptcha) || !userDTO.getCaptcha().equalsIgnoreCase(realKaptcha))) {
             log.info("【认证操作】验证码错误, input={}, expected={}", userDTO.getCaptcha(), realKaptcha);
-            return R.error(ExceptionEnums.KAPACHA_ERROR);
+            return Result.error(ExceptionEnums.KAPACHA_ERROR);
         }
 
         UsernamePasswordToken token = new UsernamePasswordToken(userDTO.getUsername(), userDTO.getPassword());
@@ -72,9 +72,9 @@ public class SmsUserController {
             SecurityUtils.getSubject().login(token);
         } catch (AuthenticationException e) {
             log.info("【认证操作】用户名或密码错误, ex={}", e.getMessage());
-            return R.error(ExceptionEnums.AUTHEN_ERROR);
+            return Result.error(ExceptionEnums.AUTHEN_ERROR);
         }
-        return R.ok();
+        return Result.ok();
     }
 
     @GetMapping("/user/info")
@@ -83,12 +83,12 @@ public class SmsUserController {
         SmsUser smsUser = (SmsUser) subject.getPrincipal();
         if (smsUser == null) {
             log.info("【获取登录用户信息】用户未登录");
-            return R.error(ExceptionEnums.NOT_LOGIN);
+            return Result.error(ExceptionEnums.NOT_LOGIN);
         }
 
         Map<String, Object> data = new HashMap<>();
         data.put("nickname", smsUser.getNickname());
-        return R.ok(data);
+        return Result.ok(data);
     }
 
     @GetMapping("/menu/user")
@@ -96,15 +96,15 @@ public class SmsUserController {
         SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if (smsUser == null) {
             log.info("【获取用户菜单信息】用户未登录");
-            return R.error(ExceptionEnums.NOT_LOGIN);
+            return Result.error(ExceptionEnums.NOT_LOGIN);
         }
 
         List<Map<String, Object>> data = menuService.findUserMenu(smsUser.getId());
         if (data == null) {
             log.error("【获取用户菜单信息】查询用户菜单失败, id={}", smsUser.getId());
-            return R.error(ExceptionEnums.USER_MENU_ERROR);
+            return Result.error(ExceptionEnums.USER_MENU_ERROR);
         }
-        return R.ok(data);
+        return Result.ok(data);
     }
 
     @PostMapping("/user/password")
@@ -112,16 +112,17 @@ public class SmsUserController {
                                    @RequestParam("newPassword") String newPassword) {
         SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if (smsUser == null) {
-            return R.error(ExceptionEnums.NOT_LOGIN);
+            return Result.error(ExceptionEnums.NOT_LOGIN);
         }
         if (!StringUtils.hasText(password) || !StringUtils.hasText(newPassword)) {
-            return R.error(ExceptionEnums.PARAMETER_ERROR);
+            return Result.error(ExceptionEnums.PARAMETER_ERROR);
         }
 
         boolean success = userService.updatePassword(smsUser.getId(), password, newPassword);
         if (!success) {
-            return R.error("原密码错误或修改失败");
+            return Result.error("原密码错误或修改失败");
         }
-        return R.ok("修改成功");
+        return Result.ok("修改成功");
     }
 }
+

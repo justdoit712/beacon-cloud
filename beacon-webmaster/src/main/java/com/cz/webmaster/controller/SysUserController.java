@@ -1,6 +1,6 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.converter.SysUserConverter;
 import com.cz.webmaster.dto.SysUserForm;
@@ -51,7 +51,7 @@ public class SysUserController {
         for (SmsUser user : users.subList(fromIndex, toIndex)) {
             rows.add(SysUserConverter.toView(user, false));
         }
-        return R.ok(total, rows);
+        return Result.ok(total, rows);
     }
 
     @GetMapping("/info/{id}")
@@ -63,10 +63,10 @@ public class SysUserController {
     @PostMapping("/save")
     public ResultVO save(@RequestBody SysUserForm form) {
         if (form == null || !StringUtils.hasText(form.getUsercode())) {
-            return R.error("用户名不能为空");
+            return Result.error("用户名不能为空");
         }
         if (userService.findByUsername(form.getUsercode().trim()) != null) {
-            return R.error("用户名已存在");
+            return Result.error("用户名已存在");
         }
 
         SmsUser user = SysUserConverter.toEntity(form);
@@ -77,18 +77,18 @@ public class SysUserController {
         }
 
         boolean success = userService.save(user);
-        return success ? R.ok("新增成功") : R.error("新增失败");
+        return success ? Result.ok("新增成功") : Result.error("新增失败");
     }
 
     @PostMapping("/update")
     public ResultVO update(@RequestBody SysUserForm form) {
         if (form == null || form.getId() == null) {
-            return R.error("用户id不能为空");
+            return Result.error("用户id不能为空");
         }
         if (StringUtils.hasText(form.getUsercode())) {
             SmsUser existing = userService.findByUsername(form.getUsercode().trim());
             if (existing != null && !existing.getId().equals(form.getId())) {
-                return R.error("用户名已存在");
+                return Result.error("用户名已存在");
             }
         }
 
@@ -99,16 +99,17 @@ public class SysUserController {
         }
 
         boolean success = userService.update(user);
-        return success ? R.ok("修改成功") : R.error("修改失败");
+        return success ? Result.ok("修改成功") : Result.error("修改失败");
     }
 
     @PostMapping("/del")
     public ResultVO delete(@RequestBody List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
-            return R.error("请选择要删除的数据");
+            return Result.error("请选择要删除的数据");
         }
 
         boolean success = userService.deleteBatch(ids);
-        return success ? R.ok("删除成功") : R.error("删除失败");
+        return success ? Result.ok("删除成功") : Result.error("删除失败");
     }
 }
+

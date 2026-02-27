@@ -1,9 +1,9 @@
 package com.cz.api.utils;
 
 import com.cz.api.vo.ResultVO;
-import com.cz.common.exception.ApiException;
+import com.cz.common.exception.BizException;
 
-public class R {
+public class Result {
 
     public static ResultVO ok(){
         ResultVO r = new ResultVO();
@@ -19,7 +19,7 @@ public class R {
         return r;
     }
 
-    public static ResultVO error(ApiException ex) {
+    public static ResultVO error(BizException ex) {
         ResultVO r = new ResultVO();
         r.setCode(ex.getCode());
         r.setMsg(ex.getMessage());

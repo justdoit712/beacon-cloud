@@ -1,6 +1,6 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.controller.support.OperatorContextUtils;
 import com.cz.webmaster.service.PhaseService;
@@ -31,7 +31,7 @@ public class SysPhaseController {
                          @RequestParam(defaultValue = "10") int limit,
                          @RequestParam(value = "search", required = false) String keyword) {
         PhaseService.PageResult result = phaseService.list(keyword, offset, limit);
-        return R.ok(result.getTotal(), result.getRows());
+        return Result.ok(result.getTotal(), result.getRows());
     }
 
     @GetMapping("/phase/info/{id}")
@@ -45,29 +45,29 @@ public class SysPhaseController {
     public ResultVO save(@RequestBody Map<String, Object> body) {
         String errorMsg = phaseService.validateForSave(body);
         if (errorMsg != null) {
-            return R.error(errorMsg);
+            return Result.error(errorMsg);
         }
         boolean success = phaseService.save(body, OperatorContextUtils.currentOperatorId());
-        return success ? R.ok("save success") : R.error("save failed");
+        return success ? Result.ok("save success") : Result.error("save failed");
     }
 
     @PostMapping("/phase/update")
     public ResultVO update(@RequestBody Map<String, Object> body) {
         String errorMsg = phaseService.validateForUpdate(body);
         if (errorMsg != null) {
-            return R.error(errorMsg);
+            return Result.error(errorMsg);
         }
         boolean success = phaseService.update(body, OperatorContextUtils.currentOperatorId());
-        return success ? R.ok("update success") : R.error("update failed");
+        return success ? Result.ok("update success") : Result.error("update failed");
     }
 
     @PostMapping("/phase/del")
     public ResultVO del(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            return R.error("ids is required");
+            return Result.error("ids is required");
         }
         boolean success = phaseService.deleteBatch(ids);
-        return success ? R.ok("delete success") : R.error("delete failed");
+        return success ? Result.ok("delete success") : Result.error("delete failed");
     }
 
     @GetMapping("/provs/all")
@@ -92,3 +92,4 @@ public class SysPhaseController {
         return result;
     }
 }
+

@@ -6,7 +6,7 @@ import com.cz.common.vo.ResultVO;
 /**
  * 封装 ResultVO 的工具类
  */
-public class R {
+public class Result {
 
     /**
      * 成功，无数据

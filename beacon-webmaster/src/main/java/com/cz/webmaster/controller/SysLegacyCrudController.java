@@ -1,6 +1,6 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.controller.support.OperatorContextUtils;
 import com.cz.webmaster.service.LegacyCrudService;
@@ -34,7 +34,7 @@ public class SysLegacyCrudController {
                          @RequestParam(defaultValue = "10") int limit,
                          @RequestParam(value = "search", required = false) String keyword) {
         LegacyCrudService.PageResult result = legacyCrudService.list(family, keyword, offset, limit);
-        return R.ok(result.getTotal(), result.getRows());
+        return Result.ok(result.getTotal(), result.getRows());
     }
 
     @GetMapping("/{family:" + FAMILY_PATTERN + "}/info/{id}")
@@ -50,30 +50,31 @@ public class SysLegacyCrudController {
     public ResultVO save(@PathVariable("family") String family, @RequestBody Map<String, Object> body) {
         String validateError = legacyCrudService.validateForSave(family, body);
         if (validateError != null) {
-            return R.error(validateError);
+            return Result.error(validateError);
         }
         Long operatorId = OperatorContextUtils.currentOperatorId();
         boolean success = legacyCrudService.save(family, body, operatorId);
-        return success ? R.ok("save success") : R.error("save failed");
+        return success ? Result.ok("save success") : Result.error("save failed");
     }
 
     @PostMapping("/{family:" + FAMILY_PATTERN + "}/update")
     public ResultVO update(@PathVariable("family") String family, @RequestBody Map<String, Object> body) {
         String validateError = legacyCrudService.validateForUpdate(family, body);
         if (validateError != null) {
-            return R.error(validateError);
+            return Result.error(validateError);
         }
         Long operatorId = OperatorContextUtils.currentOperatorId();
         boolean success = legacyCrudService.update(family, body, operatorId);
-        return success ? R.ok("update success") : R.error("update failed");
+        return success ? Result.ok("update success") : Result.error("update failed");
     }
 
     @PostMapping("/{family:" + FAMILY_PATTERN + "}/del")
     public ResultVO del(@PathVariable("family") String family, @RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            return R.error("ids is required");
+            return Result.error("ids is required");
         }
         boolean success = legacyCrudService.deleteBatch(family, ids);
-        return success ? R.ok("delete success") : R.error("delete failed");
+        return success ? Result.ok("delete success") : Result.error("delete failed");
     }
 }
+

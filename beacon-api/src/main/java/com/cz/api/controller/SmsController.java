@@ -4,7 +4,7 @@ import com.cz.api.client.BeaconCacheClient;
 import com.cz.api.filter.CheckFilterContext;
 import com.cz.api.form.InternalSingleSendForm;
 import com.cz.api.form.SingleSendForm;
-import com.cz.api.utils.R;
+import com.cz.api.utils.Result;
 import com.cz.api.vo.ResultVO;
 import com.cz.common.constant.CacheConstant;
 import com.cz.common.constant.RabbitMQConstants;
@@ -64,7 +64,7 @@ public class SmsController {
                                BindingResult bindingResult,
                                HttpServletRequest req) {
         if (bindingResult.hasErrors()) {
-            return R.error(ExceptionEnums.PARAMETER_ERROR.getCode(), firstError(bindingResult));
+            return Result.error(ExceptionEnums.PARAMETER_ERROR.getCode(), firstError(bindingResult));
         }
 
         String realIp = getRealIp(req);
@@ -82,15 +82,15 @@ public class SmsController {
                                        HttpServletRequest req,
                                        @RequestHeader(value = "X-Internal-Token", required = false) String requestToken) {
         if (bindingResult.hasErrors()) {
-            return R.error(ExceptionEnums.PARAMETER_ERROR.getCode(), firstError(bindingResult));
+            return Result.error(ExceptionEnums.PARAMETER_ERROR.getCode(), firstError(bindingResult));
         }
         if (StringUtils.hasText(internalSmsToken) && !internalSmsToken.equals(requestToken)) {
-            return R.error(-403, "internal token invalid");
+            return Result.error(-403, "internal token invalid");
         }
 
         Long clientId = resolveClientId(form.getApikey());
         if (clientId == null) {
-            return R.error(ExceptionEnums.ERROR_APIKEY.getCode(), ExceptionEnums.ERROR_APIKEY.getMsg());
+            return Result.error(ExceptionEnums.ERROR_APIKEY.getCode(), ExceptionEnums.ERROR_APIKEY.getMsg());
         }
 
         String realIp = StringUtils.hasText(form.getRealIp()) ? form.getRealIp() : getRealIp(req);
@@ -106,7 +106,7 @@ public class SmsController {
         rabbitTemplate.convertAndSend(RabbitMQConstants.SMS_PRE_SEND, submit,
                 new CorrelationData(submit.getSequenceId().toString()));
 
-        ResultVO result = R.ok();
+        ResultVO result = Result.ok();
         result.setUid(submit.getUid());
         result.setSid(String.valueOf(submit.getSequenceId()));
         return result;

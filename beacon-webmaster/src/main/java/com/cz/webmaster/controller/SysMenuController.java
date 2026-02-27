@@ -1,6 +1,6 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.converter.SysMenuConverter;
 import com.cz.webmaster.dto.SysMenuForm;
@@ -51,7 +51,7 @@ public class SysMenuController {
         for (SmsMenu menu : menus.subList(fromIndex, toIndex)) {
             rows.add(SysMenuConverter.toView(menu, nameMap));
         }
-        return R.ok(total, rows);
+        return Result.ok(total, rows);
     }
 
     @GetMapping("/info/{id}")
@@ -75,29 +75,30 @@ public class SysMenuController {
     @PostMapping("/save")
     public ResultVO save(@RequestBody SysMenuForm form) {
         if (form == null || !StringUtils.hasText(form.getName())) {
-            return R.error("菜单名称不能为空");
+            return Result.error("菜单名称不能为空");
         }
         SmsMenu menu = SysMenuConverter.toEntity(form);
         boolean success = menuService.save(menu);
-        return success ? R.ok("新增成功") : R.error("新增失败");
+        return success ? Result.ok("新增成功") : Result.error("新增失败");
     }
 
     @PostMapping("/update")
     public ResultVO update(@RequestBody SysMenuForm form) {
         if (form == null || form.getId() == null) {
-            return R.error("菜单id不能为空");
+            return Result.error("菜单id不能为空");
         }
         SmsMenu menu = SysMenuConverter.toEntity(form);
         boolean success = menuService.update(menu);
-        return success ? R.ok("修改成功") : R.error("修改失败");
+        return success ? Result.ok("修改成功") : Result.error("修改失败");
     }
 
     @PostMapping("/del")
     public ResultVO delete(@RequestBody List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
-            return R.error("请选择要删除的数据");
+            return Result.error("请选择要删除的数据");
         }
         boolean success = menuService.deleteBatch(ids);
-        return success ? R.ok("删除成功") : R.error("删除失败");
+        return success ? Result.ok("删除成功") : Result.error("删除失败");
     }
 }
+

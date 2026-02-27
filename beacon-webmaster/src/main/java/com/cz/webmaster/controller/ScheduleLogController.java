@@ -1,6 +1,6 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.entity.ScheduleLog;
 import com.cz.webmaster.service.ScheduleLogService;
@@ -29,16 +29,17 @@ public class ScheduleLogController {
                          @RequestParam(value = "search", required = false) String keyword) {
         long total = scheduleLogService.count(keyword);
         List<ScheduleLog> rows = scheduleLogService.list(keyword, offset, limit);
-        return R.ok(total, rows);
+        return Result.ok(total, rows);
     }
 
     @PostMapping("/del")
     public ResultVO del(@RequestBody List<Long> logIds) {
         try {
             boolean success = scheduleLogService.deleteBatch(logIds);
-            return success ? R.ok("delete success") : R.error("delete failed");
+            return success ? Result.ok("delete success") : Result.error("delete failed");
         } catch (Exception e) {
-            return R.error(e.getMessage());
+            return Result.error(e.getMessage());
         }
     }
 }
+

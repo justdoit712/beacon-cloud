@@ -1,6 +1,6 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.controller.support.OperatorContextUtils;
 import com.cz.webmaster.dto.SmsSendForm;
@@ -25,7 +25,7 @@ public class SysSmsController {
     public ResultVO save(@RequestBody SmsSendForm form) {
         String errorMsg = smsManageService.validateForSave(form);
         if (errorMsg != null) {
-            return R.error(errorMsg);
+            return Result.error(errorMsg);
         }
         SmsBatchSendVO summary = smsManageService.save(form, OperatorContextUtils.currentOperatorId());
         return toResult(summary);
@@ -35,7 +35,7 @@ public class SysSmsController {
     public ResultVO update(@RequestBody SmsSendForm form) {
         String errorMsg = smsManageService.validateForUpdate(form);
         if (errorMsg != null) {
-            return R.error(errorMsg);
+            return Result.error(errorMsg);
         }
         SmsBatchSendVO summary = smsManageService.update(form, OperatorContextUtils.currentOperatorId());
         return toResult(summary);
@@ -43,16 +43,17 @@ public class SysSmsController {
 
     private ResultVO toResult(SmsBatchSendVO summary) {
         if (summary == null) {
-            return R.error("send failed");
+            return Result.error("send failed");
         }
         String message = summary.getMessage() == null ? "send failed" : summary.getMessage();
         ResultVO resultVO;
         if (summary.getSuccess() == null || summary.getSuccess() <= 0) {
-            resultVO = R.error(message);
+            resultVO = Result.error(message);
         } else {
-            resultVO = R.ok(message);
+            resultVO = Result.ok(message);
         }
         resultVO.setData(summary);
         return resultVO;
     }
 }
+

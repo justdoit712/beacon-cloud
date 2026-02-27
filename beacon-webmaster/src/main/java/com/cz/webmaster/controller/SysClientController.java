@@ -1,6 +1,6 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.converter.SysClientConverter;
 import com.cz.webmaster.dto.SysClientForm;
@@ -52,7 +52,7 @@ public class SysClientController {
         for (ClientBusiness cb : list.subList(fromIndex, toIndex)) {
             rows.add(SysClientConverter.toView(cb));
         }
-        return R.ok(total, rows);
+        return Result.ok(total, rows);
     }
 
     @GetMapping("/info/{id}")
@@ -64,7 +64,7 @@ public class SysClientController {
     @PostMapping("/save")
     public ResultVO save(@RequestBody SysClientForm form) {
         if (form == null || !StringUtils.hasText(form.getCorpname())) {
-            return R.error("公司名称不能为空");
+            return Result.error("公司名称不能为空");
         }
 
         ClientBusiness cb = SysClientConverter.toEntity(form);
@@ -75,13 +75,13 @@ public class SysClientController {
         }
 
         boolean success = clientBusinessService.save(cb);
-        return success ? R.ok("新增成功") : R.error("新增失败");
+        return success ? Result.ok("新增成功") : Result.error("新增失败");
     }
 
     @PostMapping("/update")
     public ResultVO update(@RequestBody SysClientForm form) {
         if (form == null || form.getId() == null) {
-            return R.error("客户id不能为空");
+            return Result.error("客户id不能为空");
         }
 
         ClientBusiness cb = SysClientConverter.toEntity(form);
@@ -91,16 +91,17 @@ public class SysClientController {
         }
 
         boolean success = clientBusinessService.update(cb);
-        return success ? R.ok("修改成功") : R.error("修改失败");
+        return success ? Result.ok("修改成功") : Result.error("修改失败");
     }
 
     @PostMapping("/del")
     public ResultVO delete(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            return R.error("请选择要删除的数据");
+            return Result.error("请选择要删除的数据");
         }
 
         boolean success = clientBusinessService.deleteBatch(ids);
-        return success ? R.ok("删除成功") : R.error("删除失败");
+        return success ? Result.ok("删除成功") : Result.error("删除失败");
     }
 }
+

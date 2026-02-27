@@ -1,6 +1,6 @@
-package com.cz.webmaster.controller;
+﻿package com.cz.webmaster.controller;
 
-import com.cz.common.util.R;
+import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.entity.ScheduleJob;
 import com.cz.webmaster.service.ScheduleJobService;
@@ -32,7 +32,7 @@ public class ScheduleJobController {
                          @RequestParam(value = "search", required = false) String keyword) {
         long total = scheduleJobService.count(keyword);
         List<ScheduleJob> rows = scheduleJobService.list(keyword, offset, limit);
-        return R.ok(total, rows);
+        return Result.ok(total, rows);
     }
 
     @GetMapping("/info/{jobId}")
@@ -46,9 +46,9 @@ public class ScheduleJobController {
     public ResultVO save(@RequestBody ScheduleJob scheduleJob) {
         try {
             boolean success = scheduleJobService.save(scheduleJob);
-            return success ? R.ok("save success") : R.error("save failed");
+            return success ? Result.ok("save success") : Result.error("save failed");
         } catch (Exception e) {
-            return R.error(e.getMessage());
+            return Result.error(e.getMessage());
         }
     }
 
@@ -56,9 +56,9 @@ public class ScheduleJobController {
     public ResultVO update(@RequestBody ScheduleJob scheduleJob) {
         try {
             boolean success = scheduleJobService.update(scheduleJob);
-            return success ? R.ok("update success") : R.error("update failed");
+            return success ? Result.ok("update success") : Result.error("update failed");
         } catch (Exception e) {
-            return R.error(e.getMessage());
+            return Result.error(e.getMessage());
         }
     }
 
@@ -66,9 +66,9 @@ public class ScheduleJobController {
     public ResultVO del(@RequestBody List<Long> jobIds) {
         try {
             boolean success = scheduleJobService.deleteBatch(jobIds);
-            return success ? R.ok("delete success") : R.error("delete failed");
+            return success ? Result.ok("delete success") : Result.error("delete failed");
         } catch (Exception e) {
-            return R.error(e.getMessage());
+            return Result.error(e.getMessage());
         }
     }
 
@@ -76,9 +76,9 @@ public class ScheduleJobController {
     public ResultVO pause(@RequestBody List<Long> jobIds) {
         try {
             boolean success = scheduleJobService.pauseBatch(jobIds);
-            return success ? R.ok("pause success") : R.error("pause failed");
+            return success ? Result.ok("pause success") : Result.error("pause failed");
         } catch (Exception e) {
-            return R.error(e.getMessage());
+            return Result.error(e.getMessage());
         }
     }
 
@@ -86,9 +86,9 @@ public class ScheduleJobController {
     public ResultVO resume(@RequestBody List<Long> jobIds) {
         try {
             boolean success = scheduleJobService.resumeBatch(jobIds);
-            return success ? R.ok("resume success") : R.error("resume failed");
+            return success ? Result.ok("resume success") : Result.error("resume failed");
         } catch (Exception e) {
-            return R.error(e.getMessage());
+            return Result.error(e.getMessage());
         }
     }
 
@@ -96,9 +96,10 @@ public class ScheduleJobController {
     public ResultVO run(@RequestBody List<Long> jobIds) {
         try {
             boolean success = scheduleJobService.runBatch(jobIds);
-            return success ? R.ok("run success") : R.error("run failed");
+            return success ? Result.ok("run success") : Result.error("run failed");
         } catch (Exception e) {
-            return R.error(e.getMessage());
+            return Result.error(e.getMessage());
         }
     }
 }
+

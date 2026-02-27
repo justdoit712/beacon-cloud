@@ -1,0 +1,142 @@
+Subject: [PATCH] docs(frontend): 新增前端优化分阶段落地文档（优先级执行，含回退与重启查验规范）
+---
+Index: beacon-api/src/main/java/com/cz/api/filter/impl/IPCheckFilter.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/beacon-api/src/main/java/com/cz/api/filter/impl/IPCheckFilter.java b/beacon-api/src/main/java/com/cz/api/filter/impl/IPCheckFilter.java
+--- a/beacon-api/src/main/java/com/cz/api/filter/impl/IPCheckFilter.java    (revision 46161a819ea54b4f5179621d2f5f82c0eff328cf)
++++ b/beacon-api/src/main/java/com/cz/api/filter/impl/IPCheckFilter.java    (date 1772123936396)
+@@ -38,7 +38,7 @@
+         //2. 如果IP白名单为null，直接放行，或者包含，修改逻辑判断。
+         // 如果客户未设置IP白名单，认为客户认为什么IP都可以访问
+         // 如果设置了IP白名单，才需要去做一个校验
+-        if(CollectionUtils.isEmpty(ip)|| ip.contains(submit.getRealIP())){
++        if(CollectionUtils.isEmpty(ip)|| ip.contains(submit.getRealIp())){
+             log.info("【接口模块-校验ip】  客户端请求IP合法！");
+             return;
+         }
+@@ -47,4 +47,4 @@
+         log.info("【接口模块-校验ip】  请求的ip不在白名单内");
+         throw new ApiException(ExceptionEnums.IP_NOT_WHITE);
+     }
+-}
+\ No newline at end of file
++}
+Index: beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java b/beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java
+--- a/beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java    (revision 46161a819ea54b4f5179621d2f5f82c0eff328cf)
++++ b/beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java    (date 1772123915115)
+@@ -1,6 +1,5 @@
+ package com.cz.common.model;
+
+-import com.fasterxml.jackson.annotation.JsonFormat;
+ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+ import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+@@ -9,7 +8,6 @@
+
+ import java.io.Serializable;
+ import java.time.LocalDateTime;
+-import java.util.Date;
+ import java.util.List;
+
+ /**
+@@ -109,7 +107,7 @@
+     /**
+      * 真实ip
+      */
+-    private String realIP;
++    private String realIp;
+
+     /**
+      * 客户端请求携带的apikey
+@@ -124,7 +122,7 @@
+     /**
+      * 短信签名ID
+      */
+-    private Long SignId;
++    private Long signId;
+
+     /**
+      * 是否是转码短信
+@@ -138,4 +136,4 @@
+     private Long oneHourLimitMilli;
+     // 后续再做封装~~~~
+
+-}
+\ No newline at end of file
++}
+Index: beacon-api/src/main/java/com/cz/api/controller/SmsController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/beacon-api/src/main/java/com/cz/api/controller/SmsController.java b/beacon-api/src/main/java/com/cz/api/controller/SmsController.java
+--- a/beacon-api/src/main/java/com/cz/api/controller/SmsController.java    (revision 46161a819ea54b4f5179621d2f5f82c0eff328cf)
++++ b/beacon-api/src/main/java/com/cz/api/controller/SmsController.java    (date 1772123992255)
+@@ -67,7 +67,7 @@
+             return R.error(ExceptionEnums.PARAMETER_ERROR.getCode(), firstError(bindingResult));
+         }
+
+-        String realIp = getRealIP(req);
++        String realIp = getRealIp(req);
+         StandardSubmit submit = buildSubmit(singleSendForm.getApikey(), null, singleSendForm.getMobile(),
+                 singleSendForm.getText(), singleSendForm.getState(), singleSendForm.getUid(), realIp);
+
+@@ -93,7 +93,7 @@
+             return R.error(ExceptionEnums.ERROR_APIKEY.getCode(), ExceptionEnums.ERROR_APIKEY.getMsg());
+         }
+
+-        String realIp = StringUtils.hasText(form.getRealIp()) ? form.getRealIp() : getRealIP(req);
++        String realIp = StringUtils.hasText(form.getRealIp()) ? form.getRealIp() : getRealIp(req);
+         StandardSubmit submit = buildSubmit(form.getApikey(), clientId, form.getMobile(), form.getText(),
+                 form.getState(), form.getUid(), realIp);
+         return enqueue(submit);
+@@ -126,7 +126,7 @@
+         submit.setText(text);
+         submit.setState(state == null ? 1 : state);
+         submit.setUid(uid);
+-        submit.setRealIP(realIp);
++        submit.setRealIp(realIp);
+         return submit;
+     }
+
+@@ -157,7 +157,7 @@
+     /**
+      * Get the real request IP from configured headers, fallback to remote address.
+      */
+-    private String getRealIP(HttpServletRequest req) {
++    private String getRealIp(HttpServletRequest req) {
+         if (!StringUtils.hasText(headers)) {
+             return req.getRemoteAddr();
+         }
+Index: beacon-common/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/beacon-common/pom.xml b/beacon-common/pom.xml
+--- a/beacon-common/pom.xml    (revision 46161a819ea54b4f5179621d2f5f82c0eff328cf)
++++ b/beacon-common/pom.xml    (date 1772122650637)
+@@ -38,13 +38,7 @@
+             <groupId>com.fasterxml.jackson.datatype</groupId>
+             <artifactId>jackson-datatype-jsr310</artifactId>
+         </dependency>
+-
+-        <dependency>
+-            <groupId>com.fasterxml.jackson.datatype</groupId>
+-            <artifactId>jackson-datatype-jsr310</artifactId>
+-            <version>2.12.5</version>
+-        </dependency>
+     </dependencies>
+
+
+-</project>
+\ No newline at end of file
++</project>
