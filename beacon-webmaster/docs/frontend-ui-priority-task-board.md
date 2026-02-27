@@ -19,6 +19,16 @@
 4. 提交步骤：`git add <files> && git commit -m "<step-id>: <说明>"`
 5. 记录结果：步骤编号、提交号、验证结论、截图路径
 
+## 2.1 当前进度（截至 2026-02-27）
+- 已完成步骤：`S0-01 ~ S0-04`、`S1-01 ~ S1-07`
+- 已完成运行态冒烟：
+  - `login.html`：错误密码提示正常、`admin/admin` 登录成功
+  - `index.html`：页面加载正常，`iframe` 可加载默认页
+  - `sys/user.html`、`client/client.html`、`client/clientbusiness.html`、`channel/channel.html`、`activity/activity.html`：
+    编辑区存在 `page-form-layout`，并保留 `add/update/del/saveOrUpdate/reload` 入口
+- 下一步：`S2-01` 登录页视觉升级（背景 + 卡片）
+- 详细过程记录：`docs/frontend-ui-priority-progress.md`
+
 ## 3. 任务清单
 | ID | 阶段 | 任务 | 目标文件（每步 1~3 个） | 完成标准 | 预估 |
 |---|---|---|---|---|---|

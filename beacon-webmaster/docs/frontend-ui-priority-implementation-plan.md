@@ -5,6 +5,11 @@
 
 目标是：在不重写前端架构的前提下，快速提升观感、一致性和可用性，并可分阶段上线。
 
+### 1.1 执行状态（截至 2026-02-27）
+- 已完成：阶段 0（S0-01 ~ S0-04）、阶段 1（S1-01 ~ S1-07）
+- 进行中：阶段 2（从 S2-01 开始）
+- 详细记录：`docs/frontend-ui-priority-progress.md`
+
 ## 2. 当前现状（基线）
 
 ### 2.1 技术与页面结构
@@ -71,10 +76,10 @@
 ## 5. 分阶段计划（建议 2 周）
 
 ### 阶段 0：准备与基线（0.5 天）
-- [ ] 建立分支：`feature/frontend-ui-priority-plan`
-- [ ] 记录基线截图（登录页、首页、用户管理、客户管理、活动管理）
-- [ ] 明确浏览器验证范围：Chrome/Edge 最新版本
-- [ ] 与业务方确认“仅样式和页面结构调整，不改接口”
+- [x] 建立分支：`front`（按当前执行约定）
+- [x] 记录基线截图（登录页、首页、用户管理、客户管理、活动管理）
+- [x] 明确浏览器验证范围：Chrome/Edge 最新版本
+- [x] 与业务方确认“仅样式和页面结构调整，不改接口”
 
 交付物：
 - 截图目录（本地即可）  
@@ -84,19 +89,19 @@
 ### 阶段 1：主题与全局收敛（2 天）
 
 #### 1) 新增主题样式文件
-- [ ] 新建 `src/main/resources/static/public/css/theme.css`
-- [ ] 定义设计令牌（CSS 变量）：主色、成功色、危险色、背景色、边框色、圆角、阴影、间距
-- [ ] 定义统一组件样式：按钮、输入框、面板、表格、分页、标签、弹层标题
+- [x] 新建 `src/main/resources/static/public/css/theme.css`
+- [x] 定义设计令牌（CSS 变量）：主色、成功色、危险色、背景色、边框色、圆角、阴影、间距
+- [x] 定义统一组件样式：按钮、输入框、面板、表格、分页、标签、弹层标题
 
 #### 2) 接入主题文件
-- [ ] 在 `src/main/resources/static/index.html` 引入 `theme.css`
-- [ ] 在 `src/main/resources/static/login.html` 引入 `theme.css`
-- [ ] 在所有引用 `main.css` 的业务页补充引入 `theme.css`（按批次做，首批高频页必须覆盖）
+- [x] 在 `src/main/resources/static/index.html` 引入 `theme.css`
+- [x] 在 `src/main/resources/static/login.html` 引入 `theme.css`
+- [x] 按批次完成高频业务页主题接入（`sys/user`、`client/client`、`client/clientbusiness`、`channel/channel`、`activity/activity`）
 
 #### 3) 收敛 `main.css` 的全局污染
-- [ ] 将 `main.css` 中对 `.row`、`.col-sm-*`、`.form-horizontal` 的全局规则改为局部作用域类
-- [ ] 新增局部容器类（示例：`.page-form-layout`）并只在需要的页面使用
-- [ ] 避免影响 bootstrap 原生栅格
+- [x] 将 `main.css` 中对 `.row`、`.col-sm-*`、`.form-horizontal` 的全局规则改为局部作用域类
+- [x] 新增局部容器类（`.page-form-layout`）并在高频页编辑区使用
+- [x] 避免影响 bootstrap 原生栅格（完成首轮收敛验证）
 
 验收标准：
 - 页面无明显错位、遮挡、换行异常  
