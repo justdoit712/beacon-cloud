@@ -1198,6 +1198,11 @@ textarea:focus-visible,
     min-width: 88px;
 }
 
+.ops-chart-canvas {
+    width: 100%;
+    min-height: 520px;
+}
+
 .ops-form .form-control.is-invalid,
 .ops-form select.form-control.is-invalid {
     border-color: var(--color-danger);
@@ -1340,5 +1345,9 @@ textarea:focus-visible,
 
     .ops-form-actions .btn {
         min-width: 72px;
+    }
+
+    .ops-chart-canvas {
+        min-height: 320px;
     }
 }
