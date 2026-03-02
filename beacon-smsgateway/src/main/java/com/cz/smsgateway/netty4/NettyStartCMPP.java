@@ -12,9 +12,9 @@ public class NettyStartCMPP {
     //端口
     public static int port = 7890;
     //账号
-    public static String serviceId = "laozheng";
+    public static String serviceId = "cz";
     //密码
-    public static String pwd = "JavaLaoZheng123!";
+    public static String pwd = "123";
 
 
 
