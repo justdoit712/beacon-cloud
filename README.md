@@ -2,20 +2,41 @@
 
 `beacon-cloud` 是一个基于 Spring Cloud 的短信平台微服务项目，覆盖短信提交、策略过滤、网关下发、状态回执、日志检索、运营后台和监控告警等完整链路。
 
-## 1. 技术栈
+## 1. 技术栈与版本
 
-- JDK: `1.8`
+### 1.1 基础框架（来自根 `pom.xml`）
+
+- JDK: `1.8`（`maven.compiler.source/target=1.8`）
 - Spring Boot: `2.3.12.RELEASE`
 - Spring Cloud: `Hoxton.SR12`
 - Spring Cloud Alibaba: `2.2.6.RELEASE`
-- Maven: 多模块聚合构建
-- 中间件:
-- Nacos（注册中心 + 配置中心）
-- MySQL `5.7.x`
-- Redis `5.x`
-- RabbitMQ `3.8.x`
-- Elasticsearch `7.6.2`
-- xxl-job `2.3.0`
+- Maven: 多模块聚合构建（建议 `3.6+`）
+
+### 1.2 中间件版本（开发环境建议）
+
+| 组件 | 推荐版本 | 备注 |
+| --- | --- | --- |
+| Nacos | `2.1.x` | 注册中心 + 配置中心 |
+| MySQL | `5.7.x` | 业务库示例 `duanxin_pingtai` |
+| Redis | `5.x` | 缓存与策略数据 |
+| RabbitMQ | `3.8.x` | 消息总线（建议 management 版本镜像） |
+| Elasticsearch | `7.6.2` | 日志检索存储 |
+| Kibana | `7.6.2` | 必须与 ES 主版本保持一致 |
+| XXL-Job Admin | `2.3.x` / `2.4.x` | `beacon-monitor` 依赖 `xxl-job-core:2.3.1` |
+| Hippo4j Server | `1.5.x` | `beacon-smsgateway` 依赖 client `1.5.0` |
+
+### 1.3 各模块关键依赖版本
+
+| 模块 | 关键依赖 | 版本 |
+| --- | --- | --- |
+| `beacon-api` | `mysql-connector-j` | `9.1.0` |
+| `beacon-common` | `spring-context` | `5.3.12` |
+| `beacon-monitor` | `xxl-job-core` | `2.3.1` |
+| `beacon-search` | `elasticsearch-rest-high-level-client` / `elasticsearch` | `7.6.2` |
+| `beacon-smsgateway` | `netty-all` / `hippo4j-spring-boot-starter` | `4.1.69.Final` / `1.5.0` |
+| `beacon-strategy` | `ikanalyzer` / `hutool-dfa` | `2012_u6` / `5.8.12` |
+| `beacon-test` | `mybatis-spring-boot-starter` / `mysql-connector-java` | `2.2.2` / `5.1.49` |
+| `beacon-webmaster` | `shiro-spring-boot-web-starter` / `druid-spring-boot-starter` / `mybatis-spring-boot-starter` | `1.4.0` / `1.1.10` / `2.2.2` |
 
 ## 2. 项目结构
 
@@ -81,7 +102,9 @@
 3. Redis
 4. RabbitMQ
 5. Elasticsearch
-6. xxl-job-admin（如启用监控任务）
+6. Kibana（用于 ES 数据可视化，推荐）
+7. xxl-job-admin（如启用监控任务）
+8. hippo4j-server（如启用动态线程池）
 
 并在 Nacos/环境变量中补齐各服务配置，例如：
 
@@ -91,7 +114,22 @@
 - 网关 CMPP 连接参数（`beacon-smsgateway`）
 - 内部鉴权参数（如 `internal.sms.token`、`cache.client.auth.*`）
 
-### 5.1 `beacon-smsgateway` 额外前置条件（必须）
+### 5.1 中间件插件/特性开关（必看）
+
+| 组件 | 插件/开关 | 是否必须 | 作用 |
+| --- | --- | --- | --- |
+| RabbitMQ | `rabbitmq_delayed_message_exchange` | 必须（`beacon-push`） | 支持 `x-delayed-message` 延迟重试交换机 |
+| RabbitMQ | `rabbitmq_management` | 推荐 | 管理控制台（`15672`） |
+| Elasticsearch + Kibana | 安全认证账号（`elastic`/`kibana`） | 必须（启用安全时） | Kibana 访问 ES 与服务端 ES 客户端认证 |
+
+RabbitMQ delayed 插件安装与校验示例：
+
+```bash
+rabbitmq-plugins enable rabbitmq_delayed_message_exchange
+rabbitmq-plugins list | grep delayed
+```
+
+### 5.2 `beacon-smsgateway` 额外前置条件（必须）
 
 网关模块启动前，必须先准备一个可连接的 `CMPP Server`（真实运营商通道或本地模拟服务），否则 `beacon-smsgateway` 会持续重连，无法完成下发链路联调。
 
@@ -99,8 +137,8 @@
 
 - `host=127.0.0.1`
 - `port=7890`
-- `serviceId=laozheng`
-- `pwd=JavaLaoZheng123!`
+- `serviceId=cz`
+- `pwd=123`
 
 因此本地联调时，请先启动模拟 `CMPP Server` 并监听 `127.0.0.1:7890`，再启动 `beacon-smsgateway`。
 模拟服务至少需要支持以下协议交互：
@@ -122,14 +160,14 @@ mvn clean package -DskipTests
 
 ### 6.2 推荐启动顺序
 
-建议按依赖从底到上启动：
+建议按“基础依赖 -> RabbitMQ 拓扑依赖 -> 业务入口”顺序启动：
 
 1. `beacon-cache`
-2. `beacon-search`
-3. `beacon-push`
-4. 启动并确认模拟 `CMPP Server` 可用（`127.0.0.1:7890`）
-5. `beacon-smsgateway`
-6. `beacon-strategy`
+2. `beacon-strategy`（声明 `sms_pre_send_topic`、`sms_write_log_topic`、`sms_push_report_topic` 等核心队列）
+3. `beacon-search`（消费 `sms_write_log_topic`，并声明网关 normal/dead 交换机与队列）
+4. `beacon-push`（消费 `sms_push_report_topic`，并声明 delayed 交换机与队列）
+5. 启动并确认模拟 `CMPP Server` 可用（`127.0.0.1:7890`）
+6. `beacon-smsgateway`（消费 `sms_gateway_topic_{channelId}`，并投递日志/回执/状态更新消息）
 7. `beacon-api`
 8. `beacon-webmaster`
 9. `beacon-monitor`
@@ -183,12 +221,7 @@ mvn clean package -DskipTests
 - `beacon-cache/src/main/java/com/cz/cache/security/CacheAuthInterceptor.java`
 - `beacon-common/src/main/java/com/cz/common/security/CacheAuthSignUtil.java`
 
-## 9. 目录补充说明
 
-- `docs/`: 各模块重构建议文档（refactor guide）
-- `db/`: 模块分析与风险说明文档
-
----
 
 如果你是第一次接手该项目，建议先按以下顺序阅读：
 
