@@ -3,6 +3,7 @@ package com.cz.smsgateway.config;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,6 +19,9 @@ public class RabbitMQConfig {
 
     private final int TTL = 10000;
     private final String FANOUT_ROUTING_KEY = "";
+
+    @Value("${gateway.sendtopic}")
+    private String gatewaySendTopic;
 
     //  声明死信队列，需要准备普通交换机，普通队列，死信交换机，死信队列
     @Bean
@@ -51,6 +55,14 @@ public class RabbitMQConfig {
     @Bean
     public Binding deadBinding(Exchange deadExchange,Queue deadQueue){
         return BindingBuilder.bind(deadQueue).to(deadExchange).with("").noargs();
+    }
+
+    /**
+     * 声明网关监听的业务队列，避免监听容器启动时队列不存在导致反复重试。
+     */
+    @Bean
+    public Queue gatewaySendQueue() {
+        return QueueBuilder.durable(gatewaySendTopic).build();
     }
 
 

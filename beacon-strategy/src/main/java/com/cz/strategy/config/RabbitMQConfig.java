@@ -44,6 +44,15 @@ public class RabbitMQConfig {
      */
     @Bean
     public Queue preSendQueue(){
+        return QueueBuilder.durable(RabbitMQConstants.SMS_PRE_SEND).build();
+    }
+
+    /**
+     * 策略模块发送手机号归属地&运营商到后台管理模块的队列
+     * @return
+     */
+    @Bean
+    public Queue mobileAreaOperatorQueue() {
         return QueueBuilder.durable(RabbitMQConstants.MOBILE_AREA_OPERATOR).build();
     }
 
