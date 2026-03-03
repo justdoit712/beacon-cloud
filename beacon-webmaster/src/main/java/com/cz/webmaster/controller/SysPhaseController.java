@@ -1,4 +1,4 @@
-﻿package com.cz.webmaster.controller;
+package com.cz.webmaster.controller;
 
 import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;

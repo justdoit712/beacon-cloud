@@ -1,4 +1,4 @@
-﻿package com.cz.webmaster.controller;
+package com.cz.webmaster.controller;
 
 import com.cz.common.constant.WebMasterConstants;
 import com.cz.common.enums.ExceptionEnums;
