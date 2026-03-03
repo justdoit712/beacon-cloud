@@ -284,7 +284,7 @@
 
 ## 8. 与已识别风险文档的关系
 
-已有文档：`beacon-webmaster/src/main/resources/db/20260226_strategy_module_risk_explanation.md`
+已有文档：`docs/08_strategy_module_risk_explanation.md`
 
 关系说明：
 
@@ -325,4 +325,3 @@
 `beacon-strategy` 是平台稳定性的核心模块，当前功能覆盖全面，且策略链已具备动态配置能力。  
 主要问题集中在“一致性与可运营性”：队列契约一致性、同类策略行为一致性、关键参数配置化。  
 优先处理 P0 项后，系统可显著降低线上不可预测风险，并为后续策略扩展打下更稳定基础。
-

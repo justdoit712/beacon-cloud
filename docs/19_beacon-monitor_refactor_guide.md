@@ -321,7 +321,7 @@ helper.setText(text);
 
 ## 6. 交付物建议
 
-1. `docs/beacon-monitor-refactor-guide.md`（本文档）
+1. `docs/19_beacon-monitor_refactor_guide.md`（本文档）
 2. 监控任务重构 PR（分阶段）
 3. 告警降噪方案说明
 4. 监控指标接入文档（Prometheus/Grafana）
