@@ -1,6 +1,6 @@
 # beacon-cloud Docs Reading Order
 
-This index collects the 20 module documents merged under `docs/` and sorted with numeric prefixes.
+This index collects the 21 module documents merged under `docs/` and sorted with numeric prefixes.
 
 1. `01_beacon-common_module_analysis.md`
 2. `02_beacon-common_refactor_guide.md`
@@ -22,4 +22,5 @@ This index collects the 20 module documents merged under `docs/` and sorted with
 18. `18_beacon-monitor_module_analysis.md`
 19. `19_beacon-monitor_refactor_guide.md`
 20. `20_beacon-test_refactor_guide.md`
+21. `21_mysql_redis_sync_fix_guide.md`
 
