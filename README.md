@@ -4,13 +4,13 @@
 
 ## 1. 技术栈与版本
 
-### 1.1 基础框架（来自根 `pom.xml`）
+### 1.1 基础框架
 
-- JDK: `1.8`（`maven.compiler.source/target=1.8`）
+- JDK: `1.8`
 - Spring Boot: `2.3.12.RELEASE`
 - Spring Cloud: `Hoxton.SR12`
 - Spring Cloud Alibaba: `2.2.6.RELEASE`
-- Maven: 多模块聚合构建（建议 `3.6+`）
+- Maven: 建议 `3.6+`
 
 ### 1.2 中间件版本（开发环境建议）
 
