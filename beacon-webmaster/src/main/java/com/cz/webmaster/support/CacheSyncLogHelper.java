@@ -72,6 +72,35 @@ public final class CacheSyncLogHelper {
     }
 
     /**
+     * 记录告警日志（用于降级、补偿占位等可观测场景）。
+     */
+    public static void warn(Logger log,
+                            String domain,
+                            String entityId,
+                            String key,
+                            String operation,
+                            long costMs,
+                            ExceptionEnums errorEnum,
+                            String warnMsg,
+                            Throwable throwable) {
+        String message = buildLogLine(
+                resolveTraceId(),
+                domain,
+                entityId,
+                key,
+                operation,
+                "WARN",
+                costMs,
+                errorEnum == null ? -1 : errorEnum.getCode(),
+                warnMsg);
+        if (throwable == null) {
+            log.warn(message);
+            return;
+        }
+        log.warn(message, throwable);
+    }
+
+    /**
      * 构造统一日志内容。
      */
     static String buildLogLine(String traceId,
@@ -113,4 +142,3 @@ public final class CacheSyncLogHelper {
         return value.trim();
     }
 }
-
