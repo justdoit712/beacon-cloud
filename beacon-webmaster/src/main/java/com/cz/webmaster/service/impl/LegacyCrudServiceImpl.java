@@ -1,7 +1,13 @@
 package com.cz.webmaster.service.impl;
 
 import cn.hutool.core.util.IdUtil;
+import com.cz.common.constant.CacheDomainRegistry;
+import com.cz.webmaster.service.CacheSyncService;
 import com.cz.webmaster.service.LegacyCrudService;
+import com.cz.webmaster.support.CacheSyncRuntimeExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -20,6 +26,8 @@ import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class LegacyCrudServiceImpl implements LegacyCrudService {
+
+    private static final Logger log = LoggerFactory.getLogger(LegacyCrudServiceImpl.class);
 
     private static final String ACTIVITY = "activity";
     private static final String API_MAPPING = "apimapping";
@@ -87,6 +95,10 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
     }
 
     private final ConcurrentMap<String, ConcurrentMap<Long, Map<String, Object>>> store = new ConcurrentHashMap<>();
+    @Autowired
+    private CacheSyncService cacheSyncService;
+    @Autowired
+    private CacheSyncRuntimeExecutor cacheSyncRuntimeExecutor;
 
     @Override
     public boolean supportsFamily(String family) {
@@ -178,6 +190,7 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
         long now = System.currentTimeMillis();
         fillFamilyDefaults(family, row, now, operatorId, true);
         familyStore(family).put(id, row);
+        triggerRuntimeSyncOnSaveOrUpdate(family, null, row);
         return true;
     }
 
@@ -195,11 +208,13 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
         if (current == null) {
             return false;
         }
+        Map<String, Object> before = copy(current);
         Map<String, Object> merged = new LinkedHashMap<>(current);
         merged.putAll(body);
         merged.put("id", id);
         fillFamilyDefaults(family, merged, System.currentTimeMillis(), operatorId, false);
         familyData.put(id, merged);
+        triggerRuntimeSyncOnSaveOrUpdate(family, before, merged);
         return true;
     }
 
@@ -210,16 +225,241 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
         }
         ConcurrentMap<Long, Map<String, Object>> familyData = familyStore(family);
         boolean removedAny = false;
+        List<Map<String, Object>> removedRows = new ArrayList<>();
         for (Long id : ids) {
-            if (id != null && familyData.remove(id) != null) {
-                removedAny = true;
+            if (id != null) {
+                Map<String, Object> removed = familyData.remove(id);
+                if (removed != null) {
+                    removedRows.add(copy(removed));
+                    removedAny = true;
+                }
             }
+        }
+        if (removedAny) {
+            triggerRuntimeSyncOnDelete(family, removedRows);
         }
         return removedAny;
     }
 
     private ConcurrentMap<Long, Map<String, Object>> familyStore(String family) {
         return store.computeIfAbsent(family, k -> new ConcurrentHashMap<>());
+    }
+
+    private void triggerRuntimeSyncOnSaveOrUpdate(String family,
+                                                  Map<String, Object> before,
+                                                  Map<String, Object> after) {
+        if (BLACK.equals(family)) {
+            syncBlackSaveOrUpdate(before, after);
+            return;
+        }
+        if (MESSAGE.equals(family)) {
+            syncDirtyWordRebuild(toLong(after == null ? null : after.get("id")));
+            return;
+        }
+        if (SEARCH_PARAMS.equals(family)) {
+            syncTransferSaveOrUpdate(before, after);
+            return;
+        }
+        log.debug("runtime sync skip unsupported legacy family on save/update: family={}", family);
+    }
+
+    private void triggerRuntimeSyncOnDelete(String family, List<Map<String, Object>> removedRows) {
+        if (BLACK.equals(family)) {
+            for (Map<String, Object> row : removedRows) {
+                syncBlackDelete(row);
+            }
+            return;
+        }
+        if (MESSAGE.equals(family)) {
+            syncDirtyWordRebuild(null);
+            return;
+        }
+        if (SEARCH_PARAMS.equals(family)) {
+            for (Map<String, Object> row : removedRows) {
+                syncTransferDelete(row);
+            }
+            return;
+        }
+        log.debug("runtime sync skip unsupported legacy family on delete: family={}", family);
+    }
+
+    private void syncBlackSaveOrUpdate(Map<String, Object> before, Map<String, Object> after) {
+        Map<String, Object> beforePayload = resolveBlackPayload(before);
+        Map<String, Object> afterPayload = resolveBlackPayload(after);
+        String beforeIdentity = blackIdentity(beforePayload);
+        String afterIdentity = blackIdentity(afterPayload);
+
+        Long entityId = toLong(after == null ? null : after.get("id"));
+        if (StringUtils.hasText(beforeIdentity)
+                && !beforeIdentity.equals(afterIdentity)
+                && beforePayload != null) {
+            scheduleSync(CacheDomainRegistry.BLACK, "delete", safeEntityId(entityId),
+                    () -> cacheSyncService.syncDelete(CacheDomainRegistry.BLACK, beforePayload));
+        }
+        if (afterPayload != null) {
+            scheduleSync(CacheDomainRegistry.BLACK, "upsert", safeEntityId(entityId),
+                    () -> cacheSyncService.syncUpsert(CacheDomainRegistry.BLACK, afterPayload));
+        } else {
+            log.debug("runtime sync skip black because payload is invalid, row={}", after);
+        }
+    }
+
+    private void syncBlackDelete(Map<String, Object> row) {
+        Map<String, Object> payload = resolveBlackPayload(row);
+        if (payload == null) {
+            return;
+        }
+        Long entityId = toLong(row == null ? null : row.get("id"));
+        scheduleSync(CacheDomainRegistry.BLACK, "delete", safeEntityId(entityId),
+                () -> cacheSyncService.syncDelete(CacheDomainRegistry.BLACK, payload));
+    }
+
+    private void syncDirtyWordRebuild(Long entityId) {
+        List<String> members = collectDirtyWords();
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("members", members);
+        scheduleSync(CacheDomainRegistry.DIRTY_WORD, "upsert", safeEntityId(entityId),
+                () -> cacheSyncService.syncUpsert(CacheDomainRegistry.DIRTY_WORD, payload));
+    }
+
+    private void syncTransferSaveOrUpdate(Map<String, Object> before, Map<String, Object> after) {
+        Map<String, Object> beforePayload = resolveTransferPayload(before);
+        Map<String, Object> afterPayload = resolveTransferPayload(after);
+        String beforeIdentity = transferIdentity(beforePayload);
+        String afterIdentity = transferIdentity(afterPayload);
+        Long entityId = toLong(after == null ? null : after.get("id"));
+
+        if (StringUtils.hasText(beforeIdentity)
+                && !beforeIdentity.equals(afterIdentity)
+                && beforePayload != null) {
+            scheduleSync(CacheDomainRegistry.TRANSFER, "delete", safeEntityId(entityId),
+                    () -> cacheSyncService.syncDelete(CacheDomainRegistry.TRANSFER, beforePayload));
+        }
+        if (afterPayload != null) {
+            scheduleSync(CacheDomainRegistry.TRANSFER, "upsert", safeEntityId(entityId),
+                    () -> cacheSyncService.syncUpsert(CacheDomainRegistry.TRANSFER, afterPayload));
+        } else {
+            log.debug("runtime sync skip searchparams->transfer because payload is invalid, row={}", after);
+        }
+    }
+
+    private void syncTransferDelete(Map<String, Object> row) {
+        Map<String, Object> payload = resolveTransferPayload(row);
+        if (payload == null) {
+            return;
+        }
+        Long entityId = toLong(row == null ? null : row.get("id"));
+        scheduleSync(CacheDomainRegistry.TRANSFER, "delete", safeEntityId(entityId),
+                () -> cacheSyncService.syncDelete(CacheDomainRegistry.TRANSFER, payload));
+    }
+
+    private List<String> collectDirtyWords() {
+        Set<String> words = new LinkedHashSet<>();
+        for (Map<String, Object> row : familyStore(MESSAGE).values()) {
+            String word = resolveText(row, "dirtyword", "word", "keyword", "value");
+            if (StringUtils.hasText(word)) {
+                words.add(word.trim());
+            }
+        }
+        return new ArrayList<>(words);
+    }
+
+    private Map<String, Object> resolveBlackPayload(Map<String, Object> row) {
+        if (row == null || row.isEmpty()) {
+            return null;
+        }
+        String mobile = resolveText(row, "mobile", "blackNumber", "black_number", "number");
+        if (!StringUtils.hasText(mobile)) {
+            return null;
+        }
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("mobile", mobile.trim());
+        Long clientId = resolvePositiveLong(row, "clientId", "client_id", "owntypeid", "ownerId");
+        if (clientId != null) {
+            payload.put("clientId", clientId);
+        }
+        return payload;
+    }
+
+    private Map<String, Object> resolveTransferPayload(Map<String, Object> row) {
+        if (row == null || row.isEmpty()) {
+            return null;
+        }
+        String mobile = resolveText(row, "mobile", "transferNumber", "transfer_number", "number");
+        if (!StringUtils.hasText(mobile)) {
+            return null;
+        }
+        String value = resolveText(row, "value", "operator", "carrier", "nowIsp", "now_isp", "mobileType", "mobile_type");
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("mobile", mobile.trim());
+        payload.put("value", value.trim());
+        return payload;
+    }
+
+    private Long resolvePositiveLong(Map<String, Object> row, String... keys) {
+        if (row == null || keys == null) {
+            return null;
+        }
+        for (String key : keys) {
+            if (!StringUtils.hasText(key)) {
+                continue;
+            }
+            Long value = toLong(row.get(key));
+            if (value != null && value > 0) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String resolveText(Map<String, Object> row, String... keys) {
+        if (row == null || keys == null) {
+            return null;
+        }
+        for (String key : keys) {
+            if (!StringUtils.hasText(key)) {
+                continue;
+            }
+            Object value = row.get(key);
+            if (value == null) {
+                continue;
+            }
+            String text = value.toString();
+            if (StringUtils.hasText(text)) {
+                return text.trim();
+            }
+        }
+        return null;
+    }
+
+    private String blackIdentity(Map<String, Object> payload) {
+        if (payload == null) {
+            return null;
+        }
+        String mobile = resolveText(payload, "mobile");
+        if (!StringUtils.hasText(mobile)) {
+            return null;
+        }
+        Long clientId = resolvePositiveLong(payload, "clientId");
+        return clientId == null ? mobile : clientId + ":" + mobile;
+    }
+
+    private String transferIdentity(Map<String, Object> payload) {
+        if (payload == null) {
+            return null;
+        }
+        return resolveText(payload, "mobile");
+    }
+
+    private String safeEntityId(Long id) {
+        return id == null ? "-" : String.valueOf(id);
+    }
+
+    private void scheduleSync(String domain, String operation, String entityId, Runnable action) {
+        cacheSyncRuntimeExecutor.runAfterCommitOrNow(action, domain, operation, entityId);
     }
 
     private void fillFamilyDefaults(String family,
@@ -333,4 +573,3 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
         return new LinkedHashMap<>(source);
     }
 }
-
