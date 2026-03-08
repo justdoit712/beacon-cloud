@@ -36,6 +36,7 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/public/**","anon");
         filterChainDefinitionMap.put("/sys/auth/captcha.jpg","anon");
         filterChainDefinitionMap.put("/sys/login","anon");
+        filterChainDefinitionMap.put("/internal/balance/debit","anon");
         filterChainDefinitionMap.put("/index.html","anon");
         filterChainDefinitionMap.put("/login.html","anon");
         filterChainDefinitionMap.put("/logout","logout");

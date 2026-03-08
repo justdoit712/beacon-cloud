@@ -24,3 +24,7 @@ cache:
       enabled: true
       caller: beacon-strategy
       secret: cache_strategy_secret
+
+internal:
+  balance:
+    token: ""

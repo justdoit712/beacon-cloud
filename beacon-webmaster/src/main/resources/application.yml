@@ -42,6 +42,11 @@ system:
   # 在本地开发环境，设置万能验证码为 1111
   test-kaptcha: "1111"
 
+internal:
+  balance:
+    # webmaster internal balance debit token, empty means no check
+    token: ""
+
 sync:
   # 同步总开关：关闭后 runtime/manual/boot 子开关均不生效
   enabled: true

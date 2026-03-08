@@ -28,4 +28,9 @@ public interface ClientBusinessMapper {
     int updateByPrimaryKeySelective(ClientBusiness row);
 
     int updateByPrimaryKey(ClientBusiness row);
+
+    int debitBalanceAtomic(@Param("clientId") Long clientId,
+                           @Param("fee") Long fee,
+                           @Param("amountLimit") Long amountLimit,
+                           @Param("updateId") Long updateId);
 }
