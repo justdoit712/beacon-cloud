@@ -147,6 +147,14 @@ public class ClientBusinessController {
         return result;
     }
 
+    /**
+     * 客户充值入口。
+     * <p>
+     * 当前阶段用于固化余额主口径约束：
+     * 1) 充值金额先写入 MySQL（extend4）；
+     * 2) Redis client_balance 仅作为镜像缓存，不作为主账本；
+     * 3) 镜像刷新由后续同步链路统一处理。
+     */
     @GetMapping("/pay")
     public ResultVO pay(@RequestParam("jine") Long amount,
                         @RequestParam(value = "clientId", required = false) Long clientId) {
@@ -202,6 +210,9 @@ public class ClientBusinessController {
         }
         long newAmount = oldAmount + amount;
 
+        // 余额主口径约束（第二步）：MySQL 为真源。
+        // 这里将最新余额写回 MySQL（extend4 字段），
+        // Redis 中 client_balance 仅作为镜像缓存，后续由同步链路刷新。
         ClientBusiness update = new ClientBusiness();
         update.setId(target.getId());
         update.setExtend4(String.valueOf(newAmount));

@@ -13,7 +13,11 @@ import org.springframework.stereotype.Service;
 
 /**
  * @author cz
- * @description  校验客户剩余的金额是否充足
+ * @description  校验客户剩余余额是否充足。
+ * <p>
+ * 约束说明：
+ * client_balance 的主口径为 MySQL，当前这里读取的是 Redis 余额镜像。
+ * 镜像与主库的一致性由后续 Runtime Sync 链路保障。
  */
 @Service(value = "fee")
 @Slf4j
@@ -32,8 +36,17 @@ public class FeeCheckFilter implements CheckFilter {
      */
     private final int LOOP_LENGTH = 67;
 
+    /**
+     * Redis 余额哈希中的字段名。
+     */
     private final String BALANCE = "balance";
 
+    /**
+     * 余额校验主流程：
+     * 1) 计算本次短信费用；
+     * 2) 读取 Redis 余额镜像；
+     * 3) 判断余额是否足够，不足则抛出业务异常。
+     */
     @Override
     public void check(StandardSubmit submit) {
         log.info("【接口模块-校验客户余额】   校验ing…………");
@@ -49,7 +62,9 @@ public class FeeCheckFilter implements CheckFilter {
             submit.setFee(ApiConstant.SINGLE_FEE * strip);
         }
 
-        //3、从Redis中查询出客户剩余的金额
+        //3、从 Redis 中读取余额镜像
+        // 约束说明：client_balance 的主口径为 MySQL，Redis 为派生缓存。
+        // 此处读取的是缓存镜像，后续由运行时同步链路保障与 MySQL 一致。
         Long balance = ((Integer) cacheClient.hget(CacheConstant.CLIENT_BALANCE + submit.getClientId(), BALANCE)).longValue();
 
         //4、判断金额是否满足当前短信费用\
