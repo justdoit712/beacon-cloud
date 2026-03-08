@@ -17,6 +17,11 @@ spring:
         # beacon-cache-dev.yml
 
 cache:
+  namespace:
+    enabled: true
+    env: dev
+    project: beacon-cloud
+    owner: cz
   security:
     enabled: true
     test-api-enabled: false

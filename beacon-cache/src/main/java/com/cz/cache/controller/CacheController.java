@@ -1,7 +1,9 @@
 package com.cz.cache.controller;
 
 import com.cz.cache.redis.LocalRedisClient;
+import com.cz.cache.redis.NamespaceKeyResolver;
 import com.cz.cache.redis.RedisScanService;
+import com.cz.cache.security.CacheNamespaceProperties;
 import com.cz.cache.security.CacheSecurityProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -29,55 +31,66 @@ public class CacheController {
     private RedisScanService redisScanService;
     @Autowired
     private CacheSecurityProperties cacheSecurityProperties;
+    @Autowired
+    private CacheNamespaceProperties namespaceProperties;
+    @Autowired
+    private NamespaceKeyResolver namespaceKeyResolver;
 
     @PostMapping(value = "/cache/hmset/{key}")
     public void hmset(@PathVariable(value = "key")String key, @RequestBody Map<String,Object> map){
-        log.info("【缓存模块】 hmset方法，存储key = {}，存储value = {}",key,map);
-        redisClient.hSet(key,map);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 hmset方法，逻辑key = {}，物理key = {}，存储value = {}", key, physicalKey, map);
+        redisClient.hSet(physicalKey,map);
     }
 
     @PostMapping(value = "/cache/set/{key}")
     public void set(@PathVariable(value = "key")String key, @RequestParam(value = "value")String value){
-        log.info("【缓存模块】 set方法，存储key = {}，存储value = {}",key,value);
-        redisClient.set(key,value);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 set方法，逻辑key = {}，物理key = {}，存储value = {}", key, physicalKey, value);
+        redisClient.set(physicalKey,value);
     }
 
     @PostMapping(value = "/cache/sadd/{key}")
     public void sadd(@PathVariable(value = "key")String key, @RequestBody Map<String,Object>... value){
-        log.info("【缓存模块】 sadd方法，存储key = {}，存储value = {}", key, value);
-        redisClient.sAdd(key,value);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 sadd方法，逻辑key = {}，物理key = {}，存储value = {}", key, physicalKey, value);
+        redisClient.sAdd(physicalKey,value);
     }
 
     @GetMapping("/cache/hgetall/{key}")
     public Map hGetAll(@PathVariable(value = "key")String key){
-        log.info("【缓存模块】 hGetAll方法，获取key ={} 的数据", key);
-        Map<String, Object> value = redisClient.hGetAll(key);
-        log.info("【缓存模块】 hGetAll方法，获取key ={} 的数据 value = {}", key,value);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 hGetAll方法，逻辑key ={}，物理key ={} ", key, physicalKey);
+        Map<String, Object> value = redisClient.hGetAll(physicalKey);
+        log.info("【缓存模块】 hGetAll方法，逻辑key ={} 的数据 value = {}", key, value);
         return value;
     }
 
     @GetMapping("/cache/hget/{key}/{field}")
     public Object hget(@PathVariable(value = "key")String key,@PathVariable(value = "field")String field){
-        log.info("【缓存模块】 hget方法，获取key ={}，field = {}的数据", key,field);
-        Object value = redisClient.hGet(key,field);
-        log.info("【缓存模块】 hGetAll方法，获取key ={}，field = {} 的数据 value = {}", key,field,value);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 hget方法，逻辑key ={}，物理key ={}，field = {}的数据", key, physicalKey, field);
+        Object value = redisClient.hGet(physicalKey,field);
+        log.info("【缓存模块】 hget方法，逻辑key ={}，field = {} 的数据 value = {}", key, field, value);
         return value;
     }
 
     @GetMapping("/cache/smember/{key}")
     public Set smember(@PathVariable(value = "key")String key){
-        log.info("【缓存模块】 smember方法，获取key ={}的数据", key);
-        Set<Object> values = redisClient.sMembers(key);
-        log.info("【缓存模块】 smember方法，获取key ={} 的数据 value = {}", key,values);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 smember方法，逻辑key ={}，物理key ={}", key, physicalKey);
+        Set<Object> values = redisClient.sMembers(physicalKey);
+        log.info("【缓存模块】 smember方法，逻辑key ={} 的数据 value = {}", key, values);
         return values;
     }
 
     @PostMapping("/cache/pipeline/string")
     public void pipeline(@RequestBody Map<String,String> map){
-        log.info("【缓存模块】 pipelineString，获取到存储的数据，map的长度 ={}的数据", map.size());
+        log.info("【缓存模块】 pipelineString，逻辑key数量 ={}", map.size());
         redisClient.pipelined(operations ->{
             for(Map.Entry<String, String> entry : map.entrySet()){
-                operations.opsForValue().set(entry.getKey(), entry.getValue());
+                String physicalKey = namespaceKeyResolver.toPhysicalKey(entry.getKey());
+                operations.opsForValue().set(physicalKey, entry.getValue());
             }
         });
 
@@ -85,29 +98,33 @@ public class CacheController {
 
     @GetMapping("/cache/get/{key}")
     public Object get(@PathVariable(value = "key")String key){
-        log.info("【缓存模块】 get方法，获取key ={}的数据", key);
-        Object value = redisClient.get(key);
-        log.info("【缓存模块】 get方法，获取key ={} 的数据 value = {}", key,value);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 get方法，逻辑key ={}，物理key ={}", key, physicalKey);
+        Object value = redisClient.get(physicalKey);
+        log.info("【缓存模块】 get方法，逻辑key ={} 的数据 value = {}", key, value);
         return value;
     }
 
 
     @PostMapping(value = "/cache/saddstr/{key}")
     public void saddStr(@PathVariable(value = "key")String key, @RequestBody String... value){
-        log.info("【缓存模块】 saddStr方法，存储key = {}，存储value = {}", key, value);
-        redisClient.sAdd(key,value);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 saddStr方法，逻辑key = {}，物理key = {}，存储value = {}", key, physicalKey, value);
+        redisClient.sAdd(physicalKey,value);
     }
 
 
     @PostMapping(value = "/cache/sinterstr/{key}/{sinterKey}")
     public Set<Object> sinterStr(@PathVariable(value = "key")String key, @PathVariable String sinterKey,@RequestBody String... value){
-        log.info("【缓存模块】 sinterStr的交集方法，存储key = {}，sinterKey = {}，存储value = {}", key, sinterKey,value);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        String physicalSinterKey = namespaceKeyResolver.toPhysicalKey(sinterKey);
+        log.info("【缓存模块】 sinterStr方法，逻辑key = {}，逻辑sinterKey = {}，存储value = {}", key, sinterKey, value);
         //1、 存储数据到set集合
-        redisClient.sAdd(key,value);
+        redisClient.sAdd(physicalKey,value);
         //2、 需要将key和sinterKey做交集操作，并拿到返回的set
-        Set<Object> result = redisTemplate.opsForSet().intersect(key, sinterKey);
+        Set<Object> result = redisTemplate.opsForSet().intersect(physicalKey, physicalSinterKey);
         //3、 将key删除
-        redisClient.delete(key);
+        redisClient.delete(physicalKey);
         //4、 返回交集结果
         return result;
     }
@@ -116,8 +133,9 @@ public class CacheController {
     public Boolean zadd(@PathVariable(value = "key")String key,
                         @PathVariable(value = "score")Long score,
                         @PathVariable(value = "member")Object member){
-        log.info("【缓存模块】 zaddLong方法，存储key = {}，存储score = {}，存储value = {}", key,score, member);
-        Boolean result = redisClient.zAdd(key, member, score);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 zaddLong方法，逻辑key = {}，物理key = {}，存储score = {}，存储value = {}", key, physicalKey, score, member);
+        Boolean result = redisClient.zAdd(physicalKey, member, score);
         return result;
     }
 
@@ -125,8 +143,9 @@ public class CacheController {
     public int zRangeByScoreCount(@PathVariable(value = "key") String key,
                                   @PathVariable(value = "start") Double start,
                                   @PathVariable(value = "end") Double end) {
-        log.info("【缓存模块】 zRangeByScoreCount方法，查询key = {},start = {},end = {}", key,start,end);
-        Set<ZSetOperations.TypedTuple<Object>> values = redisTemplate.opsForZSet().rangeByScoreWithScores(key, start, end);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 zRangeByScoreCount方法，逻辑key = {}，物理key = {}，start = {}，end = {}", key, physicalKey, start, end);
+        Set<ZSetOperations.TypedTuple<Object>> values = redisTemplate.opsForZSet().rangeByScoreWithScores(physicalKey, start, end);
         if(values != null){
             return values.size();
         }
@@ -135,30 +154,35 @@ public class CacheController {
 
     @DeleteMapping(value = "/cache/zremove/{key}/{member}")
     public void zRemove(@PathVariable(value = "key") String key,@PathVariable(value = "member") String member) {
-        log.info("【缓存模块】 zRemove方法，删除key = {},member = {}", key,member);
-        redisClient.zRemove(key,member);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 zRemove方法，逻辑key = {}，物理key = {}，member = {}", key, physicalKey, member);
+        redisClient.zRemove(physicalKey,member);
     }
 
     @PostMapping(value = "/cache/hincrby/{key}/{field}/{delta}")
     public Long hIncrBy(@PathVariable(value = "key") String key,
                         @PathVariable(value = "field") String field,
                         @PathVariable(value = "delta") Long delta){
-        log.info("【缓存模块】 hIncrBy方法，自增   key = {},field = {}，number = {}", key,field,delta);
-        Long result = redisClient.hIncrementBy(key, field, delta);
-        log.info("【缓存模块】 hIncrBy方法，自增   key = {},field = {}，number = {},剩余数值为 = {}", key,field,delta,result);
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 hIncrBy方法，自增逻辑key = {}，物理key = {}，field = {}，number = {}", key, physicalKey, field, delta);
+        Long result = redisClient.hIncrementBy(physicalKey, field, delta);
+        log.info("【缓存模块】 hIncrBy方法，自增逻辑key = {}，field = {}，number = {}，剩余数值为 = {}", key, field, delta, result);
         return result;
     }
 
     @GetMapping(value = "/cache/keys")
     public Set<String> keys(@RequestParam("pattern") String pattern,
                             @RequestParam(value = "count", defaultValue = "1000") Integer count){
-        if (!isAllowedPattern(pattern)) {
+        String logicalPattern = namespaceKeyResolver.toLogicalPattern(pattern);
+        if (!isAllowedPattern(logicalPattern)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "pattern not allowed");
         }
-        log.info("【缓存模块】 keys方法，根据pattern扫描key的信息， pattern = {}, count = {}", pattern, count);
-        Set<String> keys = redisScanService.scan(pattern, count);
-        log.info("【缓存模块】 keys方法，根据pattern扫描key的信息， pattern = {}, 查询出的keys数量 = {}", pattern, keys.size());
-        return keys;
+        String physicalPattern = namespaceKeyResolver.toPhysicalPattern(logicalPattern);
+        log.info("【缓存模块】 keys方法，逻辑pattern = {}，物理pattern = {}，count = {}，namespace = {}", logicalPattern, physicalPattern, count, namespaceProperties.resolvePrefix());
+        Set<String> physicalKeys = redisScanService.scan(physicalPattern, count);
+        Set<String> logicalKeys = namespaceKeyResolver.toLogicalKeys(physicalKeys);
+        log.info("【缓存模块】 keys方法，逻辑pattern = {}，查询出的keys数量 = {}", logicalPattern, logicalKeys.size());
+        return logicalKeys;
     }
 
     private boolean isAllowedPattern(String pattern) {
