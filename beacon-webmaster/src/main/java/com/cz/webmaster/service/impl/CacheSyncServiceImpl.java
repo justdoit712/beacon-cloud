@@ -225,28 +225,8 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             return;
         }
 
-        if (CacheDomainRegistry.CLIENT_SIGN.equals(domain)
-                || CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)
-                || CacheDomainRegistry.CLIENT_CHANNEL.equals(domain)) {
-            cacheWriteClient.delete(key);
-            Map<String, Object>[] mapMembers = resolveSetMapMembers(entityOrId);
-            if (mapMembers.length > 0) {
-                cacheWriteClient.sadd(key, mapMembers);
-                return;
-            }
-            String[] members = resolveSetMembers(entityOrId);
-            if (members.length > 0) {
-                cacheWriteClient.saddStr(key, members);
-            }
-            return;
-        }
-
-        if (CacheDomainRegistry.DIRTY_WORD.equals(domain)) {
-            cacheWriteClient.delete(key);
-            String[] members = resolveSetMembers(entityOrId);
-            if (members.length > 0) {
-                cacheWriteClient.saddStr(key, members);
-            }
+        if (isSetDomain(domain)) {
+            rebuildSetDomain(domain, key, entityOrId);
             return;
         }
 
@@ -256,6 +236,34 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         }
 
         throw new ApiException("unsupported upsert domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+    }
+
+    private boolean isSetDomain(String domain) {
+        return CacheDomainRegistry.CLIENT_SIGN.equals(domain)
+                || CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)
+                || CacheDomainRegistry.CLIENT_CHANNEL.equals(domain)
+                || CacheDomainRegistry.DIRTY_WORD.equals(domain);
+    }
+
+    private boolean isObjectSetDomain(String domain) {
+        return CacheDomainRegistry.CLIENT_SIGN.equals(domain)
+                || CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)
+                || CacheDomainRegistry.CLIENT_CHANNEL.equals(domain);
+    }
+
+    private void rebuildSetDomain(String domain, String key, Object entityOrId) {
+        cacheWriteClient.delete(key);
+        if (isObjectSetDomain(domain)) {
+            Map<String, Object>[] mapMembers = resolveSetMapMembers(entityOrId);
+            if (mapMembers.length > 0) {
+                cacheWriteClient.sadd(key, mapMembers);
+                return;
+            }
+        }
+        String[] members = resolveSetMembers(entityOrId);
+        if (members.length > 0) {
+            cacheWriteClient.saddStr(key, members);
+        }
     }
 
     private String buildKey(String domain, Object entityOrId) {
