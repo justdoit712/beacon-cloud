@@ -42,3 +42,21 @@ system:
   # 在本地开发环境，设置万能验证码为 1111
   test-kaptcha: "1111"
 
+sync:
+  # 同步总开关：关闭后 runtime/manual/boot 子开关均不生效
+  enabled: true
+  redis:
+    # 统一命名空间前缀，约定格式：beacon:{env}:{project}:{owner}:
+    namespace: "beacon:dev:beacon-cloud:cz:"
+  runtime:
+    # 运行时同步开关（业务写路径触发）
+    enabled: true
+  manual:
+    # 手工重建开关（管理入口触发）
+    enabled: true
+  boot:
+    # 启动校准开关（服务启动触发）
+    enabled: false
+    # 启动校准域清单，留空表示由后续逻辑决定默认域策略
+    domains: []
+
