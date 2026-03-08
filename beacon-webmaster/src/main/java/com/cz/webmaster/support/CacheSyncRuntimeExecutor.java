@@ -1,5 +1,6 @@
 package com.cz.webmaster.support;
 
+import com.cz.common.constant.CacheDomainRegistry;
 import com.cz.common.enums.ExceptionEnums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,12 +10,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.StringUtils;
 
 /**
- * Runtime Sync 触发执行器。
- * <p>
- * 用于统一处理“事务提交后执行”与“无事务立即执行”两种场景：
- * <p>
- * 1. 当前存在事务：注册 afterCommit 回调，提交成功后再执行同步动作；<br>
- * 2. 当前无事务：立即执行同步动作（兼容非事务写路径）。
+ * Runtime sync dispatcher.
+ *
+ * Rules:
+ * 1) with transaction: execute after commit;
+ * 2) without transaction: execute immediately;
+ * 3) sync failure is observable but does not block main flow.
  */
 @Component
 public class CacheSyncRuntimeExecutor {
@@ -22,22 +23,17 @@ public class CacheSyncRuntimeExecutor {
     private static final Logger log = LoggerFactory.getLogger(CacheSyncRuntimeExecutor.class);
 
     /**
-     * 根据当前事务上下文决定执行时机。
-     *
-     * @param action    具体同步动作
-     * @param domain    缓存域编码（用于日志）
-     * @param operation 操作名（用于日志）
-     * @param entityId  实体标识（用于日志）
+     * Execute cache sync action after commit when transaction exists, otherwise execute now.
      */
     public void runAfterCommitOrNow(Runnable action, String domain, String operation, String entityId) {
         if (action == null) {
             throw new IllegalArgumentException("action must not be null");
         }
+
         String safeDomain = safe(domain);
         String safeOperation = safe(operation);
         String safeEntityId = safe(entityId);
 
-        // 有事务且可注册同步回调：提交后再执行，避免 DB 回滚但缓存已更新。
         if (isTransactionActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
@@ -49,7 +45,6 @@ public class CacheSyncRuntimeExecutor {
             return;
         }
 
-        // 无事务：直接执行，兼容当前仍未统一事务化的写路径。
         runAction(action, safeDomain, safeOperation + ".immediate", safeEntityId);
     }
 
@@ -64,18 +59,46 @@ public class CacheSyncRuntimeExecutor {
             action.run();
             CacheSyncLogHelper.info(log, domain, entityId, "-", operation, costMs(startAt));
         } catch (Exception ex) {
+            long cost = costMs(startAt);
+            ExceptionEnums errorCode = resolveErrorCode(operation);
             CacheSyncLogHelper.error(
                     log,
                     domain,
                     entityId,
                     "-",
                     operation,
-                    costMs(startAt),
-                    resolveErrorCode(operation),
+                    cost,
+                    errorCode,
                     ex.getMessage(),
                     ex
             );
-            throw ex;
+
+            if (isBalanceDomain(domain)) {
+                CacheSyncLogHelper.warn(
+                        log,
+                        domain,
+                        entityId,
+                        "-",
+                        operation + ".compensationPlaceholder",
+                        cost,
+                        errorCode,
+                        "mysql committed; cache sync failed; compensation queue placeholder logged",
+                        null
+                );
+                return;
+            }
+
+            CacheSyncLogHelper.warn(
+                    log,
+                    domain,
+                    entityId,
+                    "-",
+                    operation + ".degradeContinue",
+                    cost,
+                    errorCode,
+                    "runtime sync failed but main flow continues",
+                    null
+            );
         }
     }
 
@@ -86,6 +109,10 @@ public class CacheSyncRuntimeExecutor {
         return ExceptionEnums.CACHE_SYNC_WRITE_FAIL;
     }
 
+    private boolean isBalanceDomain(String domain) {
+        return CacheDomainRegistry.CLIENT_BALANCE.equals(domain);
+    }
+
     private long costMs(long startAt) {
         return Math.max(System.currentTimeMillis() - startAt, 0);
     }
@@ -94,4 +121,3 @@ public class CacheSyncRuntimeExecutor {
         return StringUtils.hasText(value) ? value.trim() : "-";
     }
 }
-
