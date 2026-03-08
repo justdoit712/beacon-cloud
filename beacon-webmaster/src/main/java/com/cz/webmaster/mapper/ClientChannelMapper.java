@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public interface ClientChannelMapper {
 
@@ -13,6 +14,10 @@ public interface ClientChannelMapper {
     long countByKeyword(@Param("keyword") String keyword);
 
     ClientChannel findById(@Param("id") Long id);
+
+    List<ClientChannel> findByIds(@Param("ids") List<Long> ids);
+
+    List<Map<String, Object>> findRouteMembersByClientIds(@Param("clientIds") List<Long> clientIds);
 
     int insertSelective(ClientChannel clientChannel);
 

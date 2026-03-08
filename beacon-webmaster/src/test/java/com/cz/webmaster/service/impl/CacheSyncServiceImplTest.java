@@ -21,11 +21,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-/**
- * CacheSyncServiceImpl 骨架单元测试。
- * <p>
- * 重点验证：域路由 -> Key 构建 -> 写删客户端调用 是否符合预期。
- */
 public class CacheSyncServiceImplTest {
 
     private BeaconCacheWriteClient cacheWriteClient;
@@ -64,14 +59,48 @@ public class CacheSyncServiceImplTest {
     @Test
     public void shouldRouteDirtyWordUpsertToDeleteThenSaddStr() {
         Map<String, Object> payload = new HashMap<>();
-        payload.put("members", Arrays.asList("违法词", "营销词"));
+        payload.put("members", Arrays.asList("bad_1", "bad_2"));
 
         cacheSyncService.syncUpsert("dirty_word", payload);
 
         verify(cacheWriteClient, times(1)).delete("dirty_word");
         ArgumentCaptor<String[]> captor = ArgumentCaptor.forClass(String[].class);
         verify(cacheWriteClient, times(1)).saddStr(eq("dirty_word"), captor.capture());
-        Assert.assertArrayEquals(new String[]{"违法词", "营销词"}, captor.getValue());
+        Assert.assertArrayEquals(new String[]{"bad_1", "bad_2"}, captor.getValue());
+    }
+
+    @Test
+    public void shouldRouteClientChannelUpsertToDeleteThenSaddMap() {
+        Map<String, Object> member = new HashMap<>();
+        member.put("channelId", 2001L);
+        member.put("clientChannelNumber", "1069");
+        member.put("clientChannelWeight", 100);
+        member.put("isAvailable", 0);
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("clientId", 1001L);
+        payload.put("members", Arrays.asList(member));
+
+        cacheSyncService.syncUpsert("client_channel", payload);
+
+        verify(cacheWriteClient, times(1)).delete("client_channel:1001");
+        ArgumentCaptor<Map[]> memberCaptor = ArgumentCaptor.forClass(Map[].class);
+        verify(cacheWriteClient, times(1)).sadd(eq("client_channel:1001"), memberCaptor.capture());
+        Assert.assertEquals(1, memberCaptor.getValue().length);
+        Assert.assertEquals(2001L, memberCaptor.getValue()[0].get("channelId"));
+    }
+
+    @Test
+    public void shouldMapSpNumberToChannelNumberWhenUpsertChannel() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("id", 3001L);
+        payload.put("spNumber", "1069");
+
+        cacheSyncService.syncUpsert("channel", payload);
+
+        ArgumentCaptor<Map> payloadCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(cacheWriteClient, times(1)).hmset(eq("channel:3001"), payloadCaptor.capture());
+        Assert.assertEquals("1069", payloadCaptor.getValue().get("channelNumber"));
     }
 
     @Test

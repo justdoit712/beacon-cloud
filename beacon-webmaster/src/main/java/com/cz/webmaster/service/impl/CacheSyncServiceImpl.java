@@ -215,16 +215,33 @@ public class CacheSyncServiceImpl implements CacheSyncService {
 
     private void doUpsert(String domain, String key, Object entityOrId) {
         if (CacheDomainRegistry.CLIENT_BUSINESS.equals(domain)
-                || CacheDomainRegistry.CHANNEL.equals(domain)
                 || CacheDomainRegistry.CLIENT_BALANCE.equals(domain)) {
             cacheWriteClient.hmset(key, resolveHashPayload(entityOrId));
             return;
         }
 
+        if (CacheDomainRegistry.CHANNEL.equals(domain)) {
+            cacheWriteClient.hmset(key, resolveChannelPayload(entityOrId));
+            return;
+        }
+
         if (CacheDomainRegistry.CLIENT_SIGN.equals(domain)
                 || CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)
-                || CacheDomainRegistry.CLIENT_CHANNEL.equals(domain)
-                || CacheDomainRegistry.DIRTY_WORD.equals(domain)) {
+                || CacheDomainRegistry.CLIENT_CHANNEL.equals(domain)) {
+            cacheWriteClient.delete(key);
+            Map<String, Object>[] mapMembers = resolveSetMapMembers(entityOrId);
+            if (mapMembers.length > 0) {
+                cacheWriteClient.sadd(key, mapMembers);
+                return;
+            }
+            String[] members = resolveSetMembers(entityOrId);
+            if (members.length > 0) {
+                cacheWriteClient.saddStr(key, members);
+            }
+            return;
+        }
+
+        if (CacheDomainRegistry.DIRTY_WORD.equals(domain)) {
             cacheWriteClient.delete(key);
             String[] members = resolveSetMembers(entityOrId);
             if (members.length > 0) {
@@ -305,6 +322,56 @@ public class CacheSyncServiceImpl implements CacheSyncService {
     private Map<String, Object> resolveHashPayload(Object entityOrId) {
         Map<String, Object> map = toMap(entityOrId);
         return map.isEmpty() ? new LinkedHashMap<>() : map;
+    }
+
+    private Map<String, Object> resolveChannelPayload(Object entityOrId) {
+        Map<String, Object> map = resolveHashPayload(entityOrId);
+        Object channelNumber = firstNonNull(map, "channelNumber", "spNumber");
+        if (channelNumber != null && !map.containsKey("channelNumber")) {
+            map.put("channelNumber", channelNumber);
+        }
+        return map;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object>[] resolveSetMapMembers(Object entityOrId) {
+        Object source = entityOrId;
+        if (!(source instanceof Collection) && !(source instanceof Map[])) {
+            Map<String, Object> map = toMap(entityOrId);
+            source = firstNonNull(map, "members", "values");
+        }
+
+        List<Map<String, Object>> members = new ArrayList<>();
+        if (source instanceof Map[]) {
+            for (Map<?, ?> item : (Map<?, ?>[]) source) {
+                if (item == null || item.isEmpty()) {
+                    continue;
+                }
+                members.add(toMap(item));
+            }
+            return members.toArray(new Map[0]);
+        }
+
+        if (source instanceof Collection) {
+            Collection<?> collection = (Collection<?>) source;
+            for (Object item : collection) {
+                if (item == null) {
+                    continue;
+                }
+                Map<String, Object> memberMap;
+                if (item instanceof Map) {
+                    memberMap = toMap(item);
+                } else if (item instanceof String || item instanceof Number || item instanceof Boolean) {
+                    continue;
+                } else {
+                    memberMap = toMap(item);
+                }
+                if (!memberMap.isEmpty()) {
+                    members.add(memberMap);
+                }
+            }
+        }
+        return members.toArray(new Map[0]);
     }
 
     private String[] resolveSetMembers(Object entityOrId) {
@@ -470,4 +537,3 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         return Math.max(System.currentTimeMillis() - startAt, 0);
     }
 }
-
