@@ -28,7 +28,11 @@ public enum ExceptionEnums {
     AUTHEN_ERROR(-101,"用户名或密码错误！"),
     NOT_LOGIN(-102,"用户未登录！"),
     USER_MENU_ERROR(-103,"查询用户的菜单信息失败！"),
-    SMS_NO_AUTHOR(-104,"当前登录用户没有权限查询当前短信信息")
+    SMS_NO_AUTHOR(-104,"当前登录用户没有权限查询当前短信信息"),
+
+    CACHE_SYNC_WRITE_FAIL(-201,"缓存同步写入失败"),
+    CACHE_SYNC_DELETE_FAIL(-202,"缓存同步删除失败"),
+    CACHE_SYNC_CONFIG_INVALID(-203,"缓存同步配置不合法")
     ;
 
 

@@ -1,7 +1,9 @@
 package com.cz.webmaster.config;
 
+import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.security.CacheAuthHeaders;
 import com.cz.common.security.CacheAuthSignUtil;
+import com.cz.webmaster.support.CacheSyncLogHelper;
 import feign.Logger;
 import feign.Request;
 import feign.RequestInterceptor;
@@ -10,6 +12,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * beacon-cache Feign 调用配置。
@@ -23,6 +29,7 @@ import org.springframework.util.StringUtils;
 public class CacheFeignAuthConfig {
 
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(CacheFeignAuthConfig.class);
+    private static final AtomicBoolean INVALID_AUTH_CONFIG_LOGGED = new AtomicBoolean(false);
 
     @Value("${cache.client.auth.enabled:true}")
     private boolean enabled;
@@ -42,7 +49,23 @@ public class CacheFeignAuthConfig {
     @Bean
     public RequestInterceptor cacheAuthRequestInterceptor() {
         return template -> {
-            if (!enabled || !StringUtils.hasText(caller) || !StringUtils.hasText(secret)) {
+            if (!enabled) {
+                return;
+            }
+            if (!StringUtils.hasText(caller) || !StringUtils.hasText(secret)) {
+                if (INVALID_AUTH_CONFIG_LOGGED.compareAndSet(false, true)) {
+                    CacheSyncLogHelper.error(
+                            log,
+                            "cache_sync",
+                            "-",
+                            CacheAuthSignUtil.normalizePath(template.path()),
+                            "cache_auth_request_interceptor",
+                            0L,
+                            ExceptionEnums.CACHE_SYNC_CONFIG_INVALID,
+                            "cache.client.auth.caller or cache.client.auth.secret is blank",
+                            null
+                    );
+                }
                 return;
             }
             String timestamp = String.valueOf(System.currentTimeMillis());
@@ -74,10 +97,37 @@ public class CacheFeignAuthConfig {
     public ErrorDecoder cacheFeignErrorDecoder() {
         ErrorDecoder defaultDecoder = new ErrorDecoder.Default();
         return (methodKey, response) -> {
-            log.error("调用 beacon-cache 失败: methodKey={}, status={}, reason={}",
-                    methodKey, response.status(), response.reason());
+            String path = response.request() == null ? "-" : extractPath(response.request().url());
+            String message = "status=" + response.status() + ",reason=" + response.reason();
+            ExceptionEnums errorEnum = methodKey != null && methodKey.contains("delete")
+                    ? ExceptionEnums.CACHE_SYNC_DELETE_FAIL
+                    : ExceptionEnums.CACHE_SYNC_WRITE_FAIL;
+            CacheSyncLogHelper.error(
+                    log,
+                    "cache_sync",
+                    "-",
+                    path,
+                    methodKey,
+                    -1L,
+                    errorEnum,
+                    message,
+                    null
+            );
             return defaultDecoder.decode(methodKey, response);
         };
+    }
+
+    private static String extractPath(String url) {
+        if (!StringUtils.hasText(url)) {
+            return "-";
+        }
+        try {
+            URI uri = new URI(url);
+            String path = uri.getPath();
+            return StringUtils.hasText(path) ? path : CacheAuthSignUtil.normalizePath(url);
+        } catch (URISyntaxException ex) {
+            return CacheAuthSignUtil.normalizePath(url);
+        }
     }
 
     @Bean
@@ -85,4 +135,3 @@ public class CacheFeignAuthConfig {
         return Logger.Level.BASIC;
     }
 }
-
