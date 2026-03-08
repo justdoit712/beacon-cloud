@@ -60,3 +60,14 @@ sync:
     # 启动校准域清单，留空表示由后续逻辑决定默认域策略
     domains: []
 
+cache:
+  client:
+    auth:
+      enabled: true
+      # 必须与 beacon-cache 的 caller-secrets 配置一致
+      caller: beacon-webmaster
+      secret: cache_webmaster_secret
+    feign:
+      connect-timeout-ms: 3000
+      read-timeout-ms: 5000
+

@@ -15,6 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -170,6 +173,70 @@ public class CacheController {
         return result;
     }
 
+    /**
+     * 删除单个逻辑 key（自动映射到当前命名空间物理 key）。
+     */
+    @DeleteMapping(value = "/cache/delete/{key}")
+    public CacheDeleteResult delete(@PathVariable(value = "key") String key) {
+        if (!StringUtils.hasText(key)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "key must not be blank");
+        }
+        String logicalKey = key.trim();
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(logicalKey);
+        CacheDeleteResult result = new CacheDeleteResult();
+        result.setAttemptedCount(1);
+        result.setNamespace(namespaceProperties.resolvePrefix());
+        try {
+            boolean deleted = redisClient.delete(physicalKey);
+            result.setSuccessCount(1);
+            result.setDeletedCount(deleted ? 1 : 0);
+            log.info("【缓存模块】 delete方法，逻辑key = {}，物理key = {}，deleted = {}，namespace = {}",
+                    logicalKey, physicalKey, deleted, result.getNamespace());
+        } catch (Exception ex) {
+            result.setFailedKeys(Collections.singletonList(logicalKey));
+            log.error("【缓存模块】 delete方法失败，逻辑key = {}，物理key = {}，namespace = {}",
+                    logicalKey, physicalKey, result.getNamespace(), ex);
+        }
+        return result;
+    }
+
+    /**
+     * 批量删除逻辑 key（自动映射到当前命名空间物理 key）。
+     */
+    @PostMapping(value = "/cache/delete/batch")
+    public CacheDeleteResult deleteBatch(@RequestBody List<String> keys) {
+        List<String> failedKeys = new ArrayList<>();
+        Set<String> normalizedLogicalKeys = normalizeLogicalKeys(keys, failedKeys);
+
+        CacheDeleteResult result = new CacheDeleteResult();
+        result.setAttemptedCount(normalizedLogicalKeys.size());
+        result.setNamespace(namespaceProperties.resolvePrefix());
+
+        long successCount = 0;
+        long deletedCount = 0;
+        for (String logicalKey : normalizedLogicalKeys) {
+            String physicalKey = namespaceKeyResolver.toPhysicalKey(logicalKey);
+            try {
+                boolean deleted = redisClient.delete(physicalKey);
+                successCount++;
+                if (deleted) {
+                    deletedCount++;
+                }
+            } catch (Exception ex) {
+                failedKeys.add(logicalKey);
+                log.error("【缓存模块】 deleteBatch方法失败，逻辑key = {}，物理key = {}，namespace = {}",
+                        logicalKey, physicalKey, result.getNamespace(), ex);
+            }
+        }
+        result.setSuccessCount(successCount);
+        result.setDeletedCount(deletedCount);
+        result.setFailedKeys(failedKeys);
+
+        log.info("【缓存模块】 deleteBatch方法，attemptedCount = {}，successCount = {}，deletedCount = {}，failedCount = {}，namespace = {}",
+                result.getAttemptedCount(), result.getSuccessCount(), result.getDeletedCount(), result.getFailedKeys().size(), result.getNamespace());
+        return result;
+    }
+
     @GetMapping(value = "/cache/keys")
     public Set<String> keys(@RequestParam("pattern") String pattern,
                             @RequestParam(value = "count", defaultValue = "1000") Integer count){
@@ -203,5 +270,20 @@ public class CacheController {
             }
         }
         return false;
+    }
+
+    private Set<String> normalizeLogicalKeys(List<String> keys, List<String> failedKeys) {
+        Set<String> normalized = new LinkedHashSet<>();
+        if (keys == null || keys.isEmpty()) {
+            return normalized;
+        }
+        for (String key : keys) {
+            if (!StringUtils.hasText(key)) {
+                failedKeys.add(key);
+                continue;
+            }
+            normalized.add(key.trim());
+        }
+        return normalized;
     }
 }

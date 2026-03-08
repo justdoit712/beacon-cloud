@@ -33,6 +33,7 @@ cache:
       beacon-api: cache_api_secret
       beacon-strategy: cache_strategy_secret
       beacon-monitor: cache_monitor_secret
+      beacon-webmaster: cache_webmaster_secret
       beacon-smsgateway: cache_smsgateway_secret
       beacon-test: cache_test_secret
     caller-permissions:
@@ -44,6 +45,8 @@ cache:
       beacon-monitor:
         - READ
         - KEYS
+      beacon-webmaster:
+        - WRITE
       beacon-smsgateway:
         - READ
       beacon-test:
