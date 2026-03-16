@@ -1082,81 +1082,14 @@ textarea:focus-visible,
     margin-bottom: var(--space-4);
 }
 
-.ops-page-intro {
-    display: flex;
-    align-items: stretch;
-    justify-content: space-between;
-    gap: var(--space-6);
-    margin-bottom: var(--space-4);
-    padding: 24px 28px;
-    border: 1px solid #dce4ee;
-    border-radius: var(--radius-lg);
-    background:
-        radial-gradient(circle at right top, rgba(60, 141, 188, 0.08), transparent 38%),
-        linear-gradient(135deg, #ffffff 0%, #f8fbff 55%, #f4f8fd 100%);
-    box-shadow: var(--shadow-xs);
-}
 
-.ops-page-intro-copy {
-    max-width: 760px;
-}
 
-.ops-page-kicker {
-    margin: 0 0 var(--space-2);
-    color: var(--color-primary);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 12px;
-    font-weight: 700;
-}
 
-.ops-page-intro-copy h1 {
-    margin: 0 0 var(--space-3);
-    color: #1f2d3d;
-    font-size: 30px;
-    line-height: 1.2;
-}
 
-.ops-page-description {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: 15px;
-    line-height: 1.7;
-}
 
-.ops-page-intro-meta {
-    flex: 0 0 360px;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-3);
-}
 
-.ops-page-meta-card {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: var(--space-2);
-    min-height: 88px;
-    padding: var(--space-4);
-    border: 1px solid #dce4ee;
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.82);
-}
 
-.ops-page-meta-label {
-    color: var(--color-text-muted);
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    font-weight: 600;
-}
 
-.ops-page-meta-value {
-    color: #1f2d3d;
-    font-size: 15px;
-    line-height: 1.5;
-    font-weight: 600;
-}
 
 .ops-list-panel,
 .ops-form-panel {
@@ -1693,14 +1626,6 @@ button[id='chongzhi']:focus {
         padding: var(--space-3);
     }
 
-    .ops-page-intro {
-        padding: var(--space-5);
-    }
-
-    .ops-page-intro-copy h1 {
-        font-size: 24px;
-    }
-
     .ops-panel-note {
         max-width: none;
         text-align: left;
@@ -1738,14 +1663,6 @@ button[id='chongzhi']:focus {
 }
 
 @media (max-width: 991px) {
-    .ops-page-intro {
-        flex-direction: column;
-    }
-
-    .ops-page-intro-meta {
-        flex: 1 1 auto;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
 
     .ops-filter-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1757,7 +1674,4 @@ button[id='chongzhi']:focus {
 }
 
 @media (max-width: 576px) {
-    .ops-page-intro-meta {
-        grid-template-columns: 1fr;
-    }
 }
