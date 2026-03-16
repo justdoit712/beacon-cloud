@@ -13,13 +13,34 @@
     <link rel="stylesheet" href="../public/css/theme.css">
 
 </head>
-<body class="ops-page">
+<body class="ops-page ops-page-wide">
 <div id="dtapp" class="ops-page-container" v-cloak>
+    <section class="ops-page-intro">
+        <div class="ops-page-intro-copy">
+            <p class="ops-page-kicker">Role Operations</p>
+            <h1>角色管理</h1>
+            <p class="ops-page-description">统一维护角色名称、状态与授权关系，让角色页与其它标准管理页保持一致的列表、表单和弹层体验。</p>
+        </div>
+        <div class="ops-page-intro-meta">
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">当前范围</span>
+                <span class="ops-page-meta-value">角色资料与授权</span>
+            </article>
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">主流程</span>
+                <span class="ops-page-meta-value">查询 / 新增 / 修改 / 删除 / 授权</span>
+            </article>
+        </div>
+    </section>
 
     <div v-show="showList" class="ops-page-layout">
         <div class="panel panel-default ops-list-panel">
             <div class="panel-heading ops-list-heading">
-                <span class="ops-list-title">角色列表</span>
+                <div class="ops-heading-copy">
+                    <span class="ops-panel-kicker">角色资料</span>
+                    <span class="ops-list-title">角色列表</span>
+                </div>
+                <p class="ops-panel-note">查看角色名称、备注和状态，并通过列表入口完成菜单授权，避免在表单区混入树形权限操作。</p>
             </div>
             <div class="panel-body">
                 <div id="toolbar" class="ops-toolbar">
@@ -37,37 +58,58 @@
                     </button>
                 </div>
 
-                <table id="table" class="ops-table"></table>
+                <div class="ops-table-wrap">
+                    <table id="table" class="ops-table"></table>
+                </div>
             </div>
         </div>
     </div>
 
     <div v-show="!showList" class="panel panel-default page-form-layout ops-form-panel">
-        <div class="panel-heading">{{title}}</div>
+        <div class="panel-heading ops-form-panel-heading">
+            <div class="ops-heading-copy">
+                <span class="ops-panel-kicker">角色资料</span>
+                <span class="ops-list-title">{{title}}角色</span>
+            </div>
+            <p class="ops-panel-note">先维护角色基础信息，再回到列表使用“授权”按钮绑定菜单，让数据维护和权限分配各自聚焦。</p>
+        </div>
         <form class="form-horizontal ops-form">
             <input type="hidden" v-model="role.id"/>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">名称</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="role.name"/>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>角色基础</h2>
+                    <p>用于定义角色名称与身份标签，便于列表侧快速识别角色职责。</p>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">备注</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="role.remark"/>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="role-name-input">名称</label>
+                    <div class="col-sm-10">
+                        <input id="role-name-input" type="text" class="form-control" v-model="role.name" placeholder="请输入角色名称"/>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">状态</div>
-                <div class="col-sm-10">
-                    <select class="form-control" v-model="role.status">
-                        <option value="">请选择</option>
-                        <option value="1">有效</option>
-                        <option value="0">无效</option>
-                    </select>
+            </section>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>状态与说明</h2>
+                    <p>角色备注用于标记职责边界，状态用于控制是否在系统中继续生效。</p>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="role-remark-input">备注</label>
+                    <div class="col-sm-10">
+                        <input id="role-remark-input" type="text" class="form-control" v-model="role.remark" placeholder="请输入角色备注"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="role-status-select">状态</label>
+                    <div class="col-sm-10">
+                        <select id="role-status-select" class="form-control" v-model="role.status">
+                            <option value="">请选择状态</option>
+                            <option value="1">有效</option>
+                            <option value="0">无效</option>
+                        </select>
+                        <p class="ops-form-help">菜单授权请在保存后回到列表，使用“授权”按钮在树形菜单中进行维护。</p>
+                    </div>
+                </div>
+            </section>
             <div class="form-group ops-form-actions">
                 <div class="col-sm-2 control-label"></div>
                 <div class="col-sm-10">
@@ -81,8 +123,16 @@
 </div>
 
 <!-- 选择菜单 -->
-<div id="menuLayer" style="display: none;padding:10px;">
-    <ul id="menuTree" class="ztree"></ul>
+<div id="menuLayer" class="ops-tree-layer">
+    <div class="ops-tree-shell">
+        <div class="ops-tree-head">
+            <h2>菜单授权</h2>
+            <p class="ops-tree-note">勾选当前角色可访问的目录、菜单和按钮，确认后立即写入角色授权关系。</p>
+        </div>
+        <div class="ops-tree-scroll">
+            <ul id="menuTree" class="ztree"></ul>
+        </div>
+    </div>
 </div>
 
 <script src="../public/libs/jquery.min.js"></script>

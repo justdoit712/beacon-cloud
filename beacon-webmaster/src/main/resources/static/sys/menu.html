@@ -13,13 +13,34 @@
     <link rel="stylesheet" href="../public/css/theme.css">
 
 </head>
-<body class="ops-page">
+<body class="ops-page ops-page-wide">
 <div id="dtapp" class="ops-page-container" v-cloak>
+    <section class="ops-page-intro">
+        <div class="ops-page-intro-copy">
+            <p class="ops-page-kicker">Menu Operations</p>
+            <h1>菜单管理</h1>
+            <p class="ops-page-description">统一维护目录、菜单与按钮层级，让菜单页的树选择、路由配置和显示设置与其它管理页保持同样清晰的分区。</p>
+        </div>
+        <div class="ops-page-intro-meta">
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">当前范围</span>
+                <span class="ops-page-meta-value">目录、菜单与按钮层级</span>
+            </article>
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">主流程</span>
+                <span class="ops-page-meta-value">查询 / 新增 / 修改 / 删除 / 选树</span>
+            </article>
+        </div>
+    </section>
 
     <div v-show="showList" class="ops-page-layout">
         <div class="panel panel-default ops-list-panel">
             <div class="panel-heading ops-list-heading">
-                <span class="ops-list-title">菜单列表</span>
+                <div class="ops-heading-copy">
+                    <span class="ops-panel-kicker">菜单层级</span>
+                    <span class="ops-list-title">菜单列表</span>
+                </div>
+                <p class="ops-panel-note">查看目录、菜单与按钮的层级关系，并在列表页快速进入新增、修改和删除操作。</p>
             </div>
             <div class="panel-body">
                 <div id="toolbar" class="ops-toolbar">
@@ -34,63 +55,91 @@
                     </button>
                 </div>
 
-                <table id="table" class="ops-table"></table>
+                <div class="ops-table-wrap">
+                    <table id="table" class="ops-table"></table>
+                </div>
             </div>
         </div>
     </div>
 
     <div v-show="!showList" class="panel panel-default page-form-layout ops-form-panel">
-        <div class="panel-heading">{{title}}</div>
+        <div class="panel-heading ops-form-panel-heading">
+            <div class="ops-heading-copy">
+                <span class="ops-panel-kicker">菜单层级</span>
+                <span class="ops-list-title">{{title}}菜单</span>
+            </div>
+            <p class="ops-panel-note">按菜单类型、层级路由和显示设置分区填写，减少层级字段和展示字段混排带来的理解成本。</p>
+        </div>
         <form class="form-horizontal ops-form">
-            <div class="form-group">
-                <div class="col-sm-2 control-label">类型</div>
-                <div class="col-sm-10">
-                    <div class="ops-inline-options">
-                        <label><input type="radio" name="type" value="0" v-model="menu.type"/>目录</label>
-                        <label><input type="radio" name="type" value="1" v-model="menu.type"/>菜单</label>
-                        <label><input type="radio" name="type" value="2" v-model="menu.type"/>按钮</label>
+            <input type="hidden" v-model="menu.id"/>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>菜单类型</h2>
+                    <p>先确认当前节点属于目录、菜单还是按钮，后续路由与权限字段会按类型显示。</p>
+                </div>
+                <div class="form-group">
+                    <div id="menu-type-label" class="col-sm-2 control-label">类型</div>
+                    <div class="col-sm-10">
+                        <div class="ops-inline-options" role="radiogroup" aria-labelledby="menu-type-label">
+                            <label><input type="radio" name="type" value="0" v-model="menu.type"/>目录</label>
+                            <label><input type="radio" name="type" value="1" v-model="menu.type"/>菜单</label>
+                            <label><input type="radio" name="type" value="2" v-model="menu.type"/>按钮</label>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">菜单名称</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="menu.name" placeholder="菜单名称或按钮名称"/>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="menu-name-input">菜单名称</label>
+                    <div class="col-sm-10">
+                        <input id="menu-name-input" type="text" class="form-control" v-model="menu.name" placeholder="请输入菜单名称或按钮名称"/>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">上级菜单</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control pointer" v-model="menu.parentName"
-                           @click="menuTree" readonly="readonly" placeholder="一级菜单"/>
+            </section>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>层级与路由</h2>
+                    <p>用于选择当前节点的上级菜单，并维护菜单 URL 或按钮权限标识。</p>
                 </div>
-            </div>
-            <div v-if="menu.type == 1" class="form-group">
-                <div class="col-sm-2 control-label">菜单URL</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="menu.url" placeholder="菜单URL"/>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="menu-parent-input">上级菜单</label>
+                    <div class="col-sm-10">
+                        <input id="menu-parent-input" type="text" class="form-control pointer" v-model="menu.parentName"
+                               @click="menuTree" readonly="readonly" placeholder="请选择上级菜单"/>
+                        <p class="ops-form-help">点击输入框打开树形菜单选择上级节点，根节点表示一级菜单。</p>
+                    </div>
                 </div>
-            </div>
-            <div v-if="menu.type == 1 || menu.type == 2" class="form-group">
-                <div class="col-sm-2 control-label">授权标识</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="menu.perms"
-                           placeholder="多个用逗号分隔，如：user:list,user:create"/>
+                <div v-if="menu.type == 1" class="form-group">
+                    <label class="col-sm-2 control-label" for="menu-url-input">菜单 URL</label>
+                    <div class="col-sm-10">
+                        <input id="menu-url-input" type="text" class="form-control" v-model="menu.url" placeholder="请输入菜单 URL"/>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">排序号</div>
-                <div class="col-sm-10">
-                    <input type="number" class="form-control" v-model="menu.orderNum" placeholder="排序号"/>
+                <div v-if="menu.type == 1 || menu.type == 2" class="form-group">
+                    <label class="col-sm-2 control-label" for="menu-perms-input">授权标识</label>
+                    <div class="col-sm-10">
+                        <input id="menu-perms-input" type="text" class="form-control" v-model="menu.perms"
+                               placeholder="多个用逗号分隔，如：user:list,user:create"/>
+                    </div>
                 </div>
-            </div>
-            <div v-if="menu.type != 2" class="form-group">
-                <div class="col-sm-2 control-label">图标</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="menu.icon" placeholder="菜单图标"/>
-                    <p class="help-block">获取图标：http://www.fontawesome.com.cn/faicons/</p>
+            </section>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>显示设置</h2>
+                    <p>排序号控制展示顺序，图标用于目录和菜单节点的导航呈现。</p>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="menu-order-input">排序号</label>
+                    <div class="col-sm-10">
+                        <input id="menu-order-input" type="number" class="form-control" v-model="menu.orderNum" placeholder="请输入排序号"/>
+                    </div>
+                </div>
+                <div v-if="menu.type != 2" class="form-group">
+                    <label class="col-sm-2 control-label" for="menu-icon-input">图标</label>
+                    <div class="col-sm-10">
+                        <input id="menu-icon-input" type="text" class="form-control" v-model="menu.icon" placeholder="请输入菜单图标"/>
+                        <p class="ops-form-help">图标可参考 Font Awesome 图标库，例如 `fa fa-home`。</p>
+                    </div>
+                </div>
+            </section>
             <div class="form-group ops-form-actions">
                 <div class="col-sm-2 control-label"></div>
                 <div class="col-sm-10">
@@ -104,8 +153,16 @@
 </div>
 
 <!-- 选择菜单 -->
-<div id="menuLayer" style="display: none;padding:10px;">
-    <ul id="menuTree" class="ztree"></ul>
+<div id="menuLayer" class="ops-tree-layer">
+    <div class="ops-tree-shell">
+        <div class="ops-tree-head">
+            <h2>上级菜单选择</h2>
+            <p class="ops-tree-note">请选择当前菜单的上级节点，树中根节点表示一级菜单。</p>
+        </div>
+        <div class="ops-tree-scroll">
+            <ul id="menuTree" class="ztree"></ul>
+        </div>
+    </div>
 </div>
 
 <script src="../public/libs/jquery.min.js"></script>

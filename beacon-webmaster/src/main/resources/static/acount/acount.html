@@ -12,43 +12,93 @@
 <link rel="stylesheet" href="../public/css/main.css">
 <link rel="stylesheet" href="../public/css/theme.css">
 </head>
-<body class="ops-page">
+<body class="ops-page ops-page-wide">
 <div id="dtapp" class="ops-page-container" v-cloak>
+    <section class="ops-page-intro">
+        <div class="ops-page-intro-copy">
+            <p class="ops-page-kicker">Recharge Operations</p>
+            <h1>充值管理</h1>
+            <p class="ops-page-description">统一维护充值记录、客户归属与到账金额，让充值页也收口到标准管理页的列表、表单和操作节奏。</p>
+        </div>
+        <div class="ops-page-intro-meta">
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">当前范围</span>
+                <span class="ops-page-meta-value">充值记录与到账金额</span>
+            </article>
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">主流程</span>
+                <span class="ops-page-meta-value">查询 / 新增 / 修改 / 删除 / 返回</span>
+            </article>
+        </div>
+    </section>
 
     <div v-show="showList" class="ops-page-layout">
         <div class="panel panel-default ops-list-panel">
             <div class="panel-heading ops-list-heading">
-                <span class="ops-list-title">充值管理列表</span>
+                <div class="ops-heading-copy">
+                    <span class="ops-panel-kicker">充值记录</span>
+                    <span class="ops-list-title">充值管理列表</span>
+                </div>
+                <p class="ops-panel-note">查看客户、到账金额、支付时间和支付方式，便于追踪充值记录与后续对账。</p>
             </div>
             <div class="panel-body">
                 <div id="toolbar" class="ops-toolbar">
                     <button class="btn btn-success" type="button" @click="add">
                         <i class="fa fa-plus"></i>&nbsp;&nbsp;<span class="bold">新增</span>
                     </button>
+                    <button class="btn btn-success" type="button" @click="update">
+                        <i class="fa fa-pencil-square-o"></i>&nbsp;&nbsp;<span class="bold">修改</span>
+                    </button>
+                    <button class="btn btn-danger" type="button" @click="del">
+                        <i class="fa fa-remove"></i>&nbsp;&nbsp;<span class="bold">删除</span>
+                    </button>
                 </div>
 
-                <table id="table" class="ops-table"></table>
+                <div class="ops-table-wrap">
+                    <table id="table" class="ops-table"></table>
+                </div>
             </div>
         </div>
     </div>
 
     <div v-show="!showList" class="panel panel-default page-form-layout ops-form-panel">
-        <div class="panel-heading">{{title}}</div>
+        <div class="panel-heading ops-form-panel-heading">
+            <div class="ops-heading-copy">
+                <span class="ops-panel-kicker">充值记录</span>
+                <span class="ops-list-title">{{title}}充值记录</span>
+            </div>
+            <p class="ops-panel-note">按充值对象和到账信息分区维护，保证手工充值与充值记录修改都在同一套表单节奏下完成。</p>
+        </div>
         <form class="form-horizontal ops-form">
-            <div class="form-group">
-                <div class="col-sm-2 control-label">所属客户</div>
-                <div class="col-sm-10">
-                    <select class="form-control" v-model="acount.clientid" name="sites" id="sites">
-                        <option v-for="item in sites" :value="item.id">{{ item.corpname }}</option>
-                    </select>
+            <input type="hidden" v-model="acount.id"/>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>充值对象</h2>
+                    <p>先确认充值归属客户，确保到账金额会计入口和余额变更指向正确客户。</p>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">到账金额</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="acount.paidvalue" placeholder="到账金额(单位元)"/>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="acount-client-select">所属客户</label>
+                    <div class="col-sm-10">
+                        <select class="form-control" v-model="acount.clientid" name="sites" id="acount-client-select">
+                            <option value="">请选择所属客户</option>
+                            <option v-for="item in sites" :value="item.id">{{ item.corpname }}</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
+            </section>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>到账信息</h2>
+                    <p>到账金额以元为输入单位，订单号和支付信息会由后端按当前记录自动补齐。</p>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="acount-paidvalue-input">到账金额</label>
+                    <div class="col-sm-10">
+                        <input id="acount-paidvalue-input" type="text" class="form-control" v-model="acount.paidvalue" placeholder="请输入到账金额（单位元）"/>
+                        <p class="ops-form-help">保存后会生成或保留订单号、支付渠道单号与支付信息，用于后续记录追踪。</p>
+                    </div>
+                </div>
+            </section>
             <div class="form-group ops-form-actions">
                 <div class="col-sm-2 control-label"></div>
                 <div class="col-sm-10">

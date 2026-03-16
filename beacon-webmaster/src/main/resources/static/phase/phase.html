@@ -12,13 +12,34 @@
     <link rel="stylesheet" href="../public/css/main.css">
     <link rel="stylesheet" href="../public/css/theme.css">
 </head>
-<body class="ops-page">
+<body class="ops-page ops-page-wide">
 <div id="dtapp" class="ops-page-container" v-cloak>
+    <section class="ops-page-intro">
+        <div class="ops-page-intro-copy">
+            <p class="ops-page-kicker">Phase Operations</p>
+            <h1>号段管理</h1>
+            <p class="ops-page-description">统一维护手机号码号段与省市映射，让号段页也具备清晰的引导区、列表区和分段表单结构。</p>
+        </div>
+        <div class="ops-page-intro-meta">
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">当前范围</span>
+                <span class="ops-page-meta-value">号段与地域映射</span>
+            </article>
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">主流程</span>
+                <span class="ops-page-meta-value">查询 / 新增 / 修改 / 删除 / 返回</span>
+            </article>
+        </div>
+    </section>
 
     <div v-show="showList" class="ops-page-layout">
         <div class="panel panel-default ops-list-panel">
             <div class="panel-heading ops-list-heading">
-                <span class="ops-list-title">号段列表</span>
+                <div class="ops-heading-copy">
+                    <span class="ops-panel-kicker">号段资料</span>
+                    <span class="ops-list-title">号段列表</span>
+                </div>
+                <p class="ops-panel-note">查看号段与省市对应关系，便于后续路由、地域识别和规则核对。</p>
             </div>
             <div class="panel-body">
                 <div id="toolbar" class="ops-toolbar">
@@ -33,36 +54,59 @@
                     </button>
                 </div>
 
-                <table id="table" class="ops-table"></table>
+                <div class="ops-table-wrap">
+                    <table id="table" class="ops-table"></table>
+                </div>
             </div>
         </div>
     </div>
 
     <div v-show="!showList" class="panel panel-default page-form-layout ops-form-panel">
-        <div class="panel-heading">{{title}}</div>
+        <div class="panel-heading ops-form-panel-heading">
+            <div class="ops-heading-copy">
+                <span class="ops-panel-kicker">号段资料</span>
+                <span class="ops-list-title">{{title}}号段</span>
+            </div>
+            <p class="ops-panel-note">将号段信息和地域映射分区填写，减少省市级联与基础字段混排带来的认知跳跃。</p>
+        </div>
         <form class="form-horizontal ops-form">
-            <div class="form-group">
-                <div class="col-sm-2 control-label">号段</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="phase.phase" placeholder="号段"/>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>号段信息</h2>
+                    <p>用于维护号码前缀基础资料，建议录入标准号段值，方便后续检索与比对。</p>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">省标识</div>
-                <div class="col-sm-10">
-                    <select class="form-control" @change="getCitys($event)" v-model="phase.provId" name="sites" id="sites">
-                        <option v-for="item in sites" :value="item.id">{{ item.areaname }}</option>
-                    </select>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="phase-input">号段</label>
+                    <div class="col-sm-10">
+                        <input id="phase-input" type="text" class="form-control" v-model="phase.phase" placeholder="请输入号段"/>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">城市标识</div>
-                <div class="col-sm-10">
-                    <select class="form-control" v-model="phase.cityId" name="citys" id="citys">
-                        <option v-for="item in citys" :value="item.id">{{ item.areaname }}</option>
-                    </select>
+            </section>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>地域映射</h2>
+                    <p>先选省份再选择城市，确保号段与地区映射关系完整可追踪。</p>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="phase-prov-select">省标识</label>
+                    <div class="col-sm-10">
+                        <select class="form-control" @change="getCitys($event)" v-model="phase.provId" name="sites" id="phase-prov-select">
+                            <option value="">请选择省份</option>
+                            <option v-for="item in sites" :value="item.id">{{ item.areaname }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="phase-city-select">城市标识</label>
+                    <div class="col-sm-10">
+                        <select class="form-control" v-model="phase.cityId" name="citys" id="phase-city-select">
+                            <option value="">请选择城市</option>
+                            <option v-for="item in citys" :value="item.id">{{ item.areaname }}</option>
+                        </select>
+                        <p class="ops-form-help">城市列表会根据当前省份动态加载，保存前建议再次核对省市组合。</p>
+                    </div>
+                </div>
+            </section>
             <div class="form-group ops-form-actions">
                 <div class="col-sm-2 control-label"></div>
                 <div class="col-sm-10">

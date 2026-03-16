@@ -1371,6 +1371,18 @@ textarea:focus-visible,
     line-height: 1.5;
 }
 
+.ops-form-panel .help-block {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.ops-form-panel .pointer[readonly] {
+    background-color: #fbfdff;
+    cursor: pointer;
+}
+
 button[id='chongzhi'] {
     display: inline-flex;
     align-items: center;
@@ -1392,6 +1404,48 @@ button[id='chongzhi']:focus {
     background: #f3faff;
     color: var(--color-primary-hover);
     box-shadow: var(--shadow-xs);
+}
+
+.ops-tree-layer {
+    display: none;
+    padding: 0 !important;
+    background: transparent;
+}
+
+.ops-tree-shell {
+    padding: var(--space-4);
+    background: linear-gradient(180deg, #fbfdff 0%, #f7fafd 100%);
+}
+
+.ops-tree-head {
+    margin-bottom: var(--space-3);
+}
+
+.ops-tree-head h2 {
+    margin: 0 0 var(--space-1);
+    color: #1f2d3d;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.ops-tree-note {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.ops-tree-scroll {
+    max-height: 320px;
+    overflow: auto;
+    border: 1px solid #dce4ee;
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    padding: var(--space-3);
+}
+
+.ops-tree-scroll .ztree {
+    margin-top: 0;
 }
 
 /* Activity page Element bridge */
@@ -1553,6 +1607,10 @@ button[id='chongzhi']:focus {
 
     .ops-form-actions .btn {
         min-width: 72px;
+    }
+
+    .ops-tree-scroll {
+        max-height: 260px;
     }
 
     .ops-chart-canvas {
