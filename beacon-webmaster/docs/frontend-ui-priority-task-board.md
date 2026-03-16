@@ -1,7 +1,7 @@
 # 前端 UI 优先优化任务看板
 
 ## 1. 说明
-本看板由 `frontend-ui-priority-implementation-plan.md` 拆分而来，用于按最小改动步骤执行并留存可回滚锚点。
+本看板已按当前代码基线重排，仅保留尚未收口的活跃步骤；已落地内容已从任务清单中移除，不再重复排期。
 
 执行约束：
 - 每步最多改动 1~3 个紧密关联文件。
@@ -15,38 +15,35 @@
 3. 重启应用并冒烟验证：
    - `login.html` 登录成功/失败提示
    - `index.html` 菜单跳转 + iframe 加载
-   - 当前改动页面的新增/修改/删除/返回
+   - 当前改动页面核心流程：
+     - CRUD 页面：新增 / 修改 / 删除 / 返回
+     - 特殊页面：按步骤定义验证查询 / 发送 / 提交 / 图表渲染等主链路
 4. 提交步骤：`git add <files> && git commit -m "<step-id>: <说明>"`
 5. 记录结果：步骤编号、提交号、验证结论、截图路径
 
-## 2.1 当前进度（截至 2026-02-27）
-- 当前阶段：阶段 2（P1），下一步 `S2-01`
-- 待执行步骤：`S2-01 ~ S4-04`、`R-01 ~ R-02`（14 步）
+## 2.1 当前进度（截至 2026-03-16）
+- 当前阶段：阶段 3（页面收口），下一步 `P1-01`
+- 活跃步骤：`P1-01 ~ P3-02`、`R-01 ~ R-02`（8 步）
+- 已从活跃看板移除：`login.html`、`index.html`、`sys/main.html`、`sys/user.html` 及其对应通用样式改造
 - 详细过程记录：`docs/frontend-ui-priority-progress.md`
 
 ## 3. 任务清单
 | ID | 阶段 | 状态 | 任务 | 目标文件（每步 1~3 个） | 完成标准 | 预估 |
 |---|---|---|---|---|---|---|
-| S2-01 | 阶段 2 | 下一步 | 登录页视觉升级（背景+卡片） | `src/main/resources/static/login.html`, `src/main/resources/static/public/css/theme.css` | 首屏层次、留白、卡片观感明显提升 | 2h |
-| S2-02 | 阶段 2 | 待开始 | 登录交互统一 + 密码类型修复 | `src/main/resources/static/login.html`, `src/main/resources/static/public/css/theme.css` | 输入/按钮状态统一，`user.password` 为 `type="password"` | 2h |
-| S2-03 | 阶段 2 | 待开始 | 首页框架优化（去行内样式） | `src/main/resources/static/index.html`, `src/main/resources/static/public/css/theme.css` | 顶栏/侧栏/面包屑/iframe 容器规范，路由逻辑不变 | 3h |
-| S2-04 | 阶段 2 | 待开始 | 控制台页卡片化改造 | `src/main/resources/static/sys/main.html`, `src/main/resources/static/public/css/theme.css` | 欢迎区+指标占位+常用入口，支持基础响应式 | 3h |
-| S3-01 | 阶段 3 | 待开始 | 用户页结构统一 + 密码字段复核 | `src/main/resources/static/sys/user.html`, `src/main/resources/static/public/css/theme.css` | 查询/按钮/表格/编辑分区统一，密码输入正确 | 2.5h |
-| S3-02 | 阶段 3 | 待开始 | 客户与客户业务页结构统一 | `src/main/resources/static/client/client.html`, `src/main/resources/static/client/clientbusiness.html`, `src/main/resources/static/public/css/theme.css` | 布局、按钮顺序、表格样式一致 | 3h |
-| S3-03 | 阶段 3 | 待开始 | 渠道与活动页结构统一 + 桥接 | `src/main/resources/static/channel/channel.html`, `src/main/resources/static/activity/activity.html`, `src/main/resources/static/public/css/theme.css` | Element 与 Bootstrap 间距桥接统一 | 3h |
-| S3-04 | 阶段 3 | 待开始 | 弹层和按钮规范收口 | `src/main/resources/static/public/css/theme.css`, `src/main/resources/static/sys/user.html`, `src/main/resources/static/activity/activity.html` | layer 标题/按钮风格统一，按钮顺序统一 | 2h |
-| S4-01 | 阶段 4 | 待开始 | 主要操作态增强 | `src/main/resources/static/public/css/theme.css` | hover/active/disabled/loading 状态清晰 | 2h |
-| S4-02 | 阶段 4 | 待开始 | 校验提示与空状态文案统一 | `src/main/resources/static/public/css/theme.css`, `src/main/resources/static/sys/user.html`, `src/main/resources/static/client/client.html` | 校验提示位置一致，空状态文案一致 | 2h |
-| S4-03 | 阶段 4 | 待开始 | 三视口适配 | `src/main/resources/static/public/css/theme.css`, `src/main/resources/static/index.html`, `src/main/resources/static/login.html` | 375/768/1366 无横向滚动，核心流程可操作 | 3h |
-| S4-04 | 阶段 4 | 待开始 | 常见可访问性修正 | `src/main/resources/static/login.html`, `src/main/resources/static/sys/user.html`, `src/main/resources/static/public/css/theme.css` | `label-for` 正确，焦点可见 | 2h |
-| R-01 | 收尾 | 待开始 | 上线前全量回归 | 无代码或文档更新 | 功能/视觉/安全/兼容清单全部通过 | 2h |
+| P1-01 | 同模板页 | 下一步 | 客户与客户业务页结构收口 | `src/main/resources/static/client/client.html`, `src/main/resources/static/client/clientbusiness.html`, `src/main/resources/static/public/css/theme.css` | 布局、按钮顺序、表格/表单样式一致，CRUD/back 通过 | 3h |
+| P1-02 | 同模板页 | 待开始 | 渠道与活动页结构收口 + Element 桥接复核 | `src/main/resources/static/channel/channel.html`, `src/main/resources/static/activity/activity.html`, `src/main/resources/static/public/css/theme.css` | 列表/表单视觉一致，Element 与 Bootstrap 间距、输入高度、按钮风格统一 | 3h |
+| P2-01 | 标准管理页 | 待开始 | 角色与菜单页纳入统一模板 | `src/main/resources/static/sys/role.html`, `src/main/resources/static/sys/menu.html`, `src/main/resources/static/public/css/theme.css` | 列表、表单、树弹层、按钮顺序统一，CRUD/back 通过 | 3h |
+| P2-02 | 标准管理页 | 待开始 | 号段与充值页纳入统一模板 | `src/main/resources/static/phase/phase.html`, `src/main/resources/static/acount/acount.html`, `src/main/resources/static/public/css/theme.css` | 下拉、表单、空状态、按钮区一致，CRUD/back 通过 | 3h |
+| P3-01 | 特殊页 | 待开始 | 搜索与短信发送页收口 | `src/main/resources/static/client/search.html`, `src/main/resources/static/client/smssend.html`, `src/main/resources/static/public/css/theme.css` | 非 CRUD 验收标准明确，查询/发送主链路可操作，表单与结果区风格统一 | 3h |
+| P3-02 | 特殊页 | 待开始 | 充值入口与短信饼图页收口 | `src/main/resources/static/client/userpay.html`, `src/main/resources/static/echarts/smspie.html`, `src/main/resources/static/public/css/theme.css` | 入口、筛选、提交、图表渲染流程可用，页面风格统一 | 3h |
+| R-01 | 收尾 | 待开始 | 上线前全量回归 | 无代码或文档更新 | 功能 / 视觉 / 兼容 / 可访问性清单全部通过 | 2h |
 | R-02 | 收尾 | 待开始 | 交付记录归档 | `beacon-webmaster/docs/frontend-ui-priority-progress.md` | 每步提交号、截图、结论完整可追踪 | 1h |
 
 ## 4. 建议排期（与当前进度同步）
-1. 待执行：Day 4~5，`S2-01 ~ S2-04`
-2. 待执行：Day 6~8，`S3-01 ~ S3-04`
-3. 待执行：Day 9，`S4-01 ~ S4-04`
-4. 待执行：Day 10，`R-01 ~ R-02`
+1. 待执行：Day 1~2，`P1-01 ~ P1-02`
+2. 待执行：Day 3~4，`P2-01 ~ P2-02`
+3. 待执行：Day 5~6，`P3-01 ~ P3-02`
+4. 待执行：Day 7，`R-01 ~ R-02`
 
 ## 5. Commit Message 模板
 统一格式：
@@ -56,10 +53,10 @@
 
 示例：
 ```text
-S2-01: login upgrade visual hierarchy with background and card
-S2-02: login unify input/button states and fix password input type
-S3-03: channel/activity unify layout and bridge element bootstrap spacing
-S4-03: responsive adapt key pages for 375 768 1366 viewports
+P1-01: client unify client and clientbusiness page structure
+P1-02: channel activity align layout and bridge element spacing
+P2-01: sys role menu align management page template
+P3-01: special pages unify search and sms send flows
 R-01: qa run full smoke and regression checklist
 ```
 
@@ -70,18 +67,18 @@ R-01: qa run full smoke and regression checklist
 
 回滚优先级：
 1. 优先回滚当前异常页面
-2. 其次回滚 `theme.css` 接入点
+2. 其次回滚 `theme.css` 对应接入点
 3. 避免整分支回滚，减少无关影响
 
 ## 7. 每步验收记录模板
 ```text
-Step: Sx-xx
+Step: Px-xx
 Commit: <sha>
 Changed Files: <file1>, <file2>, <file3>
 Smoke Test:
 - login: pass/fail
 - index+iframe: pass/fail
-- current page CRUD/back: pass/fail
+- current page main flow: pass/fail
 Result: pass/fail
 Screenshots: <path>
 Notes: <optional>
