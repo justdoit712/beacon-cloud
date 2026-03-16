@@ -13,13 +13,34 @@
     <link rel="stylesheet" href="../public/css/theme.css">
 
 </head>
-<body class="ops-page">
+<body class="ops-page ops-page-wide">
 <div id="dtapp" class="ops-page-container" v-cloak>
+    <section class="ops-page-intro">
+        <div class="ops-page-intro-copy">
+            <p class="ops-page-kicker">Channel Operations</p>
+            <h1>短信通道管理</h1>
+            <p class="ops-page-description">统一维护通道基础资料、连接参数和协议状态，让通道页和其它管理页保持一致的操作节奏。</p>
+        </div>
+        <div class="ops-page-intro-meta">
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">当前范围</span>
+                <span class="ops-page-meta-value">通道路由主数据</span>
+            </article>
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">主流程</span>
+                <span class="ops-page-meta-value">查询 / 新增 / 修改 / 删除 / 返回</span>
+            </article>
+        </div>
+    </section>
 
     <div v-show="showList" class="ops-page-layout">
         <div class="panel panel-default ops-list-panel">
             <div class="panel-heading ops-list-heading">
-                <span class="ops-list-title">通道列表</span>
+                <div class="ops-heading-copy">
+                    <span class="ops-panel-kicker">通道资料</span>
+                    <span class="ops-list-title">通道列表</span>
+                </div>
+                <p class="ops-panel-note">在同一张表里查看成本、地区、协议与启用状态，便于快速筛选可用通道。</p>
             </div>
             <div class="panel-body">
                 <div id="toolbar" class="ops-toolbar">
@@ -34,98 +55,124 @@
                     </button>
                 </div>
 
-                <table id="table" class="ops-table"></table>
+                <div class="ops-table-wrap">
+                    <table id="table" class="ops-table"></table>
+                </div>
             </div>
         </div>
     </div>
 
     <div v-show="!showList" class="panel panel-default page-form-layout ops-form-panel">
-        <div class="panel-heading">{{title}}</div>
+        <div class="panel-heading ops-form-panel-heading">
+            <div class="ops-heading-copy">
+                <span class="ops-panel-kicker">通道资料</span>
+                <span class="ops-list-title">{{title}}通道</span>
+            </div>
+            <p class="ops-panel-note">按基础信息、连接配置、协议状态三个分区维护，减少长表单的理解成本。</p>
+        </div>
         <form class="form-horizontal ops-form">
-            <div class="form-group">
-                <div class="col-sm-2 control-label">通道名称</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="channel.channelname" placeholder="通道名称"/>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>通道基础</h2>
+                    <p>先确认通道名称、地区范围和成本口径，方便列表侧快速筛选。</p>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">通道类型</div>
-                <div class="col-sm-10">
-                    <div class="ops-inline-options">
-                        <label><input type="radio" value="0" v-model="channel.channeltype">全网</label>
-                        <label><input type="radio" value="1" v-model="channel.channeltype">移动</label>
-                        <label><input type="radio" value="2" v-model="channel.channeltype">联通</label>
-                        <label><input type="radio" value="3" v-model="channel.channeltype">电信</label>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="channel-name">通道名称</label>
+                    <div class="col-sm-10">
+                        <input id="channel-name" type="text" class="form-control" v-model="channel.channelname" placeholder="请输入通道名称"/>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">通道地区</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="channel.channelarea" placeholder="如：北京 北京"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">地区号段</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="channel.channelareacode" placeholder="如：010"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">通道成本(厘/条)</div>
-                <div class="col-sm-10">
-                    <input type="number" class="form-control" v-model="channel.channelprice" placeholder="如：10"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">账户接入号</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="channel.spnumber" placeholder="账户接入号"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">通道IP</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="channel.channelip" placeholder="如：120.16.11.228"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">通道端口</div>
-                <div class="col-sm-10">
-                    <input type="number" class="form-control" v-model="channel.channelport" placeholder="如：8150"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">通道账号</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="channel.channelusername" placeholder="通道账号"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">通道密码</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="channel.channelpassword" placeholder="通道密码"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">协议类型</div>
-                <div class="col-sm-10">
-                    <div class="ops-inline-options">
-                        <label><input type="radio" value="1" v-model="channel.protocaltype">cmpp</label>
-                        <label><input type="radio" value="2" v-model="channel.protocaltype">sgip</label>
-                        <label><input type="radio" value="3" v-model="channel.protocaltype">smgp</label>
+                <div class="form-group">
+                    <div id="channel-type-label" class="col-sm-2 control-label">通道类型</div>
+                    <div class="col-sm-10">
+                        <div class="ops-inline-options" role="radiogroup" aria-labelledby="channel-type-label">
+                            <label><input type="radio" value="0" v-model="channel.channeltype">全网</label>
+                            <label><input type="radio" value="1" v-model="channel.channeltype">移动</label>
+                            <label><input type="radio" value="2" v-model="channel.channeltype">联通</label>
+                            <label><input type="radio" value="3" v-model="channel.channeltype">电信</label>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">启用状态</div>
-                <div class="col-sm-10">
-                    <div class="ops-inline-options">
-                        <label><input type="radio" value="0" v-model="channel.isavailable">停用</label>
-                        <label><input type="radio" value="1" v-model="channel.isavailable">启用</label>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="channel-area">通道地区</label>
+                    <div class="col-sm-10">
+                        <input id="channel-area" type="text" class="form-control" v-model="channel.channelarea" placeholder="如：北京 北京"/>
                     </div>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="channel-area-code">地区号段</label>
+                    <div class="col-sm-10">
+                        <input id="channel-area-code" type="text" class="form-control" v-model="channel.channelareacode" placeholder="如：010"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="channel-price">通道成本(厘/条)</label>
+                    <div class="col-sm-10">
+                        <input id="channel-price" type="number" class="form-control" v-model="channel.channelprice" placeholder="如：10"/>
+                    </div>
+                </div>
+            </section>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>连接配置</h2>
+                    <p>统一维护接入号、地址、端口及账号密码，便于后续联调与排障。</p>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="channel-spnumber">账户接入号</label>
+                    <div class="col-sm-10">
+                        <input id="channel-spnumber" type="text" class="form-control" v-model="channel.spnumber" placeholder="请输入账户接入号"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="channel-ip">通道 IP</label>
+                    <div class="col-sm-10">
+                        <input id="channel-ip" type="text" class="form-control" v-model="channel.channelip" placeholder="如：120.16.11.228"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="channel-port">通道端口</label>
+                    <div class="col-sm-10">
+                        <input id="channel-port" type="number" class="form-control" v-model="channel.channelport" placeholder="如：8150"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="channel-username">通道账号</label>
+                    <div class="col-sm-10">
+                        <input id="channel-username" type="text" class="form-control" v-model="channel.channelusername" placeholder="请输入通道账号"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="channel-password">通道密码</label>
+                    <div class="col-sm-10">
+                        <input id="channel-password" type="password" class="form-control" v-model="channel.channelpassword" placeholder="请输入通道密码"/>
+                    </div>
+                </div>
+            </section>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>协议与状态</h2>
+                    <p>配置协议类型与启用状态，让上线准备和回滚动作更清晰。</p>
+                </div>
+                <div class="form-group">
+                    <div id="channel-protocol-label" class="col-sm-2 control-label">协议类型</div>
+                    <div class="col-sm-10">
+                        <div class="ops-inline-options" role="radiogroup" aria-labelledby="channel-protocol-label">
+                            <label><input type="radio" value="1" v-model="channel.protocaltype">cmpp</label>
+                            <label><input type="radio" value="2" v-model="channel.protocaltype">sgip</label>
+                            <label><input type="radio" value="3" v-model="channel.protocaltype">smgp</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div id="channel-status-label" class="col-sm-2 control-label">启用状态</div>
+                    <div class="col-sm-10">
+                        <div class="ops-inline-options" role="radiogroup" aria-labelledby="channel-status-label">
+                            <label><input type="radio" value="0" v-model="channel.isavailable">停用</label>
+                            <label><input type="radio" value="1" v-model="channel.isavailable">启用</label>
+                        </div>
+                    </div>
+                </div>
+            </section>
             <div class="form-group ops-form-actions">
                 <div class="col-sm-2 control-label"></div>
                 <div class="col-sm-10">

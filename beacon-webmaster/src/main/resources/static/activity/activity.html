@@ -13,13 +13,34 @@
     <link rel="stylesheet" href="../public/css/theme.css">
     <link rel="stylesheet" href="../public/css/index.css">
 </head>
-<body class="ops-page">
+<body class="ops-page ops-page-wide">
 <div id="dtapp" class="ops-page-container" v-cloak>
+    <section class="ops-page-intro">
+        <div class="ops-page-intro-copy">
+            <p class="ops-page-kicker">Activity Operations</p>
+            <h1>活动管理</h1>
+            <p class="ops-page-description">统一活动内容、素材上传和时间窗口配置，让活动页和标准管理页保持同样清晰的分区与操作节奏。</p>
+        </div>
+        <div class="ops-page-intro-meta">
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">当前范围</span>
+                <span class="ops-page-meta-value">活动内容与外链</span>
+            </article>
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">主流程</span>
+                <span class="ops-page-meta-value">查询 / 新增 / 修改 / 删除 / 返回</span>
+            </article>
+        </div>
+    </section>
 
     <div v-show="showList" class="ops-page-layout">
         <div class="panel panel-default ops-list-panel">
             <div class="panel-heading ops-list-heading">
-                <span class="ops-list-title">活动列表</span>
+                <div class="ops-heading-copy">
+                    <span class="ops-panel-kicker">活动内容</span>
+                    <span class="ops-list-title">活动列表</span>
+                </div>
+                <p class="ops-panel-note">查看活动标题、时间窗口和跳转链接，方便快速确认当前投放内容。</p>
             </div>
             <div class="panel-body">
                 <div id="toolbar" class="ops-toolbar">
@@ -34,86 +55,116 @@
                     </button>
                 </div>
 
-                <table id="table" class="ops-table"></table>
+                <div class="ops-table-wrap">
+                    <table id="table" class="ops-table"></table>
+                </div>
             </div>
         </div>
     </div>
 
     <div v-show="!showList" class="panel panel-default page-form-layout ops-form-panel activity-form-bridge">
-        <div class="panel-heading">{{title}}</div>
+        <div class="panel-heading ops-form-panel-heading">
+            <div class="ops-heading-copy">
+                <span class="ops-panel-kicker">活动内容</span>
+                <span class="ops-list-title">{{title}}活动</span>
+            </div>
+            <p class="ops-panel-note">按内容、素材与时间分区填写，减少 Element 组件和传统表单混排带来的跳跃感。</p>
+        </div>
         <form class="form-horizontal ops-form">
-            <div class="form-group">
-                <div class="col-sm-2 control-label">标 题</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="activity.title" placeholder="汽车行业发展"/>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>活动内容</h2>
+                    <p>先填写标题、描述和创建者，明确活动主体与展示信息。</p>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">描 述</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="activity.description" placeholder="资讯来源"/>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="activity-title">标题</label>
+                    <div class="col-sm-10">
+                        <input id="activity-title" type="text" class="form-control" v-model="activity.title" placeholder="如：汽车行业发展"/>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">图片</div>
-                <div class="col-sm-10 activity-element-wrap">
-                    <el-upload
-                            action="http://localhost:8080/ytupload"
-                            accept="image/jpeg,image/gif,image/png"
-                            :on-success="handleSuccess"
-                            name="mypic">
-                        <div slot="tip" class="el-upload__tip activity-upload-tip">请上传图片格式文件
-                            <el-button size="small" type="primary">自动上传</el-button>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="activity-description">描述</label>
+                    <div class="col-sm-10">
+                        <input id="activity-description" type="text" class="form-control" v-model="activity.description" placeholder="如：资讯来源"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="activity-author">活动创建者</label>
+                    <div class="col-sm-10">
+                        <input id="activity-author" type="text" class="form-control" v-model="activity.author" placeholder="请输入活动创建者"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="activity-seo">SEO 关键字</label>
+                    <div class="col-sm-10">
+                        <input id="activity-seo" type="text" class="form-control" v-model="activity.seoKeywords" placeholder="请输入 SEO 关键字"/>
+                    </div>
+                </div>
+            </section>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>素材与时间</h2>
+                    <p>在同一块区域中完成封面上传和时间窗口配置，避免组件样式跳跃。</p>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">图片</div>
+                    <div class="col-sm-10 activity-element-wrap">
+                        <div class="activity-upload-card">
+                            <el-upload
+                                    action="http://localhost:8080/ytupload"
+                                    accept="image/jpeg,image/gif,image/png"
+                                    :on-success="handleSuccess"
+                                    name="mypic">
+                                <div slot="tip" class="el-upload__tip activity-upload-tip">
+                                    <span>请上传图片格式文件，上传成功后会自动回填封面。</span>
+                                    <el-button size="small" type="primary">自动上传</el-button>
+                                </div>
+                            </el-upload>
                         </div>
-                    </el-upload>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">活动创建者</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="activity.author"/>
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">开始时间</div>
+                    <div class="col-sm-10 activity-element-wrap">
+                        <el-date-picker
+                                class="activity-date-picker"
+                                v-model="activity.beginTime"
+                                type="datetime"
+                                format="yyyy-MM-dd HH:mm"
+                                value-format="yyyy-MM-dd HH:mm"
+                                :editable="false"
+                                placeholder="选择开始时间">
+                        </el-date-picker>
+                        <p class="ops-form-help">建议与结束时间成对维护，便于列表页快速核对活动窗口。</p>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">开始时间</div>
-                <div class="col-sm-10 activity-element-wrap">
-                    <el-date-picker
-                            class="activity-date-picker"
-                            v-model="activity.beginTime"
-                            type="datetime"
-                            format="yyyy-MM-dd HH:mm"
-                            value-format="yyyy-MM-dd HH:mm"
-                            :editable="false"
-                            placeholder="选择日期时间">
-                    </el-date-picker>
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">结束时间</div>
+                    <div class="col-sm-10 activity-element-wrap">
+                        <el-date-picker
+                                class="activity-date-picker"
+                                v-model="activity.endTime"
+                                type="datetime"
+                                format="yyyy-MM-dd HH:mm"
+                                value-format="yyyy-MM-dd HH:mm"
+                                :editable="false"
+                                placeholder="选择结束时间">
+                        </el-date-picker>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">结束时间</div>
-                <div class="col-sm-10 activity-element-wrap">
-                    <el-date-picker
-                            class="activity-date-picker"
-                            v-model="activity.endTime"
-                            type="datetime"
-                            format="yyyy-MM-dd HH:mm"
-                            value-format="yyyy-MM-dd HH:mm"
-                            :editable="false"
-                            placeholder="选择日期时间">
-                    </el-date-picker>
+            </section>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>跳转配置</h2>
+                    <p>活动链接用于承接外部跳转，建议保存前一并完成复核。</p>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">活动链接</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="activity.link"/>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="activity-link">活动链接</label>
+                    <div class="col-sm-10">
+                        <input id="activity-link" type="text" class="form-control" v-model="activity.link" placeholder="请输入活动链接"/>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">SEO关键字</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="activity.seoKeywords"/>
-                </div>
-            </div>
+            </section>
             <div class="form-group ops-form-actions">
                 <div class="col-sm-2 control-label"></div>
                 <div class="col-sm-10">

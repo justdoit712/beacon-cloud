@@ -11,15 +11,35 @@
     <link rel="stylesheet" href="../public/plugins/ztree/css/metroStyle/metroStyle.css">
     <link rel="stylesheet" href="../public/css/main.css">
     <link rel="stylesheet" href="../public/css/theme.css">
-    <link rel="stylesheet" href="../public/css/index.css">
 </head>
-<body class="ops-page">
+<body class="ops-page ops-page-wide">
 <div id="dtapp" class="ops-page-container" v-cloak>
+    <section class="ops-page-intro">
+        <div class="ops-page-intro-copy">
+            <p class="ops-page-kicker">Client Access</p>
+            <h1>客户接入管理</h1>
+            <p class="ops-page-description">统一维护客户鉴权、回执、回调和余额信息，让业务接入页和主数据页保持同一套管理体验。</p>
+        </div>
+        <div class="ops-page-intro-meta">
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">当前范围</span>
+                <span class="ops-page-meta-value">客户接入参数</span>
+            </article>
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">主流程</span>
+                <span class="ops-page-meta-value">查询 / 新增 / 修改 / 删除 / 返回</span>
+            </article>
+        </div>
+    </section>
 
     <div v-show="showList" class="ops-page-layout">
         <div class="panel panel-default ops-list-panel">
             <div class="panel-heading ops-list-heading">
-                <span class="ops-list-title">客户接入列表</span>
+                <div class="ops-heading-copy">
+                    <span class="ops-panel-kicker">接入参数</span>
+                    <span class="ops-list-title">客户接入列表</span>
+                </div>
+                <p class="ops-panel-note">维护客户鉴权、状态回执和优先级配置，便于快速确认接入状态。</p>
             </div>
             <div class="panel-body">
                 <div id="toolbar" class="ops-toolbar">
@@ -33,91 +53,117 @@
                         <i class="fa fa-remove"></i>&nbsp;&nbsp;<span class="bold">删除</span>
                     </button>
                 </div>
-                <table id="table" class="ops-table"></table>
+                <div class="ops-table-wrap">
+                    <table id="table" class="ops-table"></table>
+                </div>
             </div>
         </div>
     </div>
 
     <div v-show="!showList" class="panel panel-default page-form-layout ops-form-panel">
-        <div class="panel-heading">{{title}}</div>
+        <div class="panel-heading ops-form-panel-heading">
+            <div class="ops-heading-copy">
+                <span class="ops-panel-kicker">接入参数</span>
+                <span class="ops-list-title">{{title}}客户接入</span>
+            </div>
+            <p class="ops-panel-note">将接入身份、回执策略和业务控制参数整理在同一页内，减少重复切换。</p>
+        </div>
         <form class="form-horizontal ops-form">
-            <div class="form-group">
-                <div class="col-sm-2 control-label">公司名称</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="clientbusiness.corpname" placeholder="公司名称"/>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>接入身份</h2>
+                    <p>维护客户接入系统时使用的账号、密码和联系号码。</p>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">接入的用户名</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="clientbusiness.usercode" placeholder="接入的用户名"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">接入的密码</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="clientbusiness.pwd" placeholder="接入的密码"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">接入的IP地址</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="clientbusiness.ipaddress" placeholder="接入的IP地址"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">是否返回</div>
-                <div class="col-sm-10">
-                    <div class="ops-inline-options">
-                        <label><input type="radio" value="1" v-model="clientbusiness.isreturnstatus">返回</label>
-                        <label><input type="radio" value="0" v-model="clientbusiness.isreturnstatus">不返回</label>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="clientbusiness-corpname">公司名称</label>
+                    <div class="col-sm-10">
+                        <input id="clientbusiness-corpname" type="text" class="form-control" v-model="clientbusiness.corpname" placeholder="请输入公司名称"/>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">接收状态报告地址</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="clientbusiness.receivestatusurl"
-                           placeholder="接收状态报告地址"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">业务优先级</div>
-                <div class="col-sm-10">
-                    <input type="number" class="form-control" v-model="clientbusiness.priority" placeholder="业务优先级"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">使用方式</div>
-                <div class="col-sm-10">
-                    <div class="ops-inline-options">
-                        <label><input type="radio" value="1" v-model="clientbusiness.usertype">http</label>
-                        <label><input type="radio" value="2" v-model="clientbusiness.usertype">WEB</label>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="clientbusiness-usercode">接入用户名</label>
+                    <div class="col-sm-10">
+                        <input id="clientbusiness-usercode" type="text" class="form-control" v-model="clientbusiness.usercode" placeholder="请输入接入用户名"/>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">开通状态</div>
-                <div class="col-sm-10">
-                    <div class="ops-inline-options">
-                        <label><input type="radio" value="0" v-model="clientbusiness.state">没开通</label>
-                        <label><input type="radio" value="1" v-model="clientbusiness.state">开通</label>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="clientbusiness-pwd">接入密码</label>
+                    <div class="col-sm-10">
+                        <input id="clientbusiness-pwd" type="password" class="form-control" v-model="clientbusiness.pwd" placeholder="请输入接入密码"/>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">手机号</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="clientbusiness.mobile" placeholder="手机号"/>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="clientbusiness-mobile">手机号</label>
+                    <div class="col-sm-10">
+                        <input id="clientbusiness-mobile" type="text" class="form-control" v-model="clientbusiness.mobile" placeholder="请输入手机号"/>
+                    </div>
                 </div>
-            </div>
-
-            <div class="form-group">
-                <div class="col-sm-2 control-label">钱数(厘)</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="clientbusiness.money" placeholder="0"/>
+            </section>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>回执与回调</h2>
+                    <p>用于控制状态报告是否返回，以及回执通知的目标地址。</p>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="clientbusiness-ipaddress">接入 IP 地址</label>
+                    <div class="col-sm-10">
+                        <input id="clientbusiness-ipaddress" type="text" class="form-control" v-model="clientbusiness.ipaddress" placeholder="请输入接入 IP 地址"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div id="clientbusiness-return-label" class="col-sm-2 control-label">是否返回</div>
+                    <div class="col-sm-10">
+                        <div class="ops-inline-options" role="radiogroup" aria-labelledby="clientbusiness-return-label">
+                            <label><input type="radio" value="1" v-model="clientbusiness.isreturnstatus">返回</label>
+                            <label><input type="radio" value="0" v-model="clientbusiness.isreturnstatus">不返回</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="clientbusiness-receivestatusurl">接收状态报告地址</label>
+                    <div class="col-sm-10">
+                        <input id="clientbusiness-receivestatusurl" type="text" class="form-control" v-model="clientbusiness.receivestatusurl" placeholder="请输入接收状态报告地址"/>
+                        <p class="ops-form-help">建议填写完整 URL，便于后续联调状态回执。</p>
+                    </div>
+                </div>
+            </section>
+            <section class="ops-form-section">
+                <div class="ops-form-section-head">
+                    <h2>业务控制</h2>
+                    <p>用于控制路由优先级、接入方式、开通状态和余额口径。</p>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="clientbusiness-priority">业务优先级</label>
+                    <div class="col-sm-10">
+                        <input id="clientbusiness-priority" type="number" class="form-control" v-model="clientbusiness.priority" placeholder="请输入业务优先级"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div id="clientbusiness-usertype-label" class="col-sm-2 control-label">使用方式</div>
+                    <div class="col-sm-10">
+                        <div class="ops-inline-options" role="radiogroup" aria-labelledby="clientbusiness-usertype-label">
+                            <label><input type="radio" value="1" v-model="clientbusiness.usertype">http</label>
+                            <label><input type="radio" value="2" v-model="clientbusiness.usertype">WEB</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div id="clientbusiness-state-label" class="col-sm-2 control-label">开通状态</div>
+                    <div class="col-sm-10">
+                        <div class="ops-inline-options" role="radiogroup" aria-labelledby="clientbusiness-state-label">
+                            <label><input type="radio" value="0" v-model="clientbusiness.state">没开通</label>
+                            <label><input type="radio" value="1" v-model="clientbusiness.state">开通</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="clientbusiness-money">余额(厘)</label>
+                    <div class="col-sm-10">
+                        <input id="clientbusiness-money" type="text" class="form-control" v-model="clientbusiness.money" placeholder="请输入余额，单位为厘"/>
+                        <p class="ops-form-help">该字段用于显示当前余额主口径，页面列表中的充值入口会跳转到充值页。</p>
+                    </div>
+                </div>
+            </section>
             <div class="form-group ops-form-actions">
                 <div class="col-sm-2 control-label"></div>
                 <div class="col-sm-10">
@@ -134,7 +180,6 @@
 <script src="../public/plugins/layer/layer.js"></script>
 <script src="../public/libs/bootstrap.min.js"></script>
 <script src="../public/libs/vue.min.js"></script>
-<script src="../public/libs/myindex.js"></script>
 <script src="../public/plugins/bootstrap-table/bootstrap-table.min.js"></script>
 <script src="../public/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js"></script>
 <script src="../public/plugins/ztree/jquery.ztree.all.min.js"></script>
