@@ -1199,8 +1199,8 @@ textarea:focus-visible,
 .ops-form-panel .form-horizontal {
     width: 100%;
     max-width: 900px;
-    padding-top: var(--space-5);
-    padding-bottom: var(--space-4);
+    box-sizing: border-box;
+    padding: var(--space-5) var(--space-5) var(--space-4);
 }
 
 .ops-form-section + .ops-form-section {
@@ -1633,6 +1633,7 @@ button[id='chongzhi']:focus {
 
     .ops-form-panel .form-horizontal {
         max-width: 100%;
+        padding: var(--space-4) var(--space-4) var(--space-3);
     }
 
     .ops-form-actions .col-sm-10 {
