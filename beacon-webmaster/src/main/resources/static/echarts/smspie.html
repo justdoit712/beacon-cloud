@@ -1,42 +1,75 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
-<title>成功率统计</title>
-<meta charset="UTF-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
-<link rel="stylesheet" href="../public/css/bootstrap.min.css">
-<link rel="stylesheet" href="../public/css/font-awesome.min.css">
-<link rel="stylesheet" href="../public/plugins/bootstrap-table/bootstrap-table.min.css">
-<link rel="stylesheet" href="../public/plugins/ztree/css/metroStyle/metroStyle.css">
-<link rel="stylesheet" href="../public/css/main.css">
-<link rel="stylesheet" href="../public/css/theme.css">
-<script src="../public/libs/jquery.min.js"></script>
-<script src="../public/plugins/echarts/echarts.min.js"></script>
+    <title>成功率统计</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <link rel="stylesheet" href="../public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../public/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../public/plugins/bootstrap-table/bootstrap-table.min.css">
+    <link rel="stylesheet" href="../public/plugins/ztree/css/metroStyle/metroStyle.css">
+    <link rel="stylesheet" href="../public/css/main.css">
+    <link rel="stylesheet" href="../public/css/theme.css">
+    <script src="../public/plugins/echarts/echarts.min.js"></script>
 </head>
-<body class="ops-page">
+<body class="ops-page ops-page-wide">
 <div id="dtapp" class="ops-page-container" v-cloak>
+    <section class="ops-page-intro">
+        <div class="ops-page-intro-copy">
+            <p class="ops-page-kicker">Chart Operations</p>
+            <h1>成功率统计</h1>
+            <p class="ops-page-description">将筛选条件、状态汇总和图表区域整理成同一张统计工作台，方便按客户和时间范围观察等待、成功与失败占比。</p>
+        </div>
+        <div class="ops-page-intro-meta">
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">当前范围</span>
+                <span class="ops-page-meta-value">状态分布与成功率趋势</span>
+            </article>
+            <article class="ops-page-meta-card">
+                <span class="ops-page-meta-label">主流程</span>
+                <span class="ops-page-meta-value">筛选 / 查询 / 查看图表</span>
+            </article>
+        </div>
+    </section>
 
     <div class="ops-page-layout">
         <div class="panel panel-default ops-list-panel">
             <div class="panel-heading ops-list-heading">
-                <span class="ops-list-title">查询条件</span>
+                <div class="ops-heading-copy">
+                    <span class="ops-panel-kicker">统计筛选</span>
+                    <span class="ops-list-title">查询条件</span>
+                </div>
+                <p class="ops-panel-note">按时间范围和客户维度刷新图表，若不选择客户则按当前权限范围汇总全部数据。</p>
             </div>
             <div class="panel-body">
-                <form id="formSearch" class="form-inline">
-                    <div class="form-group">
-                        <label>时间</label>
-                        <input type="date" class="form-control" id="start">
-                        <input type="date" class="form-control" id="end">
+                <form id="formSearch" class="ops-filter-form" @submit.prevent="reload">
+                    <div class="ops-filter-grid">
+                        <div class="ops-filter-field">
+                            <label>时间范围</label>
+                            <div class="ops-date-range">
+                                <input id="start" type="date" class="form-control" aria-label="开始日期">
+                                <input id="end" type="date" class="form-control" aria-label="结束日期">
+                            </div>
+                        </div>
+                        <div class="ops-filter-field">
+                            <label for="clientID">公司</label>
+                            <select id="clientID" class="form-control">
+                                <option value="">请选择公司</option>
+                                <option :value="item.id" v-for="item in sites">{{item.corpname}}</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>公司</label>
-                        <select class="form-control" id="clientID">
-                            <option value="">请选择</option>
-                            <option :value="item.id" v-for="item in sites">{{item.corpname}}</option>
-                        </select>
+                    <div class="ops-filter-actions">
+                        <button type="button"
+                                class="btn btn-primary"
+                                :class="{'is-loading': loading}"
+                                :disabled="loading"
+                                @click="reload">
+                            <span class="btn-text">{{ loading ? '查询中' : '查询' }}</span>
+                        </button>
+                        <button type="button" class="btn btn-default ml-10" :disabled="loading" @click="resetForm">重置</button>
                     </div>
-                    <button type="button" class="btn btn-primary" @click="reload">查询</button>
                 </form>
             </div>
         </div>
@@ -45,10 +78,49 @@
     <div class="ops-page-layout">
         <div class="panel panel-default ops-list-panel">
             <div class="panel-heading ops-list-heading">
-                <span class="ops-list-title">短信统计图表</span>
+                <div class="ops-heading-copy">
+                    <span class="ops-panel-kicker">状态汇总</span>
+                    <span class="ops-list-title">短信状态概览</span>
+                </div>
+                <p class="ops-panel-note">用于快速查看当前筛选条件下等待、成功、失败的数量与总量，再结合图表判断状态分布。</p>
             </div>
             <div class="panel-body">
-                <div id="pie" class="ops-chart-canvas"></div>
+                <div class="ops-summary-strip">
+                    <article class="ops-summary-card">
+                        <span class="ops-summary-label">等待</span>
+                        <strong class="ops-summary-value">{{ stats.waiting }}</strong>
+                    </article>
+                    <article class="ops-summary-card">
+                        <span class="ops-summary-label">成功</span>
+                        <strong class="ops-summary-value">{{ stats.success }}</strong>
+                    </article>
+                    <article class="ops-summary-card">
+                        <span class="ops-summary-label">失败</span>
+                        <strong class="ops-summary-value">{{ stats.failed }}</strong>
+                    </article>
+                    <article class="ops-summary-card">
+                        <span class="ops-summary-label">总量</span>
+                        <strong class="ops-summary-value">{{ stats.total }}</strong>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ops-page-layout">
+        <div class="panel panel-default ops-list-panel">
+            <div class="panel-heading ops-list-heading">
+                <div class="ops-heading-copy">
+                    <span class="ops-panel-kicker">图表展示</span>
+                    <span class="ops-list-title">短信统计图表</span>
+                </div>
+                <p class="ops-panel-note">饼图用于展示当前状态分布占比，适合对照查询条件快速判断成功率和失败量级。</p>
+            </div>
+            <div class="panel-body">
+                <div class="ops-feedback-banner" :class="{'is-empty': !chartMessage}">
+                    <p class="ops-feedback-text">{{ chartMessage || '设置筛选条件后，可在这里查看图表反馈。' }}</p>
+                </div>
+                <div id="pie" class="ops-chart-canvas ops-chart-canvas-lg"></div>
             </div>
         </div>
     </div>
@@ -58,7 +130,6 @@
 <script src="../public/plugins/layer/layer.js"></script>
 <script src="../public/libs/bootstrap.min.js"></script>
 <script src="../public/libs/vue.min.js"></script>
-<script src="../public/libs/myindex.js"></script>
 <script src="../public/plugins/bootstrap-table/bootstrap-table.min.js"></script>
 <script src="../public/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js"></script>
 <script src="../public/plugins/ztree/jquery.ztree.all.min.js"></script>

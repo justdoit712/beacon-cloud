@@ -1,48 +1,40 @@
 var vm = new Vue({
     el: '#dtapp',
     data: {
-        sites: []
+        sites: [],
+        loading: false,
+        chart: null,
+        stats: {
+            waiting: 0,
+            success: 0,
+            failed: 0,
+            total: 0
+        },
+        chartMessage: '设置筛选条件后，可在这里查看图表反馈。'
     },
     methods: {
-        reload: function (event) {
-            //1,初始化echarts对象
-            var myEcharts = echarts.init(document.getElementById("pie"));
-            //2, 指定图表的配置项和数据
-            var option = {
-                title: {
-                    text: '成功率统计',
-                    subtext: '真实有效',
-                    x: 'center'
-                },
-                tooltip: {
-                    trigger: 'item',
-                    formatter: "{a} <br/>{b} : {c} ({d}%)"
-                },
-                legend: {
-                    orient: 'vertical',
-                    left: 'left',
-                    data: []
-                },
-                series: [
-                    {
-                        name: '成功率统计',
-                        type: 'pie',
-                        radius: '75%',
-                        center: ['60%', '60%'],
-                        data: [],
-                        itemStyle: {
-                            emphasis: {
-                                shadowBlur: 10,
-                                shadowOffsetX: 0,
-                                shadowColor: 'rgba(0, 0, 0, 0.5)'
-                            }
-                        }
-                    }
-                ]
-            };
-            var temp = {   //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
-                startTime: $("#start").val() == '' ? null : Date.parse($("#start").val()),
-                endTime: $("#end").val() == '' ? null : Date.parse($("#end").val()),
+        initChart: function () {
+            if (!this.chart) {
+                this.chart = echarts.init(document.getElementById('pie'));
+            }
+        },
+        resetForm: function () {
+            if (this.loading) {
+                return;
+            }
+            $("#start").val('');
+            $("#end").val('');
+            $("#clientID").val('');
+            this.reload();
+        },
+        reload: function () {
+            var myEcharts = this.chart;
+            this.loading = true;
+            this.chartMessage = '正在加载统计结果，请稍候...';
+
+            var temp = {
+                startTime: $("#start").val() === '' ? null : Date.parse($("#start").val()),
+                endTime: $("#end").val() === '' ? null : Date.parse($("#end").val()),
                 clientID: $("#clientID").val()
             };
             $.ajax({
@@ -50,21 +42,95 @@ var vm = new Vue({
                 data: temp,
                 dataType: 'json',
                 success: function (r) {
-                    //console.log(r);
-                    //给option赋值
-                    option.legend.data = r.legendData;
-                    option.series[0].data = r.seriesData;
-                    // 使用刚指定的配置项和数据显示图表。
-                    myEcharts.setOption(option);
+                    var legendData = Array.isArray(r && r.legendData) ? r.legendData : [];
+                    var seriesData = Array.isArray(r && r.seriesData) ? r.seriesData : [];
+                    var waiting = vm.findSeriesValue(seriesData, '等待');
+                    var success = vm.findSeriesValue(seriesData, '成功');
+                    var failed = vm.findSeriesValue(seriesData, '失败');
+                    var total = waiting + success + failed;
+
+                    vm.stats = {
+                        waiting: waiting,
+                        success: success,
+                        failed: failed,
+                        total: total
+                    };
+                    vm.chartMessage = total > 0 ? '图表已刷新，可结合上方汇总卡片查看当前状态分布。' : '当前筛选条件下暂无统计数据。';
+
+                    myEcharts.setOption({
+                        title: {
+                            text: '成功率统计',
+                            subtext: total > 0 ? '真实有效' : '暂无数据',
+                            x: 'center'
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: "{a} <br/>{b} : {c} ({d}%)"
+                        },
+                        legend: {
+                            orient: 'vertical',
+                            left: 'left',
+                            data: legendData
+                        },
+                        series: [
+                            {
+                                name: '成功率统计',
+                                type: 'pie',
+                                radius: '75%',
+                                center: ['60%', '60%'],
+                                data: seriesData,
+                                itemStyle: {
+                                    emphasis: {
+                                        shadowBlur: 10,
+                                        shadowOffsetX: 0,
+                                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                    }
+                                }
+                            }
+                        ]
+                    });
+                },
+                error: function () {
+                    vm.chartMessage = '统计请求失败，请稍后重试。';
+                    vm.stats = {
+                        waiting: 0,
+                        success: 0,
+                        failed: 0,
+                        total: 0
+                    };
+                    layer.alert(vm.chartMessage);
+                },
+                complete: function () {
+                    vm.loading = false;
+                    myEcharts.resize();
                 }
             });
+        },
+        findSeriesValue: function (seriesData, targetName) {
+            for (var i = 0; i < seriesData.length; i++) {
+                if (seriesData[i] && seriesData[i].name === targetName) {
+                    return Number(seriesData[i].value || 0);
+                }
+            }
+            return 0;
+        },
+        handleResize: function () {
+            if (this.chart) {
+                this.chart.resize();
+            }
         }
     },
-    created: function () {//在模板渲染成html前调用，即通常初始化某些属性值，然后再渲染成视图
-        //console.log(11)
-        //一般可以在created函数中调用ajax获取页面初始化所需的数据
-        $.get("../sys/clientbusiness/all", function(r){
-            vm.sites = r.sites;
+    created: function () {
+        $.get("../sys/clientbusiness/all", function (r) {
+            vm.sites = r && (r.sites || r.data) ? (r.sites || r.data) : [];
         });
+    },
+    mounted: function () {
+        this.initChart();
+        this.reload();
+        window.addEventListener('resize', this.handleResize);
+    },
+    beforeDestroy: function () {
+        window.removeEventListener('resize', this.handleResize);
     }
 });
