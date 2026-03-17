@@ -1,7 +1,10 @@
 # beacon-common 模块详细分析
 
-更新时间：2026-02-26  
-适用仓库：`beacon-cloud`
+文档类型：模块分析  
+适用对象：开发 / 排障 / 重构  
+验证基线：代码静态核对  
+关联模块：beacon-common  
+最后核对日期：2026-03-17
 
 ---
 
@@ -52,7 +55,7 @@
 关键字段分层：
 
 1. `apiKey`, `clientId`, `uid`, `mobile`, `text`, `state`：客户请求信息。
-2. `fee`, `sign`, `signId`, `realIP`：API 校验与费用信息。
+2. `fee`, `sign`, `signId`, `realIp`：API 校验与费用信息。
 3. `operatorId`, `areaCode`, `area`：归属地策略信息。
 4. `channelId`, `srcNumber`：路由结果信息。
 5. `reportState`, `errorMsg`：过程与结果状态。
@@ -200,30 +203,24 @@
 
 ## 7.1 契约一致性风险
 
-1. `StandardSubmit` 中存在命名不规范字段 `SignId`（首字母大写），与其余驼峰字段风格不一致。
-2. 该类作为跨模块传输对象，字段命名问题会增加序列化与映射歧义。
+1. `StandardSubmit.apiKey` 与 `StandardReport.apikey` 命名不一致。
+2. 链路里仍有 `BeanUtils.copyProperties(...)` 复制，关键字段容易静默丢失。
 
 ## 7.2 异常码集中但边界混合
 
 1. `ExceptionEnums` 同时混合 API、策略、搜索、后台登录等多域错误。
 2. 枚举膨胀后会导致“语义跨域污染”，维护成本升高。
 
-## 7.3 工具类内存仓储无容量治理
+## 7.3 工具类临时仓储仍是进程内状态
 
-1. `CMPPSubmitRepoMapUtil` 与 `CMPPDeliverMapUtil` 基于静态 `ConcurrentHashMap`。
-2. 没有超时淘汰、容量上限、监控指标。
-3. 网关异常时可能引发内存滞留。
+1. `CMPPSubmitRepoMapUtil` 与 `CMPPDeliverMapUtil` 仍然属于本地进程内缓存。
+2. 进程重启后上下文会丢失，多实例之间也不能共享。
+3. 监控与外部化存储能力仍有限。
 
-## 7.4 依赖声明冗余
+## 7.4 测试覆盖仍不充分
 
-文件：`beacon-common/pom.xml`
-
-1. `jackson-datatype-jsr310` 被重复声明两次，增加维护噪音。
-
-## 7.5 测试覆盖缺失
-
-1. 模块无 `src/test/java` 用例。
-2. 公共契约改动缺少自动回归保护。
+1. 公共契约层仍缺少更系统的跨模块兼容测试与发布前回归矩阵。
+2. 一旦主链路对象继续演进，回归成本仍然偏高。
 
 ---
 
@@ -232,13 +229,13 @@
 ## P0（优先执行）
 
 1. 为 `StandardSubmit`、`StandardReport` 增加契约回归测试（JSON 序列化/反序列化、字段兼容测试）。
-2. 给 CMPP 临时 Map 增加生命周期治理（TTL 清理、容量告警、指标埋点）。
-3. 清理 `pom.xml` 重复依赖声明。
+2. 继续给 CMPP 临时缓存补监控、命中率与外部化演进方案。
+3. 围绕 `apiKey/apikey` 命名不一致增加专门的兼容与复制测试。
 
 ## P1（中期）
 
 1. 按领域拆分异常码枚举（例如 `ApiErrorCodes`、`StrategyErrorCodes`、`WebErrorCodes`），保留兼容映射层。
-2. 规范 DTO 字段命名，逐步收敛 `SignId` 一类历史命名债。
+2. 规范 DTO 字段命名，优先收敛 `apiKey/apikey` 这一类跨对象命名债。
 
 ## P2（长期）
 
@@ -249,7 +246,5 @@
 
 ## 9. 结论
 
-`beacon-common` 当前设计可支撑系统运行，但已经进入“高耦合、低测试”的阶段。  
-如果继续扩展业务而不先治理契约和测试，后续每次改动都将放大回归成本。  
-建议先完成 P0 项，尤其是契约测试与临时内存仓储治理，再推进其它模块重构。
-
+`beacon-common` 仍然是高耦合基础模块。  
+当前更值得优先关注的是“跨对象命名不一致 + 契约兼容测试 + 进程内缓存外部化”，否则主链路改动仍会放大回归成本。

@@ -1,5 +1,13 @@
 # beacon-smsgateway 重构文档
 
+文档类型：重构指南  
+适用对象：开发 / 重构  
+验证基线：代码静态核对  
+关联模块：beacon-smsgateway  
+最后核对日期：2026-03-17
+
+---
+
 ## 1. 模块定位
 
 `beacon-smsgateway` 是平台的运营商网关适配层，核心职责：
@@ -35,7 +43,7 @@
 ## 2.2 当前模块特征
 
 1. 与运营商交互协议在本模块手写实现（高复杂、低容错）。
-2. 上下文关联依赖本地 `ConcurrentHashMap` 临时缓存（非持久、无过期）。
+2. 上下文关联当前依赖本地 Caffeine 临时缓存（有过期和容量上限，但仍非持久、非共享）。
 3. 并发由 Hippo4j 动态线程池管理，但线程池参数未在代码层显式约束。
 
 ---
@@ -156,33 +164,38 @@ if (submit == null) {
 
 ---
 
-## 3.4 P0：本地关联缓存无过期策略，内存与一致性风险高
+## 3.4 P0：本地关联缓存仍存在一致性上限
 
 ### 现状代码（需要重构）
 
 文件：`beacon-common/src/main/java/com/cz/common/util/CMPPSubmitRepoMapUtil.java:14`
 
 ```java
-private static ConcurrentHashMap<String, StandardSubmit> map = new ConcurrentHashMap<>();
+private static final Cache<Integer, StandardSubmit> CACHE = Caffeine.newBuilder()
+        .expireAfterWrite(Duration.ofMinutes(10))
+        .maximumSize(500_000)
+        .build();
 ```
 
 文件：`beacon-common/src/main/java/com/cz/common/util/CMPPDeliverMapUtil.java:14`
 
 ```java
-private static ConcurrentHashMap<String, StandardReport> map = new ConcurrentHashMap<>();
+private static final Cache<String, StandardReport> CACHE = Caffeine.newBuilder()
+        .expireAfterWrite(Duration.ofMinutes(10))
+        .maximumSize(500_000)
+        .build();
 ```
 
 ### 原因
 
-1. map 仅支持手动 remove，无 TTL，异常路径会持续堆积。
-2. 进程重启后上下文丢失，回执无法关联。
-3. 多实例部署下本地 map 无法共享。
+1. 进程重启后上下文丢失、回执无法关联。
+2. 多实例部署下本地缓存仍无法共享。
+3. 关联状态仍缺乏可恢复、可审计的持久化能力。
 
 ### 如何重构
 
-1. 过渡方案：替换为 Caffeine（TTL + 最大容量 + 淘汰统计）。
-2. 长期方案：迁移到 Redis（带过期时间）并统一 key 规范。
-3. 增加“提交后超时清理”与“回执未匹配率”监控。
+1. 长期方案建议迁移到 Redis 或状态表，解决多实例与重启恢复问题。
+2. 增加“提交后超时清理”与“回执未匹配率”监控。
 
 ---
 

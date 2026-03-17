@@ -1,5 +1,13 @@
 # beacon-cache 模块重构文档
 
+文档类型：重构指南  
+适用对象：开发 / 重构  
+验证基线：代码静态核对  
+关联模块：beacon-cache  
+最后核对日期：2026-03-17
+
+---
+
 ## 1. 模块定位
 
 `beacon-cache` 是全系统的缓存能力中台，向业务模块暴露 Redis 操作接口（HTTP + Feign），主要服务对象包括：
@@ -47,9 +55,11 @@
 
 5. 其他
 - `POST /cache/pipeline/string`
-- `POST /cache/keys/{pattern}`
+- `GET /cache/keys?pattern=...&count=...`
+- `DELETE /cache/delete/{key}`
+- `POST /cache/delete/batch`
 
-调试接口（建议迁移/下线）：
+调试接口（当前默认关闭，长期仍建议迁移/下线）：
 
 1. `POST /test/set/{key}`
 2. `GET /test/get/{key}`
@@ -168,37 +178,37 @@ String hgetString(...);
 
 ---
 
-## 3.4 `keys` 能力直接暴露，存在性能和稳定性风险
+## 3.4 `keys` 链路仍有稳定性边界需要继续收口
 
-### 现状代码（需要重构）
+### 当前代码
 
 文件：`beacon-cache/src/main/java/com/cz/cache/controller/CacheController.java`
 
 ```java
-Set<String> keys = redisTemplate.keys(pattern);
-```
-
-### 原因
-
-1. `KEYS` 在大 key 空间下会阻塞 Redis
-2. 该接口被 `beacon-monitor` 调用频繁，存在放大风险
-3. 将 pattern 放在 PathVariable 中，也会有特殊字符转义问题
-
-### 如何重构
-
-1. 使用 `SCAN` 迭代替代 `KEYS`
-2. 接口入参改 QueryParam：`GET /v2/cache/keys?pattern=...&count=...`
-3. 添加白名单 pattern（仅允许受控前缀）
-
-### 目标代码（建议）
-
-```java
-@GetMapping("/v2/cache/keys")
-public ResultVO<List<String>> scanKeys(@RequestParam String pattern,
-                                       @RequestParam(defaultValue = "1000") int count) {
-    return ResultVO.success(redisScanService.scan(pattern, count));
+@GetMapping(value = "/cache/keys")
+public Set<String> keys(@RequestParam("pattern") String pattern,
+                        @RequestParam(value = "count", defaultValue = "1000") Integer count){
+    String logicalPattern = namespaceKeyResolver.toLogicalPattern(pattern);
+    if (!isAllowedPattern(logicalPattern)) {
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "pattern not allowed");
+    }
+    String physicalPattern = namespaceKeyResolver.toPhysicalPattern(logicalPattern);
+    Set<String> physicalKeys = redisScanService.scan(physicalPattern, count);
+    return namespaceKeyResolver.toLogicalKeys(physicalKeys);
 }
 ```
+
+### 现状
+
+1. 该接口仍缺少调用频率治理与指标观测。
+2. 白名单完全依赖配置正确性，配置漂移时仍可能放大扫描范围。
+3. 大 keyspace 下 `SCAN` 虽然安全性更高，但仍有实际成本。
+
+### 下一步建议
+
+1. 给 `keys` 接口补充 QPS、耗时、返回 key 数量等指标。
+2. 为高风险调用方增加更细粒度的 pattern 前缀限制。
+3. 如后续引入 `/v2/cache/**`，可把 scan 能力一并迁移到 typed/受控的新接口层。
 
 ---
 
@@ -252,22 +262,48 @@ redisClient.delete(key);
 
 ---
 
-## 3.7 缺少访问控制和接口分级
+## 3.7 访问控制还需要密钥治理与接口分级
 
-### 现状代码（需要重构）
+### 当前代码
 
-当前 `beacon-cache` 对外接口几乎全部裸露，`/test/**` 也在生产包内。
+文件：
 
-### 原因
+1. `beacon-cache/src/main/java/com/cz/cache/config/WebMvcSecurityConfig.java`
+2. `beacon-cache/src/main/java/com/cz/cache/security/CacheAuthInterceptor.java`
+3. `beacon-cache/src/main/java/com/cz/cache/controller/TestController.java`
 
-1. 缓存服务属于高敏模块，写能力暴露风险高
-2. 一旦被误调用，可直接改余额、黑名单、路由等关键数据
+```java
+registry.addInterceptor(cacheAuthInterceptor)
+        .addPathPatterns("/cache/**", "/test/**");
+```
 
-### 如何重构
+```java
+if (uri.startsWith("/cache/keys")) {
+    return CachePermission.KEYS;
+}
+if ("GET".equalsIgnoreCase(request.getMethod())) {
+    return CachePermission.READ;
+}
+return CachePermission.WRITE;
+```
 
-1. 增加内部鉴权（网关白名单、mTLS 或内部 token）
-2. 写接口与读接口分域
-3. `/test/**` 迁移到 `test` profile 或独立工具模块
+```java
+@ConditionalOnProperty(prefix = "cache.security",
+        name = "test-api-enabled", havingValue = "true")
+public class TestController { ... }
+```
+
+### 现状
+
+1. `callerSecrets` 仍直接放在配置文件中，缺少密钥托管与轮换机制。
+2. 读接口与写接口仍在同一控制器下，边界表达不够清晰。
+3. 当前权限粒度仍偏“调用方级”，尚未细化到更小的业务域或接口组。
+
+### 下一步建议
+
+1. 把密钥迁移到 Nacos/环境变量/密钥中心，并设计轮换策略。
+2. 对写接口、扫描接口增加更细粒度的审计与告警。
+3. 后续在 `/v2/cache/**` 上按读/写/扫描做更清晰的接口分层。
 
 ---
 
@@ -297,7 +333,7 @@ System.out.println("CacheStarterApp  mission complete");
 
 1. **第一阶段（低风险）**
 - 清理日志与注释编码
-- 下线/隔离 `/test/**`
+- 固化 `cache.security` 的密钥、权限与白名单配置
 - 增加基础测试和接口契约文档
 
 2. **第二阶段（兼容改造）**
@@ -306,13 +342,13 @@ System.out.println("CacheStarterApp  mission complete");
 - 新增 facade/service 分层
 
 3. **第三阶段（稳定性）**
-- `KEYS -> SCAN`
 - `sinterstr` 原子化
+- `keys` 扫描链路的限流/监控补齐
 - 增加限流、熔断、超时配置
 
 4. **第四阶段（安全收口）**
 - 替换 `enableDefaultTyping`
-- 接口鉴权与写权限隔离
+- 密钥托管/轮换与更细粒度的写权限隔离
 - 逐步迁移各模块 Feign 到 V2
 
 ---

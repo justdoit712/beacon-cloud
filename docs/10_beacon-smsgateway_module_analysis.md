@@ -1,7 +1,10 @@
 # beacon-smsgateway 模块详细分析
 
-更新时间：2026-02-26  
-适用仓库：`beacon-cloud`
+文档类型：模块分析  
+适用对象：开发 / 排障 / 重构  
+验证基线：代码静态核对  
+关联模块：beacon-smsgateway  
+最后核对日期：2026-03-17
 
 ---
 
@@ -167,15 +170,16 @@
 2. 当连接不可写时仍可能 Ack，导致消息已出队但未实际下发。
 3. 下发失败时 `CMPPSubmitRepoMapUtil` 中残留数据，形成内存累积风险。
 
-## 6.2 临时状态 Map 无过期治理（高风险）
+## 6.2 临时状态缓存仍有进程内一致性风险（中风险）
 
 文件：
 
 1. `beacon-common/src/main/java/com/cz/common/util/CMPPSubmitRepoMapUtil.java`
 2. `beacon-common/src/main/java/com/cz/common/util/CMPPDeliverMapUtil.java`
 
-1. 两个 `ConcurrentHashMap` 无 TTL、无容量上限、无巡检清理。
-2. 在“回执缺失、网络抖动、消费失败”场景下会无限增长。
+1. 当前通过本地缓存承载提交/回执关联关系。
+2. 进程重启后上下文仍会丢失。
+3. 多实例部署下状态仍不能共享。
 
 ## 6.3 Runnable 空指针防御不足（高风险）
 
@@ -242,7 +246,7 @@
 
 1. 把 Ack 与下发结果绑定：`submit()` 失败时 `basicNack/requeue` 或进入补偿队列。
 2. 给 `SubmitRepoRunnable`/`DeliverRunnable` 增加空值保护与降级日志，避免 NPE 中断链路。
-3. 把临时关联存储改为“可过期结构”（Redis/本地缓存含 TTL 和容量上限）。
+3. 继续把临时关联存储从“本地可过期缓存”演进到“可共享、可恢复的状态存储”（如 Redis）。
 4. 修复 Netty 连接生命周期：复用 `EventLoopGroup`，并在重连或停机时显式关闭。
 
 ## P1（中期）
@@ -274,4 +278,3 @@
 `beacon-smsgateway` 已实现 CMPP 协议交互、双阶段回执处理与延迟状态更新，是平台“可发出去”的关键模块。  
 当前主要问题不是功能缺失，而是可靠性边界尚不收敛：Ack 策略、临时态治理、重连资源管理、配置安全。  
 先完成 P0 后，网关链路的可恢复性与一致性会明显提升，并显著降低“消息丢失/状态错乱”的线上风险。
-

@@ -1,5 +1,13 @@
 # beacon-common 重构设计文档
 
+文档类型：重构指南  
+适用对象：开发 / 重构  
+验证基线：代码静态核对  
+关联模块：beacon-common  
+最后核对日期：2026-03-17
+
+---
+
 ## 1. 目标与范围
 
 本次文档聚焦 `beacon-common` 模块，目标是把它从“可用的工具集合”升级成“稳定、可演进、对外契约清晰”的基础模块。
@@ -22,16 +30,16 @@
 1. `pom.xml` 存在重复依赖声明  
 文件：`beacon-common/pom.xml`
 
-2. 公共模型字段命名不一致，影响序列化与维护  
+2. 跨对象命名仍存在不一致，影响序列化与维护  
 文件：`beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java`  
-典型字段：`SignId`、`realIP`
+典型问题：`StandardSubmit.apiKey` vs `StandardReport.apikey`
 
 3. 雪花算法实现存在可读性和健壮性问题  
 文件：`beacon-common/src/main/java/com/cz/common/util/SnowFlakeUtil.java`
 
-4. 工具类异常处理方式不规范  
+4. 工具类与调用方的异常处理边界仍需统一  
 文件：`beacon-common/src/main/java/com/cz/common/util/JsonUtil.java`  
-当前有 `printStackTrace()`。
+需要统一序列化异常的接收与记录策略。
 
 ### P1（建议紧随其后）
 
@@ -93,49 +101,39 @@
 
 ### 现状代码（需要重构）
 
-文件：`beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java`
+文件：
+
+1. `beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java`
+2. `beacon-common/src/main/java/com/cz/common/model/StandardReport.java`
 
 ```java
-private String realIP;
-private Long SignId;
+// 当前主字段（StandardSubmit）
+private String realIp;
+private Long signId;
+
+// 当前仍存在的跨对象命名差异（StandardReport）
+private String apikey;
 ```
 
 ### 原因
 
-1. Java 字段命名不符合统一规范（驼峰 + 首字母小写）
-2. 与其他模块字段名（如 `apiKey`）风格不一致
-3. 序列化和前端字段映射容易混乱
+1. `StandardSubmit` 内部命名已基本规范，但跨对象仍存在 `apiKey/apikey` 风格不一致。
+2. 关键链路仍有 `BeanUtils.copyProperties(...)`，命名差异会带来静默映射风险。
+3. 契约层一旦继续演进，兼容窗口和测试成本仍然较高。
 
 ### 如何重构
 
 采用“平滑迁移”而非一次性断裂：
 
-1. 新增规范字段：`realIp`、`signId`
-2. 通过 Jackson 注解兼容旧字段名
-3. 保留旧 getter/setter（标记 `@Deprecated`）一个版本周期
+1. 将“字段命名治理”的重点从 `SignId/realIP` 转为 `apiKey/apikey` 统一。
+2. 对跨对象复制链路改为显式映射，避免依赖反射式同名复制。
+3. 为兼容字段建立契约测试，确保老消息与老索引数据仍可读。
 
 ### 目标代码（建议）
 
 ```java
-@Data
-public class StandardSubmit implements Serializable {
-
-    @JsonAlias({"realIP"})
-    private String realIp;
-
-    @JsonAlias({"SignId"})
-    private Long signId;
-
-    @Deprecated
-    public String getRealIP() {
-        return realIp;
-    }
-
-    @Deprecated
-    public void setRealIP(String realIP) {
-        this.realIp = realIP;
-    }
-}
+// 示例：优先统一 apiKey/apikey 命名，或至少显式映射
+report.setApikey(submit.getApiKey());
 ```
 
 ---
@@ -194,58 +192,6 @@ public class ApiException extends BizException {
 
     public ApiException(ExceptionEnums enums) {
         super(enums);
-    }
-}
-```
-
----
-
-## 3.4 JsonUtil：移除 printStackTrace，标准化异常
-
-### 现状代码（需要重构）
-
-文件：`beacon-common/src/main/java/com/cz/common/util/JsonUtil.java`
-
-```java
-public static String obj2JSON(Object obj){
-    try {
-        return objectMapper.writeValueAsString(obj);
-    } catch (JsonProcessingException e) {
-        e.printStackTrace();
-        throw new RuntimeException("转换JSON失败！");
-    }
-}
-```
-
-### 原因
-
-1. `printStackTrace` 不可控，污染日志
-2. 抛出的 `RuntimeException` 丢失原始异常上下文
-3. `ObjectMapper` 未明确配置 Java Time 等序列化行为
-
-### 如何重构
-
-1. 使用日志框架记录错误（或直接封装异常链）
-2. 保留原始异常 `cause`
-3. 固化 `ObjectMapper` 配置，避免跨模块行为不一致
-
-### 目标代码（建议）
-
-```java
-public final class JsonUtil {
-
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .registerModule(new JavaTimeModule())
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-    private JsonUtil() {}
-
-    public static String toJson(Object obj) {
-        try {
-            return MAPPER.writeValueAsString(obj);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("serialize to json failed", e);
-        }
     }
 }
 ```
@@ -381,7 +327,7 @@ public enum MobileOperatorEnum {
 
 ---
 
-## 3.8 CMPP 临时缓存：增加过期策略，避免内存无界
+## 3.8 CMPP 临时缓存：避免进程内状态成为长期瓶颈
 
 ### 现状代码（需要重构）
 
@@ -390,35 +336,24 @@ public enum MobileOperatorEnum {
 1. `beacon-common/src/main/java/com/cz/common/util/CMPPSubmitRepoMapUtil.java`
 2. `beacon-common/src/main/java/com/cz/common/util/CMPPDeliverMapUtil.java`
 
-当前实现为 `static ConcurrentHashMap`，没有容量限制或过期清理。
+当前问题的重点不再是“无界 `ConcurrentHashMap`”，而是“进程内缓存天生不具备重启恢复和多实例共享能力”。
 
 ### 原因
 
-1. 高峰期或异常情况下可能累积对象导致内存风险
-2. 缺少监控指标（当前 map 大小不可观测）
+1. 进程重启后上下文仍会丢失。
+2. 多实例部署下状态仍不能共享。
+3. 监控指标与外部化恢复能力仍然不足。
 
 ### 如何重构
 
-方案 A（推荐）：引入 Caffeine，设置 `expireAfterWrite + maximumSize`  
-方案 B（保守）：保留 `ConcurrentHashMap`，增加时间戳 + 定时清理线程
+1. 为本地缓存补充命中率、淘汰量、未匹配回执率等指标。
+2. 评估迁移到 Redis/持久化状态机的长期方案。
 
 ### 目标代码（建议，Caffeine）
 
 ```java
-public final class CmppSubmitStore {
-    private static final Cache<Integer, StandardSubmit> CACHE = Caffeine.newBuilder()
-            .expireAfterWrite(Duration.ofMinutes(10))
-            .maximumSize(500_000)
-            .build();
-
-    public static void put(int sequence, StandardSubmit submit) {
-        CACHE.put(sequence, submit);
-    }
-
-    public static StandardSubmit remove(int sequence) {
-        return CACHE.asMap().remove(sequence);
-    }
-}
+// 方向一：继续增强本地缓存治理
+// 方向二：迁移到 Redis / 状态表
 ```
 
 ---
@@ -456,7 +391,7 @@ public final class CmppSubmitStore {
 ## 5. 建议新增测试
 
 1. `StandardSubmitCompatTest`  
-验证 JSON 中 `realIP`/`SignId` 仍可反序列化到新字段。
+验证关键契约字段和兼容命名的序列化/反序列化行为。
 
 2. `SnowFlakeUtilTest`  
 验证并发唯一性、递增趋势、回拨异常。
@@ -465,7 +400,7 @@ public final class CmppSubmitStore {
 验证 `ExceptionEnums -> 异常 -> ResultVO` 映射一致性。
 
 4. `CmppStoreExpiryTest`  
-验证缓存条目可自动过期、容量限制生效。
+验证缓存条目生命周期、容量约束与未匹配回执场景。
 
 ---
 

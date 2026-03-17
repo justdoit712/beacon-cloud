@@ -1,5 +1,13 @@
 # beacon-push 重构文档
 
+文档类型：重构指南  
+适用对象：开发 / 重构  
+验证基线：代码静态核对  
+关联模块：beacon-push  
+最后核对日期：2026-03-17
+
+---
+
 ## 1. 模块定位
 
 `beacon-push` 是平台的“状态报告推送模块”，核心职责：
@@ -52,7 +60,7 @@ if(report.getResendCount() >= 5){
 
 以下按优先级列出。
 
-## 3.1 P0：回调异常被吞掉，观测与排障能力不足
+## 3.1 P0：回调异常记录有限，观测与排障能力仍不足
 
 ### 现状代码（需要重构）
 
@@ -62,14 +70,16 @@ if(report.getResendCount() >= 5){
 try {
     String result = restTemplate.postForObject(...);
     flag = SUCCESS.equals(result);
-} catch (RestClientException e) {
+} catch (RestClientException | IllegalStateException e) {
+    log.warn("push callback failed, callbackUrl={}, sequenceId={}, resendCount={}, error={}",
+            report.getCallbackUrl(), report.getSequenceId(), report.getResendCount(), e.getMessage());
 }
 ```
 
 ### 原因
 
-1. 异常被静默吞掉，没有日志，没有错误分类。
-2. 线上无法区分 DNS、超时、连接拒绝、4xx/5xx 等失败类型。
+1. 日志只记录 message，没有统一错误分类，也没有完整上下文和指标。
+2. 线上仍难快速区分 DNS、超时、连接拒绝、4xx/5xx 等失败类型。
 
 ### 如何重构
 
@@ -293,34 +303,6 @@ import org.apache.commons.lang.StringUtils;
 
 1. 替换为 `org.springframework.util.StringUtils` 或 `org.apache.commons.lang3.StringUtils`。
 2. 统一全项目字符串工具使用规范。
-
----
-
-## 3.10 P2：JSON 工具依赖 common 里的旧实现，异常处理不规范
-
-### 现状代码（需要重构）
-
-文件：`beacon-push/src/main/java/com/cz/push/mq/PushReportListener.java:104`
-
-```java
-String body = JsonUtil.obj2JSON(report);
-```
-
-文件：`beacon-common/src/main/java/com/cz/common/util/JsonUtil.java:18`
-
-```java
-e.printStackTrace();
-```
-
-### 原因
-
-1. `JsonUtil` 里 `printStackTrace` 会污染输出，不利于日志聚合。
-2. 推送模块在高频场景下应避免这种隐式异常处理。
-
-### 如何重构
-
-1. 复用 Spring 管理的 `ObjectMapper`。
-2. 统一 JSON 异常处理与日志格式。
 
 ---
 

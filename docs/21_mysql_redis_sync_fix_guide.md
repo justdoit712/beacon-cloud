@@ -1,214 +1,306 @@
-# MySQL 到 Redis 同步修复方案（快速修 + 稳健修）
+# MySQL 到 Redis 同步方案（毕设场景版）
 
-## 0. 结论先行
-
-当前项目确实存在核心问题：**MySQL 到 Redis 不是实时自动同步，而是依赖 `beacon-test` 下测试类手动执行“导数脚本”**。  
-这会导致业务配置在 MySQL 已变更但 Redis 未更新，从而出现接口校验、策略执行、路由下发与实际配置不一致的问题。
-
-建议采用“两阶段落地”：
-
-1. **快速修（止血）**：在现有写业务流程中补齐同步 Redis，先解决线上一致性风险。
-2. **稳健修（彻底）**：引入事件驱动同步链路（Outbox/CDC + MQ + 消费者 + 重试/幂等/监控），形成长期可治理能力。
-
-说明：下文将“文件修”按“稳健修”理解。
+文档类型：专题方案  
+适用对象：开发 / 答辩 / 演示  
+验证基线：文档方案整理  
+关联模块：beacon-webmaster / beacon-cache / beacon-common  
+最后核对日期：2026-03-17
 
 ---
 
-## 1. 项目当前问题
+## 0. 文档目的
 
-## 1.1 现状
+本方案用于当前项目的**毕业设计场景**：
 
-当前主业务模块（`beacon-api`、`beacon-strategy`、`beacon-smsgateway`）主要是**读 Redis**，并不负责把 MySQL 变更实时同步到 Redis。  
-MySQL 到 Redis 的写入动作主要在 `beacon-test/src/test/java` 的测试类中完成，例如：
+1. 服务经常关闭/重启
+2. Redis 在云服务器中长期运行，不会随着本地服务重启而清空。
+3. 需要低成本、可落地、可演示的 MySQL -> Redis 同步能力。
+4. 不追求生产级复杂度（如完整 Outbox/CDC 平台化治理）。
 
-1. `ClientBusinessMapperTest`：`client_business:{apikey}`  
-2. `ClientBalanceMapperTest`：`client_balance:{clientId}`  
-3. `ClientSignMapperTest`：`client_sign:{clientId}`  
-4. `ClientTemplateMapperTest`：`client_template:{signId}`  
-5. `ClientChannelMapperTest`：`client_channel:{clientId}`  
-6. `ChannelMapperTest`：`channel:{id}`  
-7. `DirtyWordMapperTest`：`dirty_word`  
-8. `MobileBlackMapperTest`：`black:{mobile}` / `black:{clientId}:{mobile}`  
-9. `MobileTransferMapperTest`：`transfer:{mobile}`
 
-这是一种“脚本化预热”模式，不是“业务写入即自动同步”模式。
-
-## 1.2 风险
-
-1. **强一致性缺失**：MySQL 和 Redis 数据容易漂移，业务判断基于过期缓存。  
-2. **运维依赖人工**：变更后要人手触发脚本，容易漏、晚、错。  
-3. **问题难审计**：缺少同步流水、失败重试与监控，排障成本高。  
-4. **高风险业务受影响**：余额、黑名单、签名、模板、路由等关键配置可能失真。
-
-## 1.3 影响链路
-
-1. API 校验链：`apikey/ip/sign/template/fee` 依赖 Redis。  
-2. 策略链：黑名单、敏感词、限流、扣费、路由依赖 Redis。  
-3. 网关回调：回调开关和 URL 依赖 Redis。
 
 ---
 
-## 2. 快速修实施方案（止血方案，建议 1~2 周）
+## 1. 当前核心问题
 
-## 2.1 目标
+当前系统的读链路高度依赖 Redis，而管理写路径主要更新 MySQL。  
+如果没有自动同步，MySQL 与 Redis 会发生漂移，导致配置变更无法实时生效。
 
-在不大改架构的前提下，实现“**写 MySQL 后立即同步 Redis**”，快速消除手工脚本依赖。
+结合当前工程现状，痛点可归纳为：
 
-## 2.2 核心思路
-
-1. 在后台管理写路径（新增/修改/删除）中统一接入缓存同步。  
-2. DB 事务提交成功后再执行缓存更新，避免“DB 回滚但缓存已更新”。  
-3. 采用“写穿 + 删除失效”策略：
-   - 可直接覆盖的数据（如 `client_business`、`channel`）：写穿到 Redis。
-   - 难以局部精确更新的数据（如集合关系变更）：删除对应 key，触发后续重建或立即重建。
-4. 增加“一键全量重建缓存”任务，处理历史脏数据与紧急兜底。
-
-## 2.3 代码落地建议
-
-### 2.3.1 新增统一缓存同步服务
-
-建议在 `beacon-webmaster` 新增：
-
-1. `service/CacheSyncService`（接口）  
-2. `service/impl/CacheSyncServiceImpl`（实现）  
-3. 通过 Feign 调 `beacon-cache`（复用鉴权头）
-
-职责：
-
-1. 按业务实体生成 Redis key。  
-2. 执行 `hmset/set/sadd/saddstr/delete`。  
-3. 屏蔽上层业务对缓存细节感知。
-
-### 2.3.2 在关键写业务中接入同步
-
-优先改造数据域（按风险排序）：
-
-1. `client_business`  
-2. `client_balance`  
-3. `client_sign`  
-4. `client_template`  
-5. `client_channel`  
-6. `channel`  
-7. `mobile_black`  
-8. `mobile_transfer`  
-9. `mobile_dirtyword`
-
-接入点：`beacon-webmaster` 各 Service 的 `save/update/delete` 成功路径。  
-建议使用事务提交回调触发缓存同步，避免脏写。
-
-### 2.3.3 增加全量重建入口
-
-建议新增管理任务（可手工触发）：
-
-1. 按数据域从 MySQL 全量拉取。  
-2. 重建对应 Redis key。  
-3. 产出执行报告（成功数、失败数、失败 key）。
-
-## 2.4 验收标准
-
-1. 管理端改一个客户配置后，Redis 对应 key 秒级更新。  
-2. 不再需要运行 `beacon-test` 测试类进行日常同步。  
-3. 关键链路（API 校验、策略路由）对配置变更实时生效。  
-4. 提供一次全量重建能力并验证可用。
-
-## 2.5 快速修能否解决当前问题
-
-**能。**  
-快速修可以直接解决当前最核心的问题：不再依赖手工脚本，同步由业务流程自动完成。
-
-但快速修的边界是：同步失败重试、可追踪性、统一治理能力仍然较弱。
+1. **频繁重启导致脏缓存残留**：服务停了，云 Redis 还在，历史 key 不会自动清理。
+2. **运行中写库后未必同步缓存**：管理端变更后，策略/校验模块仍读旧缓存。
+3. **手工改库不可感知**：直接在数据库改数据时，应用逻辑不会触发同步。
+4. **脚本化同步不可持续**：依赖手工执行测试类或脚本，容易漏、晚、错。
 
 ---
 
-## 3. 稳健修实施方案（彻底方案，建议 4~8 周）
 
-## 3.1 目标
 
-把“缓存同步”从业务代码中的附属逻辑，升级为“事件驱动的数据同步系统”，做到可重试、可回放、可审计、可监控。
+## 2. 目标
 
-## 3.2 推荐架构
+1. 项目运行中，MySQL 配置变更可自动同步到 Redis。
+2. 项目启动后，能够快速校准 Redis，避免历史残留污染。
+3. 提供手工一键重建能力，处理停机改库、历史脏数据、演示前校准。
+4. 实现成本低、改造范围可控，适配毕设周期。
 
-`MySQL 事务` -> `Outbox 事件表` -> `事件投递器` -> `MQ` -> `Cache Sync Consumer` -> `Redis`
+## 3. 推荐总体方案（三件套）
 
-关键点：
+采用轻量混合方案：
 
-1. **Outbox 同事务写入**：保证 DB 数据和同步事件原子落库。  
-2. **异步消费更新 Redis**：削峰、解耦、可水平扩展。  
-3. **幂等消费**：按 `eventId + entityType + entityId + version` 防重。  
-4. **重试 + 死信**：失败可自动重试，超过阈值进死信队列。  
-5. **可观测性**：事件积压、失败率、延迟、重试次数可监控告警。
+1. **启动校准（Boot Reconcile）**：服务启动时按配置执行一次“清理 + 重建”。
+2. **运行时同步（Runtime Sync）**：业务 `save/update/delete` 成功后自动同步 Redis。
+3. **手工重建（Manual Rebuild）**：提供管理入口，一键重建指定数据域或全量数据域。
 
-## 3.3 落地步骤
+该方案的定位：
 
-### 阶段 A：事件模型
-
-新增 `cache_sync_event`（或 outbox）表，字段建议：
-
-1. `id`  
-2. `event_type`（UPSERT/DELETE/REBUILD）  
-3. `entity_type`（client_business/client_sign/...）  
-4. `entity_id`  
-5. `payload`（JSON）  
-6. `version`  
-7. `status`（NEW/SENT/FAILED）  
-8. `retry_count`  
-9. `created_at/updated_at`
-
-### 阶段 B：投递器
-
-1. 新增定时/常驻投递器扫描 `NEW` 事件并发送 MQ。  
-2. 发送成功改 `SENT`，失败记重试计数。  
-3. 支持批量拉取与限流。
-
-### 阶段 C：消费器
-
-1. 新增 `cache-sync-consumer`（可独立模块或放 `beacon-cache`）。  
-2. 按事件类型更新 Redis。  
-3. 写入消费幂等记录，保证至少一次投递下结果仍正确。  
-4. 异常按策略重试并进入死信。
-
-### 阶段 D：监控与运维
-
-1. 指标：积压量、失败量、平均延迟、DLQ 数。  
-2. 工具：按实体重放、按时间段重放、失败事件导出。  
-3. 灰度：先双写（快速修 + 事件链路）观测稳定后切主。
-
-## 3.4 稳健修能否彻底解决问题
-
-**能在工程层面彻底解决。**  
-它不止“自动同步”，还提供了可靠性与治理能力：可追踪、可重试、可补偿、可扩展。
+1. 启动校准：处理“服务重启 + Redis 残留”问题。
+2. 运行时同步：处理“运行中数据变更”问题。
+3. 手工重建：处理“停机期间改库/应急修复”问题。
 
 ---
 
-## 4. 快速修 vs 稳健修对比
+## 4. 痛点与方案映射
 
-| 维度 | 快速修 | 稳健修 |
-| --- | --- | --- |
-| 目标 | 快速止血 | 长期治理 |
-| 改造量 | 小~中 | 中~大 |
-| 上线周期 | 1~2 周 | 4~8 周 |
-| 是否解决当前痛点 | 是 | 是 |
-| 失败重试能力 | 弱 | 强 |
-| 可观测/审计 | 基础 | 完整 |
-| 可扩展性 | 一般 | 高 |
+| 痛点 | 启动校准 | 运行时同步 | 手工重建 |
+| --- | --- | --- | --- |
+| 重启后 Redis 残留旧数据 | 强覆盖 | 无 | 可补救 |
+| 运行中配置修改不生效 | 无 | 强覆盖 | 可补救 |
+| 停机期间手工改库 | 无 | 无 | 强覆盖 |
+| 演示前快速校准环境 | 强覆盖 | 无 | 强覆盖 |
 
 ---
 
-## 5. 推荐实施顺序
+## 5. 详细实施设计
 
-1. **第一阶段（立刻）**：完成快速修，停用手工脚本同步作为常规手段。  
-2. **第二阶段（并行设计）**：设计 Outbox + MQ + Consumer 事件模型。  
-3. **第三阶段（灰度）**：双轨运行（快速修 + 稳健修），验证一致性。  
-4. **第四阶段（切换）**：以稳健修为主，同步保留全量重建作灾备工具。
+## 5.1 Key 命名空间
+
+建议把“逻辑 key”和“物理 key 前缀”分开理解：
+
+1. `CacheKeyBuilder` 只负责生成逻辑 key，例如 `client_business:{apikey}`、`client_channel:{clientId}`。
+2. 物理前缀由缓存侧命名空间配置提供。
+3. `NamespaceKeyResolver` 在 `beacon-cache` 侧负责把逻辑 key 转为物理 key，并在查询结果中还原回逻辑 key。
+4. `beacon-webmaster.sync.redis.namespace` 更适合作为同步侧的对齐/校验配置，应与缓存侧前缀保持一致。
+
+示例：
+
+1. 逻辑 key：`client_business:{apikey}`
+2. 物理 key：`beacon:dev:beacon-cloud:cz:client_business:{apikey}`
+3. 逻辑 key：`dirty_word`
+4. 物理 key：`beacon:dev:beacon-cloud:cz:dirty_word`
+
+建议配置项：
+
+1. `cache.namespace.fullPrefix=beacon:dev:beacon-cloud:cz:`
+2. `sync.redis.namespace=beacon:dev:beacon-cloud:cz:`
+3. 业务代码继续只传逻辑 key，禁止手工硬编码物理前缀。
 
 ---
 
-## 6. 本次问题对应的交付定义（Done）
+## 5.2 数据域优先级与同步策略
 
-满足以下条件可视为“当前问题已被修复”：
+## P0（优先完成）
 
-1. MySQL 配置变更后，Redis 自动同步，不依赖手工脚本。  
-2. 提供全量重建缓存工具，能一键修复历史脏数据。  
-3. 有同步失败日志与告警，不再“静默失败”。  
-4. （稳健修阶段）具备事件重试、死信、重放能力。
+1. `client_business:{apikey}`（Hash）
+2. `client_sign:{clientId}`（Set<Map>）
+3. `client_template:{signId}`（Set<Map>）
+4. `client_channel:{clientId}`（Set<Map>）
+5. `channel:{id}`（Hash）
+6. `black:{mobile}` / `black:{clientId}:{mobile}`（String）
+7. `dirty_word`（Set<String>）
+8. `transfer:{mobile}`（String）
 
+## P1（谨慎处理）
+
+1. `client_balance:{clientId}`（Hash）
+
+说明：当前代码已改为“MySQL 原子扣减 + 事后刷新 Redis 镜像缓存”，若启动时把 `client_balance` 当普通域全量重建，仍可能覆盖运行态镜像。  
+建议继续把 `client_balance` 作为特殊域处理（详见 5.6），不要纳入普通 boot rebuild。
+
+## 策略原则
+
+1. **可直接覆盖结构**：`hmset/set` 写穿。
+2. **集合关系结构**：优先“删 key -> 全量重建”，避免残留脏成员。
+3. **删除操作**：同步删除对应 key 或标记不可用字段后覆盖。
+
+---
+
+## 5.3 启动校准流程（Boot Reconcile）
+
+触发方式：
+
+1. 在 `ApplicationRunner` 中执行。
+2. 通过配置开关控制是否启用。
+
+执行步骤：
+
+1. 获取分布式锁（`sync:boot:lock`，TTL 120s），防止重复执行。
+2. 按数据域扫描命名空间下 key。
+3. 删除对应域旧 key（需要缓存服务支持通用 delete）。
+4. 从 MySQL 全量拉取域数据。
+5. 重新写入 Redis。
+6. 输出校准报告（域名、耗时、成功数、失败数、失败 key）。
+
+建议配置：
+
+1. `sync.boot.enabled=true`
+2. `sync.boot.domains=client_business,client_sign,client_template,client_channel,channel,black,dirty_word,transfer`
+3. `sync.boot.run-on-startup=true`
+
+注意：
+
+1. 启动校准不等于每次都做“全业务全量重建”。
+2. 可按域启停，默认只跑 P0。
+
+---
+
+## 5.4 运行时同步流程（Runtime Sync）
+
+触发位置：
+
+1. `beacon-webmaster` 写业务的 `save/update/delete` 成功路径。
+2. 采用**事务提交后回调**触发同步，避免 DB 回滚引发脏写。
+
+建议流程：
+
+1. 业务 Service 完成 DB 事务写入。
+2. 在 `afterCommit` 回调中调用 `CacheSyncService`。
+3. `CacheSyncService` 按实体类型路由同步策略并执行写 Redis。
+4. 记录结果日志，失败时写告警日志（至少输出实体、主键、key、异常）。
+
+关键约束：
+
+1. 不在 Controller 层直接写 Redis。
+2. 不在事务未提交时写 Redis。
+3. 同步失败不得静默吞掉。
+
+---
+
+## 5.5 手工一键重建（Manual Rebuild）
+
+新增管理接口（仅管理员可用）：
+
+1. `POST /admin/cache/rebuild?domain=client_sign`
+2. `POST /admin/cache/rebuild?domain=ALL`
+
+执行逻辑：
+
+1. 选定域（或全部域）。
+2. 删除旧 key。
+3. 从 MySQL 重拉全量。
+4. 批量回灌 Redis。
+5. 返回执行报告（成功数、失败数、失败明细、耗时）。
+
+适用场景：
+
+1. 演示前统一校准。
+2. 停机期间手工改库后修复。
+3. 出现脏缓存后快速恢复。
+
+---
+
+## 5.6 关于 `client_balance` 的建议（重点）
+
+建议明确采用“**MySQL 为主账本，Redis 为镜像缓存**”的口径：
+
+1. 余额变更优先落 MySQL。
+2. Redis `client_balance` 作为镜像缓存刷新。
+3. `client_balance` 不应被纳入普通 delete/boot rebuild 流程。
+
+---
+
+## 6. 代码改造清单（按模块）
+
+## 6.1 `beacon-webmaster`
+
+新增：
+
+1. `service/CacheSyncService`
+2. `service/impl/CacheSyncServiceImpl`
+3. `client/BeaconCacheWriteClient`（调用 `beacon-cache` 写接口）
+4. `runner/StartupCacheReconcileRunner`
+5. `controller/CacheRebuildController`（手工重建入口）
+6. `support/CacheKeyBuilder`（统一 key 生成）
+
+改造：
+
+1. `ClientBusinessServiceImpl`：`save/update/deleteBatch` 后触发同步。
+2. `ClientChannelServiceImpl`：`save/update/deleteBatch` 后触发同步。
+3. `ChannelServiceImpl`：`save/update/deleteBatch` 后触发同步。
+4. 后续按优先级扩展黑名单、敏感词、模板、签名等写路径。
+
+## 6.2 `beacon-cache`
+
+补充接口能力：
+
+1. 通用删除接口：`DELETE /cache/delete/{key}`
+2. 批量删除接口：`POST /cache/delete/batch`
+
+可选增强：
+
+1. 前缀扫描删除（严格白名单限制）。
+
+## 6.3 `beacon-common`
+
+1. 增加同步配置类 `CacheSyncProperties`。
+2. 统一同步日志模型 `CacheSyncLog`（便于打印结构化日志）。
+
+---
+
+## 7. 配置建议
+
+```yaml
+sync:
+  enabled: true
+  redis:
+    namespace: "beacon:dev:beacon-cloud:"
+  boot:
+    enabled: true
+    run-on-startup: true
+    lock-key: "sync:boot:lock"
+    lock-ttl-seconds: 120
+    domains:
+      - client_business
+      - client_sign
+      - client_template
+      - client_channel
+      - channel
+      - black
+      - dirty_word
+      - transfer
+  rebuild:
+    allow-manual: true
+```
+
+---
+
+## 8. 验收标准（Done）
+
+满足以下条件可认为“毕设场景下目标达成”：
+
+1. 管理端修改客户、通道、签名、模板、黑名单后，Redis 秒级可见。
+2. 项目重启后，P0 数据域不出现历史脏 key 干扰。
+3. 停机手工改库后，执行一次手工重建即可恢复一致。
+4. 同步失败会产生日志，可定位实体与 key。
+5. 不再依赖测试类手工导数作为日常同步手段。
+
+---
+
+## 9. 推荐实施顺序（适配毕设节奏）
+
+1. 第 1 天：完成 `CacheKeyBuilder` + `CacheSyncService` + `beacon-cache` 删除接口。
+2. 第 2 天：接入 `ClientBusiness/ClientChannel/Channel` 运行时同步（afterCommit）。
+3. 第 3 天：完成启动校准 Runner + 手工重建接口 + 验收脚本。
+4. 第 4 天（可选）：补充黑名单/敏感词/转网等域同步与日志完善。
+
+---
+
+## 10. 答辩展示建议
+
+建议准备三段演示：
+
+1. **运行时同步演示**：后台改配置 -> Redis key 立即变化 -> 接口行为同步变化。
+2. **重启校准演示**：先制造脏 key -> 重启服务 -> 校准后恢复正确。
+3. **手工改库补救演示**：停机改 MySQL -> 启动后手工重建 -> 结果恢复一致。
+
+以上三段能完整说明该方案如何覆盖“频繁停启 + 云 Redis”的实际痛点。

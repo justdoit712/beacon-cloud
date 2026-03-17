@@ -1,7 +1,10 @@
 # 策略模块风险详细说明（除黑名单命名问题）
 
-更新时间：2026-02-26  
-适用仓库：`beacon-cloud`
+文档类型：风险专题  
+适用对象：开发 / 排障 / 重构  
+验证基线：代码静态核对  
+关联模块：beacon-strategy  
+最后核对日期：2026-03-17
 
 ---
 
@@ -14,8 +17,6 @@
   - `blackGlobal,blackClient,...`
 
 这份文档重点解释其余风险：问题代码在哪里、为什么有风险、怎么修。
-
----
 
 ## 1. 风险一：默认 `dirtyword` 策略命中后不拦截，只打印日志
 
@@ -54,7 +55,7 @@ if(dirtyWords != null && dirtyWords.size() > 0){
 
 ---
 
-## 2. 风险二：`internal/single_send` 绕过 API 校验链，可能导致费用字段为空
+## 2. 风险二：`internal/single_send` 仍绕过 API 校验链，费用字段一致性风险未消除
 
 ### 问题代码 A（内部发送未走 `checkFilterContext`）
 
@@ -82,33 +83,35 @@ public ResultVO singleSend(...) {
 }
 ```
 
-### 关联代码 C（策略层扣费直接使用 `submit.getFee()`）
+### 关联代码 C（策略层已有兜底逻辑）
 
 文件：`beacon-strategy/src/main/java/com/cz/strategy/filter/impl/FeeStrategyFilter.java`
 
 ```java
 Long fee = submit.getFee();
-Long amount = cacheClient.hIncrBy(CacheConstant.CLIENT_BALANCE + clientId, BALANCE, -fee);
+Long clientId = submit.getClientId();
+if (fee == null || fee <= 0 || clientId == null || clientId <= 0) {
+    handleUnknownFailure(submit, ExceptionEnums.PARAMETER_ERROR.getMsg(), null);
+}
 ```
 
 ### 问题在哪里
 
-- `fee` 是在 API 侧 `FeeCheckFilter` 中计算并写入 `submit` 的。
-- 内部接口不走 check 链时，`fee` 可能为空。
-- 策略扣费阶段对空值没有防御。
+- `fee` 仍主要依赖 API 侧 `FeeCheckFilter` 计算并写入 `submit`。
+- internal 接口依旧不走 `checkFilterContext`，因此 `fee` 仍可能缺失。
+- 但当前策略层已经补了空值兜底，不再是“直接拿空值做扣费”的状态。
 
 ### 影响
 
-- 运行时异常（NPE 或参数错误）。
-- 消息消费异常后是否重试取决于容器行为，可能引发重复处理或积压。
+- 当前风险主要表现为“策略层会主动判失败并中断发送”。
+- 仍会造成 internal 请求与 external 请求行为不一致，本应成功的请求可能在策略层失败。
 
 ### 如何解决
 
 推荐方案：
 
 1. 内部接口也走同一套 `checkFilterContext.check(submit)`。
-2. 同时在 `FeeStrategyFilter` 做兜底校验：
-   - `fee == null` 时直接抛业务异常并记录失败原因，不做扣费。
+2. 保留 `FeeStrategyFilter` 当前的兜底逻辑，继续防止空值直接进入扣费链路。
 
 ### 设计思路
 
@@ -192,48 +195,6 @@ submit.setSrcNumber("" + channel.get("channelNumber") + clientChannel.get("clien
 ### 设计思路
 
 - 对“预留扩展点”要么 stub 明确，要么实现完整，避免半状态。
-
----
-
-## 5. 风险五：策略模块声明的预发送队列常量与实际监听队列不一致
-
-### 问题代码 A（策略模块队列声明）
-
-文件：`beacon-strategy/src/main/java/com/cz/strategy/config/RabbitMQConfig.java`
-
-```java
-@Bean
-public Queue preSendQueue(){
-    return QueueBuilder.durable(RabbitMQConstants.MOBILE_AREA_OPERATOR).build();
-}
-```
-
-### 问题代码 B（策略模块监听）
-
-文件：`beacon-strategy/src/main/java/com/cz/strategy/mq/PreSendListener.java`
-
-```java
-@RabbitListener(queues = RabbitMQConstants.SMS_PRE_SEND)
-public void listen(StandardSubmit submit, Message message, Channel channel) ...
-```
-
-### 问题在哪里
-
-- 声明的是 `MOBILE_AREA_OPERATOR`，监听的是 `SMS_PRE_SEND`。
-- 本模块无法保证自己把监听队列建好，依赖外部服务先声明。
-
-### 影响
-
-- 不同环境启动顺序变化时，可能出现消费端先起但队列不存在。
-
-### 如何解决
-
-- `preSendQueue()` 改为声明 `RabbitMQConstants.SMS_PRE_SEND`。
-- 每个服务应声明自己消费的队列，减少跨服务耦合。
-
-### 设计思路
-
-- 队列契约要“生产/消费/声明”一致，避免隐式依赖。
 
 ---
 
@@ -442,4 +403,3 @@ long sendTimeMilli = sendTime.toInstant(ZoneOffset.of(UTC)).toEpochMilli();
 
 你说的黑名单命名问题，确实可以先通过数据库配置规避。  
 但剩余风险里，优先级最高的是“策略行为与名称不一致（敏感词）”和“入口字段一致性（internal fee）”，这两项最容易造成线上认知偏差和运行时异常。
-

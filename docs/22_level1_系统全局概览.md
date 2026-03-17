@@ -1,5 +1,13 @@
 # Level 1 - 系统全局概览
 
+文档类型：系统总览  
+适用对象：新同学 / 答辩 / 架构理解  
+验证基线：代码静态核对  
+关联模块：全局  
+最后核对日期：2026-03-17
+
+---
+
 本文面向第一次接触 `beacon-cloud` 的读者，目标是用最少前置知识建立系统整体认知。  
 内容仅描述当前仓库中已经落地的实现。
 
@@ -98,4 +106,3 @@ beacon-monitor 通过 XXL-Job 执行队列与余额巡检任务
 6. 搜索存储：Elasticsearch（`beacon-search` 使用 `elasticsearch-rest-high-level-client`）。
 7. 关系库：MySQL（`beacon-webmaster`、`beacon-test`）。
 8. 调度：XXL-Job（`beacon-monitor`）。
-

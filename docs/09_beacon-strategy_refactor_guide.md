@@ -1,5 +1,13 @@
 # beacon-strategy 重构文档
 
+文档类型：重构指南  
+适用对象：开发 / 重构  
+验证基线：代码静态核对  
+关联模块：beacon-strategy  
+最后核对日期：2026-03-17
+
+---
+
 ## 1. 模块定位
 
 `beacon-strategy` 是短信平台的“策略执行中枢”，主要职责：
@@ -47,7 +55,7 @@ String filters = cacheClient.hget(CacheConstant.CLIENT_BUSINESS + submit.getApiK
 
 ## 3.1 P0：策略链“失败即放行”（fail-open）风险
 
-### 现状代码（需要重构）
+### 现状代码（仍需重构）
 
 文件：`beacon-strategy/src/main/java/com/cz/strategy/filter/StrategyFilterContext.java:31`
 
@@ -428,7 +436,7 @@ if(isCallback == 1){
 
 ### 原因
 
-1. `isCallback` 为空时 `== 1` 会触发自动拆箱 NPE。
+1. 当前代码里 `isCallback == 1` 这项风险仍然存在，文档判断保持有效。
 2. 每次失败都查询两次缓存，热点场景下放大依赖压力。
 3. 未体现幂等约束，重复失败上报可能重复推报告。
 
@@ -440,17 +448,9 @@ if(isCallback == 1){
 
 ---
 
-## 3.11 P1：RabbitMQ 配置存在队列常量错误与回调配置缺口
+## 3.11 P1：RabbitMQ 回调配置仍有缺口
 
 ### 现状代码（需要重构）
-
-文件：`beacon-strategy/src/main/java/com/cz/strategy/config/RabbitMQConfig.java:47`
-
-```java
-public Queue preSendQueue(){
-    return QueueBuilder.durable(RabbitMQConstants.MOBILE_AREA_OPERATOR).build();
-}
-```
 
 文件：`beacon-strategy/src/main/java/com/cz/strategy/config/RabbitTemplateConfig.java:45`
 
@@ -460,15 +460,13 @@ rabbitTemplate.setReturnCallback(...);
 
 ### 原因
 
-1. `preSendQueue` 方法名与实际常量不一致，语义误导；应与 `SMS_PRE_SEND` 对齐。
-2. 未设置 `mandatory=true`，return 回调可能不触发。
-3. 使用旧式回调 API，升级 Spring AMQP 时兼容风险较高。
+1. `RabbitTemplate` 侧仍未设置 `mandatory=true`，return 回调可能不触发。
+2. 仍在使用旧式回调 API，升级 Spring AMQP 时兼容风险较高。
 
 ### 如何重构
 
-1. 统一队列声明命名与常量含义。
-2. 补充 `rabbitTemplate.setMandatory(true)`。
-3. 升级到新式 `ReturnsCallback`/`ConfirmCallback` 用法并加集成测试。
+1. 补充 `rabbitTemplate.setMandatory(true)`。
+2. 升级到新式 `ReturnsCallback`/`ConfirmCallback` 用法并加集成测试。
 
 ---
 

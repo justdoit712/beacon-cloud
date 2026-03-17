@@ -1,7 +1,10 @@
 # beacon-cache 模块详细分析
 
-更新时间：2026-02-26  
-适用仓库：`beacon-cloud`
+文档类型：模块分析  
+适用对象：开发 / 排障 / 重构  
+验证基线：代码静态核对  
+关联模块：beacon-cache  
+最后核对日期：2026-03-17
 
 ---
 
@@ -27,7 +30,12 @@
 2. `RedisConfig`：`RedisTemplate` 与序列化配置。
 3. `LocalRedisClient`：对 `RedisTemplate` 的二次封装。
 4. `CacheController`：正式缓存接口。
-5. `TestController`：测试接口。
+5. `RedisScanService`：基于 `SCAN` 的 key 扫描服务。
+6. `CacheAuthInterceptor`：服务间鉴权与权限拦截。
+7. `CacheSecurityProperties`：调用方密钥、权限、白名单配置。
+8. `CacheNamespaceProperties`：缓存物理 key 命名空间配置。
+9. `NamespaceKeyResolver`：逻辑 key 与物理 key 双向转换。
+10. `TestController`：测试接口，仅在 `cache.security.test-api-enabled=true` 时注册。
 
 配置文件：
 
@@ -83,6 +91,26 @@
 1. 封装层很轻，便于扩展。
 2. 泛型较宽，接口简单但类型安全弱。
 
+## 3.4 访问控制、命名空间与 key 扫描
+
+文件：
+
+1. `beacon-cache/src/main/java/com/cz/cache/security/CacheAuthInterceptor.java`
+2. `beacon-cache/src/main/java/com/cz/cache/config/WebMvcSecurityConfig.java`
+3. `beacon-cache/src/main/java/com/cz/cache/security/CacheSecurityProperties.java`
+4. `beacon-cache/src/main/java/com/cz/cache/security/CacheNamespaceProperties.java`
+5. `beacon-cache/src/main/java/com/cz/cache/redis/NamespaceKeyResolver.java`
+6. `beacon-cache/src/main/java/com/cz/cache/redis/RedisScanService.java`
+
+关键点：
+
+1. `/cache/**` 与 `/test/**` 当前都经过 `CacheAuthInterceptor`。
+2. 调用方需提供 `X-Cache-Caller`、`X-Cache-Timestamp`、`X-Cache-Sign`，签名算法为 `HmacSHA256`。
+3. 权限模型已细分为 `READ`、`WRITE`、`KEYS`、`TEST`、`ADMIN`。
+4. `TestController` 默认关闭，只有显式开启 `cache.security.test-api-enabled=true` 才会注册。
+5. 业务调用方传入的仍是逻辑 key；真正落 Redis 前由 `NamespaceKeyResolver` 统一追加 `cache.namespace.fullPrefix`。
+6. `keys` 查询通过 `RedisScanService.scan(...)` 执行 `SCAN` 遍历，并按白名单前缀限制 pattern。
+
 ---
 
 ## 4. HTTP 接口清单（CacheController）
@@ -107,8 +135,10 @@
 1. `POST /cache/zadd/{key}/{score}/{member}`：zset 写入
 2. `GET /cache/zrangebyscorecount/{key}/{start}/{end}`：按分值区间统计
 3. `DELETE /cache/zremove/{key}/{member}`：zset 删除
-4. `POST /cache/keys/{pattern}`：按 pattern 查询 key 集合
-5. `POST /cache/pipeline/string`：批量 pipeline 写入 string
+4. `GET /cache/keys?pattern=...&count=...`：按 pattern 查询 key 集合（基于 `SCAN`）
+5. `DELETE /cache/delete/{key}`：删除单个逻辑 key
+6. `POST /cache/delete/batch`：批量删除逻辑 key
+7. `POST /cache/pipeline/string`：批量 pipeline 写入 string
 
 ---
 
@@ -167,26 +197,27 @@
 
 ## 7. 主要风险与技术债
 
-## 7.1 安全边界弱（高风险）
+## 7.1 安全边界仍需继续收口（中风险）
 
-1. `CacheController` 和 `TestController` 接口默认全开放。
-2. 未见鉴权、白名单、签名校验、限流保护。
-3. 一旦被误调用或恶意调用，会直接影响全链路策略和余额。
+1. 当前通过 `CacheAuthInterceptor` 对 `/cache/**`、`/test/**` 启用服务间 HMAC 鉴权。
+2. 按调用方细分 `READ/WRITE/KEYS/TEST/ADMIN` 权限。
+3. 仍然存在密钥明文配置、调用方权限矩阵维护，以及高影响写接口审计与观测不足的问题。
 
-## 7.2 生产接口与测试接口混合（高风险）
+## 7.2 生产接口与测试接口仍在同一应用中，但已条件化暴露（中风险）
 
 文件：`beacon-cache/src/main/java/com/cz/cache/controller/TestController.java`
 
-1. 测试入口仍在主应用中启用。
-2. 建议仅在 `dev/test` profile 暴露或迁移到测试模块。
+1. `TestController` 通过 `@ConditionalOnProperty(prefix = "cache.security", name = "test-api-enabled", havingValue = "true")` 控制注册。
+2. 默认配置下测试接口不会注册，且即使开启，也仍受 `CacheAuthInterceptor` 的 `TEST` 权限控制。
+3. 但测试代码仍在主应用包内，长期仍建议迁出主包或按 profile 做更强隔离。
 
-## 7.3 `keys` 命令潜在阻塞（高风险）
+## 7.3 `keys` 查询仍需关注白名单与扫描成本（中风险）
 
 文件：`beacon-cache/src/main/java/com/cz/cache/controller/CacheController.java`
 
-1. 使用 `redisTemplate.keys(pattern)`。
-2. 大 keyspace 时会阻塞 Redis，影响在线请求。
-3. 监控场景建议改为 `SCAN` 渐进遍历。
+1. 当前实现通过 `RedisScanService.scan(...)` 使用 `SCAN`。
+2. 查询 pattern 会先经过 `cache.security.key-pattern-allow-list` 白名单校验，再转换为带命名空间的物理 pattern。
+3. 大范围扫描仍有成本，后续仍需要控制 `count`、调用频率与监控指标。
 
 ## 7.4 序列化策略存在升级风险（中风险）
 
@@ -216,9 +247,9 @@
 
 ## P0（优先执行）
 
-1. 为缓存接口加鉴权与最小授权控制（至少服务间 token 或网关内网隔离）。
-2. 下线或隔离 `TestController` 到非生产 profile。
-3. 将 `KEYS` 查询替换为 `SCAN`。
+1. 固化 `caller-secrets`、`caller-permissions`、`key-pattern-allow-list` 的配置治理，避免权限漂移。
+2. 对 `/cache/keys`、`/cache/delete*` 等高影响接口补审计日志和调用指标。
+3. 继续收紧 `TestController` 暴露策略，长期迁出主包或至少按 profile 隔离。
 
 ## P1（中期）
 
@@ -235,6 +266,5 @@
 
 ## 9. 结论
 
-`beacon-cache` 当前实现简洁，能快速支撑各模块协同，但已经承担了关键基础设施角色。  
-下一阶段应优先补“安全隔离 + 查询方式治理 + 测试接口下线”三件事，避免基础层问题放大到整条短信链路。
-
+`beacon-cache` 当前承担关键基础设施角色。  
+下一阶段更值得优先处理的是“序列化升级 + typed API + 临时集合原子化 + 密钥治理”，避免基础层在扩容和演进时重新暴露风险。
