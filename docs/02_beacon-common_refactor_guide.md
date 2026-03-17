@@ -253,7 +253,7 @@ return id & Long.MAX_VALUE;
 
 文件：
 
-1. `beacon-common/src/main/java/com/cz/common/constant/CacheConstant.java`
+1. `beacon-common/src/main/java/com/cz/common/constant/CacheKeyConstants.java`
 2. `beacon-common/src/main/java/com/cz/common/constant/RabbitMQConstants.java`
 3. `beacon-common/src/main/java/com/cz/common/constant/SmsConstant.java`
 4. `beacon-common/src/main/java/com/cz/common/constant/ApiConstant.java`

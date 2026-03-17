@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
  * <p>逻辑 key 示例：{@code client_balance:1}</p>
  * <p>物理 key 示例：{@code beacon:dev:beacon-cloud:cz:client_balance:1}</p>
  *
+ * <p>当前规则保持简单：</p>
  * <p>1. 当 {@code enabled=false} 时，不启用命名空间改写；</p>
  * <p>2. 当 {@code enabled=true} 时，必须通过 {@code fullPrefix} 提供完整前缀。</p>
  */
@@ -17,9 +18,7 @@ import org.springframework.util.StringUtils;
 @ConfigurationProperties(prefix = "cache.namespace")
 public class CacheNamespaceProperties {
 
-    /**
-     * 是否启用命名空间改写。
-     */
+    /** 是否启用命名空间改写。 */
     private boolean enabled = true;
 
     /**
@@ -29,18 +28,38 @@ public class CacheNamespaceProperties {
      */
     private String fullPrefix = "beacon:dev:beacon-cloud:cz:";
 
+    /**
+     * 返回是否启用命名空间改写。
+     *
+     * @return true 表示启用
+     */
     public boolean isEnabled() {
         return enabled;
     }
 
+    /**
+     * 设置是否启用命名空间改写。
+     *
+     * @param enabled 是否启用命名空间改写
+     */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
 
+    /**
+     * 返回完整命名空间前缀。
+     *
+     * @return 完整命名空间前缀
+     */
     public String getFullPrefix() {
         return fullPrefix;
     }
 
+    /**
+     * 设置完整命名空间前缀。
+     *
+     * @param fullPrefix 完整命名空间前缀
+     */
     public void setFullPrefix(String fullPrefix) {
         this.fullPrefix = fullPrefix;
     }

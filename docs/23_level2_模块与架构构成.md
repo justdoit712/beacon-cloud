@@ -82,7 +82,7 @@
 
 ### 6.2 Redis（运行时配置与状态）
 
-键前缀由 `CacheConstant` 定义，主要包括：
+键前缀由 `CacheKeyConstants` 定义，主要包括：
 
 1. 客户与签名模板：`client_business:*`、`client_sign:*`、`client_template:*`
 2. 余额：`client_balance:*`

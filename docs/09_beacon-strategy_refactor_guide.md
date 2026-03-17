@@ -42,7 +42,7 @@
 策略链并非本地配置，而是从缓存读取：
 
 ```java
-String filters = cacheClient.hget(CacheConstant.CLIENT_BUSINESS + submit.getApiKey(), "clientFilters");
+String filters = cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), "clientFilters");
 ```
 
 文件：`beacon-strategy/src/main/java/com/cz/strategy/filter/StrategyFilterContext.java:31`
@@ -60,7 +60,7 @@ String filters = cacheClient.hget(CacheConstant.CLIENT_BUSINESS + submit.getApiK
 文件：`beacon-strategy/src/main/java/com/cz/strategy/filter/StrategyFilterContext.java:31`
 
 ```java
-String filters = cacheClient.hget(CacheConstant.CLIENT_BUSINESS + submit.getApiKey(), CLIENT_FILTERS);
+String filters = cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), CLIENT_FILTERS);
 if (filters == null) {
     return;
 }
@@ -249,7 +249,7 @@ throw new StrategyException(ExceptionEnums.ERROR_DIRTY_WORD);
 ```java
 static {
     BeaconCacheClient cacheClient = (BeaconCacheClient) SpringUtil.getBeanByClass(BeaconCacheClient.class);
-    Set<String> dirtyWords = cacheClient.smember(CacheConstant.DIRTY_WORD);
+    Set<String> dirtyWords = cacheClient.smember(CacheKeyConstants.DIRTY_WORD);
     create(dirtyWords);
 }
 ```
@@ -259,7 +259,7 @@ static {
 ```java
 static {
     BeaconCacheClient cacheClient = (BeaconCacheClient) SpringUtil.getBeanByClass(BeaconCacheClient.class);
-    Set<String> dirtyWords = cacheClient.smember(CacheConstant.DIRTY_WORD);
+    Set<String> dirtyWords = cacheClient.smember(CacheKeyConstants.DIRTY_WORD);
     wordTree.addWords(dirtyWords);
 }
 ```

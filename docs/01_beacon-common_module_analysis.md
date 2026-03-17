@@ -29,7 +29,7 @@
 
 | 包 | 数量 | 代表类 | 作用 |
 |---|---:|---|---|
-| `constant` | 5 | `CacheConstant`, `RabbitMQConstants` | 跨模块常量约定 |
+| `constant` | 5 | `CacheKeyConstants`, `RabbitMQConstants` | 跨模块常量约定 |
 | `enums` | 4 | `ExceptionEnums`, `MobileOperatorEnum` | 业务枚举 |
 | `exception` | 3 | `ApiException`, `StrategyException` | 统一业务异常 |
 | `model` | 2 | `StandardSubmit`, `StandardReport` | MQ 与业务链路主模型 |
@@ -95,9 +95,9 @@
 
 ## 4. 常量域详细说明
 
-## 4.1 缓存 Key 契约 `CacheConstant`
+## 4.1 缓存 Key 契约 `CacheKeyConstants`
 
-文件：`beacon-common/src/main/java/com/cz/common/constant/CacheConstant.java`
+文件：`beacon-common/src/main/java/com/cz/common/constant/CacheKeyConstants.java`
 
 该类定义了各服务共享的 Redis key 前缀，是“缓存数据模型”的事实标准。代表性前缀：
 
