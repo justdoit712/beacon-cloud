@@ -143,9 +143,9 @@ public class CacheSyncProperties {
     public static class Redis {
 
         /**
-         * Redis 命名空间前缀。
+         * Redis 命名空间完整前缀。
          * <p>
-         * 约定格式：beacon:{env}:{project}:{owner}:
+         * 该值应与 cache.namespace.fullPrefix 保持一致。
          */
         private String namespace = "beacon:dev:beacon-cloud:cz:";
 
@@ -222,4 +222,3 @@ public class CacheSyncProperties {
         }
     }
 }
-

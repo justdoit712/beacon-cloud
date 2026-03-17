@@ -1,6 +1,6 @@
 package com.cz.webmaster.support;
 
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -19,7 +19,7 @@ import org.springframework.util.StringUtils;
  * 2. 物理前缀追加由 beacon-cache 侧统一处理（NamespaceKeyResolver）。
  */
 @Component
-public class CacheKeyBuilder {
+    public class CacheKeyBuilder {
 
     /**
      * 构建客户业务配置 key。
@@ -27,7 +27,7 @@ public class CacheKeyBuilder {
      * 示例：client_business:{apikey}
      */
     public String clientBusinessByApiKey(String apiKey) {
-        return CacheConstant.CLIENT_BUSINESS + requireText(apiKey, "apiKey");
+        return CacheKeyConstants.CLIENT_BUSINESS + requireText(apiKey, "apiKey");
     }
 
     /**
@@ -36,7 +36,7 @@ public class CacheKeyBuilder {
      * 示例：client_balance:{clientId}
      */
     public String clientBalanceByClientId(Long clientId) {
-        return CacheConstant.CLIENT_BALANCE + requirePositiveId(clientId, "clientId");
+        return CacheKeyConstants.CLIENT_BALANCE + requirePositiveId(clientId, "clientId");
     }
 
     /**
@@ -45,7 +45,7 @@ public class CacheKeyBuilder {
      * 示例：client_sign:{clientId}
      */
     public String clientSignByClientId(Long clientId) {
-        return CacheConstant.CLIENT_SIGN + requirePositiveId(clientId, "clientId");
+        return CacheKeyConstants.CLIENT_SIGN + requirePositiveId(clientId, "clientId");
     }
 
     /**
@@ -54,7 +54,7 @@ public class CacheKeyBuilder {
      * 示例：client_template:{signId}
      */
     public String clientTemplateBySignId(Long signId) {
-        return CacheConstant.CLIENT_TEMPLATE + requirePositiveId(signId, "signId");
+        return CacheKeyConstants.CLIENT_TEMPLATE + requirePositiveId(signId, "signId");
     }
 
     /**
@@ -63,7 +63,7 @@ public class CacheKeyBuilder {
      * 示例：client_channel:{clientId}
      */
     public String clientChannelByClientId(Long clientId) {
-        return CacheConstant.CLIENT_CHANNEL + requirePositiveId(clientId, "clientId");
+        return CacheKeyConstants.CLIENT_CHANNEL + requirePositiveId(clientId, "clientId");
     }
 
     /**
@@ -72,7 +72,7 @@ public class CacheKeyBuilder {
      * 示例：channel:{id}
      */
     public String channelById(Long id) {
-        return CacheConstant.CHANNEL + requirePositiveId(id, "id");
+        return CacheKeyConstants.CHANNEL + requirePositiveId(id, "id");
     }
 
     /**
@@ -81,7 +81,7 @@ public class CacheKeyBuilder {
      * 示例：black:{mobile}
      */
     public String blackGlobal(String mobile) {
-        return CacheConstant.BLACK + requireText(mobile, "mobile");
+        return CacheKeyConstants.BLACK + requireText(mobile, "mobile");
     }
 
     /**
@@ -90,9 +90,9 @@ public class CacheKeyBuilder {
      * 示例：black:{clientId}:{mobile}
      */
     public String blackClient(Long clientId, String mobile) {
-        return CacheConstant.BLACK
+        return CacheKeyConstants.BLACK
                 + requirePositiveId(clientId, "clientId")
-                + CacheConstant.SEPARATE
+                + CacheKeyConstants.SEPARATE
                 + requireText(mobile, "mobile");
     }
 
@@ -102,7 +102,7 @@ public class CacheKeyBuilder {
      * 示例：dirty_word
      */
     public String dirtyWord() {
-        return CacheConstant.DIRTY_WORD;
+        return CacheKeyConstants.DIRTY_WORD;
     }
 
     /**
@@ -111,7 +111,7 @@ public class CacheKeyBuilder {
      * 示例：transfer:{mobile}
      */
     public String transfer(String mobile) {
-        return CacheConstant.TRANSFER + requireText(mobile, "mobile");
+        return CacheKeyConstants.TRANSFER + requireText(mobile, "mobile");
     }
 
     private static String requireText(String value, String fieldName) {

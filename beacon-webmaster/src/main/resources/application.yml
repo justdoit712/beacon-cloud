@@ -51,7 +51,7 @@ sync:
   # 同步总开关：关闭后 runtime/manual/boot 子开关均不生效
   enabled: true
   redis:
-    # 统一命名空间前缀，约定格式：beacon:{env}:{project}:{owner}:
+    # 统一命名空间完整前缀，应与 cache.namespace.fullPrefix 保持一致
     namespace: "beacon:dev:beacon-cloud:cz:"
   runtime:
     # 运行时同步开关（业务写路径触发）

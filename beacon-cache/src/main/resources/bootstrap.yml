@@ -19,9 +19,7 @@ spring:
 cache:
   namespace:
     enabled: true
-    env: dev
-    project: beacon-cloud
-    owner: cz
+    fullPrefix: beacon:dev:beacon-cloud:cz:
   security:
     enabled: true
     test-api-enabled: false
