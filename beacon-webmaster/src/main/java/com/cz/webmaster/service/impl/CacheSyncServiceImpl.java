@@ -222,46 +222,60 @@ public class CacheSyncServiceImpl implements CacheSyncService {
     }
 
     private void doUpsert(String domain, String key, Object entityOrId) {
+        if (CacheDomainRegistry.isCurrentMainlineDomain(domain)) {
+            doCurrentMainlineUpsert(domain, key, entityOrId);
+            return;
+        }
+        if (CacheDomainRegistry.isCurrentLegacyCompatibleDomain(domain)) {
+            doLegacyCompatibleUpsert(domain, key, entityOrId);
+            return;
+        }
+        throw new ApiException("unsupported upsert domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+    }
+
+    private void doCurrentMainlineUpsert(String domain, String key, Object entityOrId) {
         if (CacheDomainRegistry.CLIENT_BUSINESS.equals(domain)
                 || CacheDomainRegistry.CLIENT_BALANCE.equals(domain)) {
             cacheWriteClient.hmset(key, resolveHashPayload(entityOrId));
             return;
         }
-
         if (CacheDomainRegistry.CHANNEL.equals(domain)) {
             cacheWriteClient.hmset(key, resolveChannelPayload(entityOrId));
             return;
         }
-
-        if (isSetDomain(domain)) {
-            rebuildSetDomain(domain, key, entityOrId);
+        if (CacheDomainRegistry.CLIENT_CHANNEL.equals(domain)) {
+            rebuildSetDomain(key, entityOrId, true);
             return;
         }
+        throw new ApiException("unsupported current mainline upsert domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+    }
 
+    private void doLegacyCompatibleUpsert(String domain, String key, Object entityOrId) {
+        if (isLegacySetDomain(domain)) {
+            rebuildSetDomain(key, entityOrId, isLegacyObjectSetDomain(domain));
+            return;
+        }
         if (CacheDomainRegistry.BLACK.equals(domain) || CacheDomainRegistry.TRANSFER.equals(domain)) {
             cacheWriteClient.set(key, resolveStringValue(domain, entityOrId));
             return;
         }
-
-        throw new ApiException("unsupported upsert domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+        throw new ApiException("unsupported legacy compatible upsert domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
     }
 
-    private boolean isSetDomain(String domain) {
+    private boolean isLegacySetDomain(String domain) {
         return CacheDomainRegistry.CLIENT_SIGN.equals(domain)
                 || CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)
-                || CacheDomainRegistry.CLIENT_CHANNEL.equals(domain)
                 || CacheDomainRegistry.DIRTY_WORD.equals(domain);
     }
 
-    private boolean isObjectSetDomain(String domain) {
+    private boolean isLegacyObjectSetDomain(String domain) {
         return CacheDomainRegistry.CLIENT_SIGN.equals(domain)
-                || CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)
-                || CacheDomainRegistry.CLIENT_CHANNEL.equals(domain);
+                || CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain);
     }
 
-    private void rebuildSetDomain(String domain, String key, Object entityOrId) {
+    private void rebuildSetDomain(String key, Object entityOrId, boolean objectSetDomain) {
         cacheWriteClient.delete(key);
-        if (isObjectSetDomain(domain)) {
+        if (objectSetDomain) {
             Map<String, Object>[] mapMembers = resolveSetMapMembers(entityOrId);
             if (mapMembers.length > 0) {
                 cacheWriteClient.sadd(key, mapMembers);
@@ -275,23 +289,37 @@ public class CacheSyncServiceImpl implements CacheSyncService {
     }
 
     private String buildKey(String domain, Object entityOrId) {
+        if (CacheDomainRegistry.isCurrentMainlineDomain(domain)) {
+            return buildCurrentMainlineKey(domain, entityOrId);
+        }
+        if (CacheDomainRegistry.isCurrentLegacyCompatibleDomain(domain)) {
+            return buildLegacyCompatibleKey(domain, entityOrId);
+        }
+        throw new ApiException("unsupported cache domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+    }
+
+    private String buildCurrentMainlineKey(String domain, Object entityOrId) {
         if (CacheDomainRegistry.CLIENT_BUSINESS.equals(domain)) {
             return cacheKeyBuilder.clientBusinessByApiKey(readText(entityOrId, "apiKey", "apikey"));
         }
         if (CacheDomainRegistry.CLIENT_BALANCE.equals(domain)) {
             return cacheKeyBuilder.clientBalanceByClientId(readLong(entityOrId, "clientId", "id"));
         }
-        if (CacheDomainRegistry.CLIENT_SIGN.equals(domain)) {
-            return cacheKeyBuilder.clientSignByClientId(readLong(entityOrId, "clientId", "id"));
-        }
-        if (CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)) {
-            return cacheKeyBuilder.clientTemplateBySignId(readLong(entityOrId, "signId", "id"));
-        }
         if (CacheDomainRegistry.CLIENT_CHANNEL.equals(domain)) {
             return cacheKeyBuilder.clientChannelByClientId(readLong(entityOrId, "clientId", "id"));
         }
         if (CacheDomainRegistry.CHANNEL.equals(domain)) {
             return cacheKeyBuilder.channelById(readLong(entityOrId, "id", "channelId"));
+        }
+        throw new ApiException("unsupported current mainline key domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+    }
+
+    private String buildLegacyCompatibleKey(String domain, Object entityOrId) {
+        if (CacheDomainRegistry.CLIENT_SIGN.equals(domain)) {
+            return cacheKeyBuilder.clientSignByClientId(readLong(entityOrId, "clientId", "id"));
+        }
+        if (CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)) {
+            return cacheKeyBuilder.clientTemplateBySignId(readLong(entityOrId, "signId", "id"));
         }
         if (CacheDomainRegistry.BLACK.equals(domain)) {
             Long clientId = tryReadLong(entityOrId, "clientId", "id");
@@ -304,7 +332,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         if (CacheDomainRegistry.TRANSFER.equals(domain)) {
             return cacheKeyBuilder.transfer(readText(entityOrId, "mobile"));
         }
-        throw new ApiException("unsupported cache domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+        throw new ApiException("unsupported legacy compatible key domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
     }
 
     private CacheDomainContract requireDomainContract(String domain) {

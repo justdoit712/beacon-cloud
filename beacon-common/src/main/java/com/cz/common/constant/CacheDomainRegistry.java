@@ -45,122 +45,15 @@ public final class CacheDomainRegistry {
     private static final Map<String, CacheDomainContract> CONTRACT_MAP;
     /** 当前主线域集合。 */
     private static final Set<String> CURRENT_MAINLINE_DOMAIN_CODES;
+    /** 当前兼容保留域集合。 */
+    private static final Set<String> CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES;
     /** 当前允许 ALL 展开的手工重建域集合。 */
     private static final Set<String> CURRENT_MANUAL_REBUILD_DOMAIN_CODES;
 
     static {
         List<CacheDomainContract> contracts = new ArrayList<>();
-
-        contracts.add(new CacheDomainContract(
-                CLIENT_BUSINESS,
-                Collections.singletonList(CacheKeyConstants.CLIENT_BUSINESS + "{apikey}"),
-                CacheRedisType.HASH,
-                CacheSourceOfTruth.MYSQL,
-                CacheWritePolicy.WRITE_THROUGH,
-                CacheDeletePolicy.DELETE_KEY,
-                CacheRebuildPolicy.FULL_REBUILD,
-                "beacon-webmaster",
-                true
-        ));
-
-        contracts.add(new CacheDomainContract(
-                CLIENT_SIGN,
-                Collections.singletonList(CacheKeyConstants.CLIENT_SIGN + "{clientId}"),
-                CacheRedisType.SET,
-                CacheSourceOfTruth.MYSQL,
-                CacheWritePolicy.DELETE_AND_REBUILD,
-                CacheDeletePolicy.DELETE_KEY,
-                CacheRebuildPolicy.FULL_REBUILD,
-                "beacon-webmaster",
-                true
-        ));
-
-        contracts.add(new CacheDomainContract(
-                CLIENT_TEMPLATE,
-                Collections.singletonList(CacheKeyConstants.CLIENT_TEMPLATE + "{signId}"),
-                CacheRedisType.SET,
-                CacheSourceOfTruth.MYSQL,
-                CacheWritePolicy.DELETE_AND_REBUILD,
-                CacheDeletePolicy.DELETE_KEY,
-                CacheRebuildPolicy.FULL_REBUILD,
-                "beacon-webmaster",
-                true
-        ));
-
-        contracts.add(new CacheDomainContract(
-                CLIENT_CHANNEL,
-                Collections.singletonList(CacheKeyConstants.CLIENT_CHANNEL + "{clientId}"),
-                CacheRedisType.SET,
-                CacheSourceOfTruth.MYSQL,
-                CacheWritePolicy.DELETE_AND_REBUILD,
-                CacheDeletePolicy.DELETE_KEY,
-                CacheRebuildPolicy.FULL_REBUILD,
-                "beacon-webmaster",
-                true
-        ));
-
-        contracts.add(new CacheDomainContract(
-                CHANNEL,
-                Collections.singletonList(CacheKeyConstants.CHANNEL + "{id}"),
-                CacheRedisType.HASH,
-                CacheSourceOfTruth.MYSQL,
-                CacheWritePolicy.WRITE_THROUGH,
-                CacheDeletePolicy.DELETE_KEY,
-                CacheRebuildPolicy.FULL_REBUILD,
-                "beacon-webmaster",
-                true
-        ));
-
-        contracts.add(new CacheDomainContract(
-                BLACK,
-                Arrays.asList(
-                        CacheKeyConstants.BLACK + "{mobile}",
-                        CacheKeyConstants.BLACK + "{clientId}" + CacheKeyConstants.SEPARATE + "{mobile}"
-                ),
-                CacheRedisType.STRING,
-                CacheSourceOfTruth.MYSQL,
-                CacheWritePolicy.WRITE_THROUGH,
-                CacheDeletePolicy.DELETE_KEY,
-                CacheRebuildPolicy.FULL_REBUILD,
-                "beacon-webmaster",
-                true
-        ));
-
-        contracts.add(new CacheDomainContract(
-                DIRTY_WORD,
-                Collections.singletonList(CacheKeyConstants.DIRTY_WORD),
-                CacheRedisType.SET,
-                CacheSourceOfTruth.MYSQL,
-                CacheWritePolicy.DELETE_AND_REBUILD,
-                CacheDeletePolicy.DELETE_KEY,
-                CacheRebuildPolicy.FULL_REBUILD,
-                "beacon-webmaster",
-                true
-        ));
-
-        contracts.add(new CacheDomainContract(
-                TRANSFER,
-                Collections.singletonList(CacheKeyConstants.TRANSFER + "{mobile}"),
-                CacheRedisType.STRING,
-                CacheSourceOfTruth.MYSQL,
-                CacheWritePolicy.WRITE_THROUGH,
-                CacheDeletePolicy.DELETE_KEY,
-                CacheRebuildPolicy.FULL_REBUILD,
-                "beacon-webmaster",
-                true
-        ));
-
-        contracts.add(new CacheDomainContract(
-                CLIENT_BALANCE,
-                Collections.singletonList(CacheKeyConstants.CLIENT_BALANCE + "{clientId}"),
-                CacheRedisType.HASH,
-                CacheSourceOfTruth.MYSQL,
-                CacheWritePolicy.MYSQL_ATOMIC_UPDATE_THEN_REFRESH,
-                CacheDeletePolicy.OVERWRITE_ONLY,
-                CacheRebuildPolicy.FULL_REBUILD_SKIP_BOOT,
-                "beacon-webmaster",
-                false
-        ));
+        registerCurrentMainlineContracts(contracts);
+        registerLegacyCompatibleContracts(contracts);
 
         Map<String, CacheDomainContract> index = new LinkedHashMap<>();
         for (CacheDomainContract contract : contracts) {
@@ -177,6 +70,13 @@ public final class CacheDomainRegistry {
                 CLIENT_CHANNEL,
                 CHANNEL,
                 CLIENT_BALANCE
+        )));
+        CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
+                CLIENT_SIGN,
+                CLIENT_TEMPLATE,
+                BLACK,
+                DIRTY_WORD,
+                TRANSFER
         )));
         CURRENT_MANUAL_REBUILD_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
                 CLIENT_BUSINESS,
@@ -263,6 +163,25 @@ public final class CacheDomainRegistry {
     }
 
     /**
+     * 返回当前兼容保留域集合。
+     *
+     * @return 当前兼容保留域集合
+     */
+    public static Set<String> currentLegacyCompatibleDomainCodes() {
+        return CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES;
+    }
+
+    /**
+     * 判断域是否属于当前兼容保留范围。
+     *
+     * @param domainCode 域编码
+     * @return true 表示属于当前兼容保留域
+     */
+    public static boolean isCurrentLegacyCompatibleDomain(String domainCode) {
+        return CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES.contains(domainCode);
+    }
+
+    /**
      * 返回当前允许由 ALL 展开的手工重建域集合。
      *
      * <p>当前只包含已纳入主线且允许进入第三层默认范围的域。</p>
@@ -281,5 +200,120 @@ public final class CacheDomainRegistry {
      */
     public static boolean isCurrentManualRebuildDomain(String domainCode) {
         return CURRENT_MANUAL_REBUILD_DOMAIN_CODES.contains(domainCode);
+    }
+
+    private static void registerCurrentMainlineContracts(List<CacheDomainContract> contracts) {
+        contracts.add(new CacheDomainContract(
+                CLIENT_BUSINESS,
+                Collections.singletonList(CacheKeyConstants.CLIENT_BUSINESS + "{apikey}"),
+                CacheRedisType.HASH,
+                CacheSourceOfTruth.MYSQL,
+                CacheWritePolicy.WRITE_THROUGH,
+                CacheDeletePolicy.DELETE_KEY,
+                CacheRebuildPolicy.FULL_REBUILD,
+                "beacon-webmaster",
+                true
+        ));
+
+        contracts.add(new CacheDomainContract(
+                CLIENT_CHANNEL,
+                Collections.singletonList(CacheKeyConstants.CLIENT_CHANNEL + "{clientId}"),
+                CacheRedisType.SET,
+                CacheSourceOfTruth.MYSQL,
+                CacheWritePolicy.DELETE_AND_REBUILD,
+                CacheDeletePolicy.DELETE_KEY,
+                CacheRebuildPolicy.FULL_REBUILD,
+                "beacon-webmaster",
+                true
+        ));
+
+        contracts.add(new CacheDomainContract(
+                CHANNEL,
+                Collections.singletonList(CacheKeyConstants.CHANNEL + "{id}"),
+                CacheRedisType.HASH,
+                CacheSourceOfTruth.MYSQL,
+                CacheWritePolicy.WRITE_THROUGH,
+                CacheDeletePolicy.DELETE_KEY,
+                CacheRebuildPolicy.FULL_REBUILD,
+                "beacon-webmaster",
+                true
+        ));
+
+        contracts.add(new CacheDomainContract(
+                CLIENT_BALANCE,
+                Collections.singletonList(CacheKeyConstants.CLIENT_BALANCE + "{clientId}"),
+                CacheRedisType.HASH,
+                CacheSourceOfTruth.MYSQL,
+                CacheWritePolicy.MYSQL_ATOMIC_UPDATE_THEN_REFRESH,
+                CacheDeletePolicy.OVERWRITE_ONLY,
+                CacheRebuildPolicy.FULL_REBUILD_SKIP_BOOT,
+                "beacon-webmaster",
+                false
+        ));
+    }
+
+    private static void registerLegacyCompatibleContracts(List<CacheDomainContract> contracts) {
+        contracts.add(new CacheDomainContract(
+                CLIENT_SIGN,
+                Collections.singletonList(CacheKeyConstants.CLIENT_SIGN + "{clientId}"),
+                CacheRedisType.SET,
+                CacheSourceOfTruth.MYSQL,
+                CacheWritePolicy.DELETE_AND_REBUILD,
+                CacheDeletePolicy.DELETE_KEY,
+                CacheRebuildPolicy.FULL_REBUILD,
+                "beacon-webmaster",
+                true
+        ));
+
+        contracts.add(new CacheDomainContract(
+                CLIENT_TEMPLATE,
+                Collections.singletonList(CacheKeyConstants.CLIENT_TEMPLATE + "{signId}"),
+                CacheRedisType.SET,
+                CacheSourceOfTruth.MYSQL,
+                CacheWritePolicy.DELETE_AND_REBUILD,
+                CacheDeletePolicy.DELETE_KEY,
+                CacheRebuildPolicy.FULL_REBUILD,
+                "beacon-webmaster",
+                true
+        ));
+
+        contracts.add(new CacheDomainContract(
+                BLACK,
+                Arrays.asList(
+                        CacheKeyConstants.BLACK + "{mobile}",
+                        CacheKeyConstants.BLACK + "{clientId}" + CacheKeyConstants.SEPARATE + "{mobile}"
+                ),
+                CacheRedisType.STRING,
+                CacheSourceOfTruth.MYSQL,
+                CacheWritePolicy.WRITE_THROUGH,
+                CacheDeletePolicy.DELETE_KEY,
+                CacheRebuildPolicy.FULL_REBUILD,
+                "beacon-webmaster",
+                true
+        ));
+
+        contracts.add(new CacheDomainContract(
+                DIRTY_WORD,
+                Collections.singletonList(CacheKeyConstants.DIRTY_WORD),
+                CacheRedisType.SET,
+                CacheSourceOfTruth.MYSQL,
+                CacheWritePolicy.DELETE_AND_REBUILD,
+                CacheDeletePolicy.DELETE_KEY,
+                CacheRebuildPolicy.FULL_REBUILD,
+                "beacon-webmaster",
+                true
+        ));
+
+        contracts.add(new CacheDomainContract(
+                TRANSFER,
+                Collections.singletonList(CacheKeyConstants.TRANSFER + "{mobile}"),
+                CacheRedisType.STRING,
+                CacheSourceOfTruth.MYSQL,
+                CacheWritePolicy.WRITE_THROUGH,
+                CacheDeletePolicy.DELETE_KEY,
+                CacheRebuildPolicy.FULL_REBUILD,
+                "beacon-webmaster",
+                true
+        ));
     }
 }
