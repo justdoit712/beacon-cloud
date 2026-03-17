@@ -22,7 +22,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class CacheSyncServiceImplTest {
+/**
+ * 主线域测试。
+ *
+ * <p>该测试类只覆盖当前主线 4 个域：
+ * client_business、client_channel、channel、client_balance。</p>
+ */
+public class CacheSyncServiceImplMainlineTest {
 
     private BeaconCacheWriteClient cacheWriteClient;
     private CacheSyncServiceImpl cacheSyncService;
@@ -60,31 +66,6 @@ public class CacheSyncServiceImplTest {
     }
 
     @Test
-    public void shouldRouteDirtyWordUpsertToDeleteThenSaddStr() {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("members", Arrays.asList("bad_1", "bad_2"));
-
-        cacheSyncService.syncUpsert("dirty_word", payload);
-
-        verify(cacheWriteClient, times(1)).delete("dirty_word");
-        ArgumentCaptor<String[]> captor = ArgumentCaptor.forClass(String[].class);
-        verify(cacheWriteClient, times(1)).saddStr(eq("dirty_word"), captor.capture());
-        Assert.assertArrayEquals(new String[]{"bad_1", "bad_2"}, captor.getValue());
-    }
-
-    @Test
-    public void shouldDeleteOnlyWhenDirtyWordMembersEmpty() {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("members", Arrays.asList());
-
-        cacheSyncService.syncUpsert("dirty_word", payload);
-
-        verify(cacheWriteClient, times(1)).delete("dirty_word");
-        verify(cacheWriteClient, never()).saddStr(eq("dirty_word"), org.mockito.ArgumentMatchers.<String[]>any());
-        verify(cacheWriteClient, never()).sadd(eq("dirty_word"), org.mockito.ArgumentMatchers.<Map<String, Object>[]>any());
-    }
-
-    @Test
     public void shouldRouteClientChannelUpsertToDeleteThenSaddMap() {
         Map<String, Object> member = new HashMap<>();
         member.put("channelId", 2001L);
@@ -106,32 +87,6 @@ public class CacheSyncServiceImplTest {
     }
 
     @Test
-    public void shouldDeleteOnlyWhenClientTemplateMembersEmpty() {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("signId", 2002L);
-        payload.put("members", Arrays.asList());
-
-        cacheSyncService.syncUpsert("client_template", payload);
-
-        verify(cacheWriteClient, times(1)).delete("client_template:2002");
-        verify(cacheWriteClient, never()).sadd(eq("client_template:2002"), org.mockito.ArgumentMatchers.<Map<String, Object>[]>any());
-        verify(cacheWriteClient, never()).saddStr(eq("client_template:2002"), org.mockito.ArgumentMatchers.<String[]>any());
-    }
-
-    @Test
-    public void shouldFallbackToStringSetWhenClientSignMembersAreStrings() {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("clientId", 1001L);
-        payload.put("members", Arrays.asList("sign_a", "sign_b"));
-
-        cacheSyncService.syncUpsert("client_sign", payload);
-
-        verify(cacheWriteClient, times(1)).delete("client_sign:1001");
-        verify(cacheWriteClient, times(1)).saddStr(eq("client_sign:1001"), org.mockito.ArgumentMatchers.<String[]>any());
-        verify(cacheWriteClient, never()).sadd(eq("client_sign:1001"), org.mockito.ArgumentMatchers.<Map<String, Object>[]>any());
-    }
-
-    @Test
     public void shouldMapSpNumberToChannelNumberWhenUpsertChannel() {
         Map<String, Object> payload = new HashMap<>();
         payload.put("id", 3001L);
@@ -145,23 +100,6 @@ public class CacheSyncServiceImplTest {
     }
 
     @Test
-    public void shouldRouteBlackDeleteToDeleteApiWithClientScopeKey() {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("clientId", 1001L);
-        payload.put("mobile", "13800000000");
-
-        cacheSyncService.syncDelete("black", payload);
-
-        verify(cacheWriteClient, times(1)).delete("black:1001:13800000000");
-    }
-
-    @Test
-    public void shouldDeleteSetKeyWhenSyncDeleteDirtyWord() {
-        cacheSyncService.syncDelete("dirty_word", new HashMap<String, Object>());
-        verify(cacheWriteClient, times(1)).delete("dirty_word");
-    }
-
-    @Test
     public void shouldSkipDeleteForClientBalanceBecauseOverwriteOnly() {
         Map<String, Object> payload = new HashMap<>();
         payload.put("clientId", 1001L);
@@ -172,34 +110,24 @@ public class CacheSyncServiceImplTest {
     }
 
     @Test
-    public void shouldRejectUnsupportedDomain() {
-        try {
-            cacheSyncService.syncUpsert("unknown_domain", new HashMap<String, Object>());
-            Assert.fail("expected ApiException");
-        } catch (ApiException ex) {
-            Assert.assertNotNull(ex.getCode());
-        }
-    }
-
-    @Test
     public void shouldAllowAllManualRebuildForCurrentAllowedRange() {
         cacheSyncService.rebuildDomain("ALL");
-    }
-
-    @Test
-    public void shouldRejectManualRebuildForNonMainlineDomain() {
-        try {
-            cacheSyncService.rebuildDomain("dirty_word");
-            Assert.fail("expected ApiException");
-        } catch (ApiException ex) {
-            Assert.assertNotNull(ex.getCode());
-        }
     }
 
     @Test
     public void shouldRejectManualRebuildForBalanceDomainBeforeAllowed() {
         try {
             cacheSyncService.rebuildDomain("client_balance");
+            Assert.fail("expected ApiException");
+        } catch (ApiException ex) {
+            Assert.assertNotNull(ex.getCode());
+        }
+    }
+
+    @Test
+    public void shouldRejectUnsupportedDomain() {
+        try {
+            cacheSyncService.syncUpsert("unknown_domain", new HashMap<String, Object>());
             Assert.fail("expected ApiException");
         } catch (ApiException ex) {
             Assert.assertNotNull(ex.getCode());
