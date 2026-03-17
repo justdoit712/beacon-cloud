@@ -5,115 +5,159 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 单个缓存业务域的统一契约定义。
- * <p>
- * 该类用于固化一个域（如 client_business、client_sign）在缓存中的核心规则，
- * 包括 key 模板、数据结构、主数据源、写删策略、重建策略、归属服务等。
- * 该对象是不可变对象，构造时会完成参数校验，确保契约本身合法。
+ * 单个缓存域的契约定义。
+ *
+ * <p>用于描述某个缓存域在系统中的固定规则，包括：</p>
+ * <p>1. 域编码；</p>
+ * <p>2. 逻辑 key 模板；</p>
+ * <p>3. Redis 数据结构类型；</p>
+ * <p>4. 真源类型；</p>
+ * <p>5. 写入、删除、重建策略；</p>
+ * <p>6. 归属服务；</p>
+ * <p>7. 是否允许在启动阶段参与重建。</p>
+ *
+ * <p>该对象为不可变对象，构造完成后不再修改。</p>
  */
 public final class CacheDomainContract {
 
-    /** 域编码（唯一标识），如 client_business。 */
+    /** 域编码，作为缓存域的唯一标识。 */
     private final String domainCode;
-    /** 逻辑 key 模板列表（不包含命名空间前缀）。 */
+    /** 逻辑 key 模板列表，不包含命名空间前缀。 */
     private final List<String> logicalKeyPatterns;
-    /** Redis 结构类型。 */
+    /** Redis 数据结构类型。 */
     private final CacheRedisType redisType;
-    /** 主数据来源（真源）。 */
+    /** 真源类型，表示该域最终以哪个存储为准。 */
     private final CacheSourceOfTruth sourceOfTruth;
-    /** 写入策略标识（如 WRITE_THROUGH）。 */
-    private final String writePolicy;
-    /** 删除策略标识（如 DELETE_KEY）。 */
-    private final String deletePolicy;
-    /** 重建策略标识（如 FULL_REBUILD）。 */
-    private final String rebuildPolicy;
-    /** 该域的归属服务（用于治理和定位）。 */
+    /** 写入策略。 */
+    private final CacheWritePolicy writePolicy;
+    /** 删除策略。 */
+    private final CacheDeletePolicy deletePolicy;
+    /** 重建策略。 */
+    private final CacheRebuildPolicy rebuildPolicy;
+    /** 该缓存域归属的服务名称。 */
     private final String ownerService;
-    /** 是否允许在启动校准阶段自动参与重建。 */
+    /** 是否允许在启动校准阶段参与自动重建。 */
     private final boolean bootRebuildEnabled;
 
     /**
      * 构造缓存域契约。
      *
-     * @param domainCode         域编码
-     * @param logicalKeyPatterns 逻辑 key 模板
-     * @param redisType          Redis 数据结构类型
-     * @param sourceOfTruth      主数据源
-     * @param writePolicy        写入策略
-     * @param deletePolicy       删除策略
-     * @param rebuildPolicy      重建策略
-     * @param ownerService       归属服务
-     * @param bootRebuildEnabled 是否允许启动重建
+     * @param domainCode 域编码
+     * @param logicalKeyPatterns 逻辑 key 模板列表
+     * @param redisType Redis 数据结构类型
+     * @param sourceOfTruth 真源类型
+     * @param writePolicy 写入策略
+     * @param deletePolicy 删除策略
+     * @param rebuildPolicy 重建策略
+     * @param ownerService 归属服务名称
+     * @param bootRebuildEnabled 是否允许启动阶段自动重建
      */
     public CacheDomainContract(String domainCode,
                                List<String> logicalKeyPatterns,
                                CacheRedisType redisType,
                                CacheSourceOfTruth sourceOfTruth,
-                               String writePolicy,
-                               String deletePolicy,
-                               String rebuildPolicy,
+                               CacheWritePolicy writePolicy,
+                               CacheDeletePolicy deletePolicy,
+                               CacheRebuildPolicy rebuildPolicy,
                                String ownerService,
                                boolean bootRebuildEnabled) {
         this.domainCode = requireText(domainCode, "domainCode");
         this.logicalKeyPatterns = normalizePatterns(logicalKeyPatterns);
         this.redisType = requireNotNull(redisType, "redisType");
         this.sourceOfTruth = requireNotNull(sourceOfTruth, "sourceOfTruth");
-        this.writePolicy = requireText(writePolicy, "writePolicy");
-        this.deletePolicy = requireText(deletePolicy, "deletePolicy");
-        this.rebuildPolicy = requireText(rebuildPolicy, "rebuildPolicy");
+        this.writePolicy = requireNotNull(writePolicy, "writePolicy");
+        this.deletePolicy = requireNotNull(deletePolicy, "deletePolicy");
+        this.rebuildPolicy = requireNotNull(rebuildPolicy, "rebuildPolicy");
         this.ownerService = requireText(ownerService, "ownerService");
         this.bootRebuildEnabled = bootRebuildEnabled;
     }
 
-    /** @return 域编码。 */
+    /**
+     * 返回域编码。
+     *
+     * @return 域编码
+     */
     public String getDomainCode() {
         return domainCode;
     }
 
-    /** @return 逻辑 key 模板列表（只读）。 */
+    /**
+     * 返回逻辑 key 模板列表。
+     *
+     * @return 逻辑 key 模板列表
+     */
     public List<String> getLogicalKeyPatterns() {
         return logicalKeyPatterns;
     }
 
-    /** @return Redis 数据结构类型。 */
+    /**
+     * 返回 Redis 数据结构类型。
+     *
+     * @return Redis 数据结构类型
+     */
     public CacheRedisType getRedisType() {
         return redisType;
     }
 
-    /** @return 主数据来源。 */
+    /**
+     * 返回真源类型。
+     *
+     * @return 真源类型
+     */
     public CacheSourceOfTruth getSourceOfTruth() {
         return sourceOfTruth;
     }
 
-    /** @return 写入策略标识。 */
-    public String getWritePolicy() {
+    /**
+     * 返回写入策略。
+     *
+     * @return 写入策略
+     */
+    public CacheWritePolicy getWritePolicy() {
         return writePolicy;
     }
 
-    /** @return 删除策略标识。 */
-    public String getDeletePolicy() {
+    /**
+     * 返回删除策略。
+     *
+     * @return 删除策略
+     */
+    public CacheDeletePolicy getDeletePolicy() {
         return deletePolicy;
     }
 
-    /** @return 重建策略标识。 */
-    public String getRebuildPolicy() {
+    /**
+     * 返回重建策略。
+     *
+     * @return 重建策略
+     */
+    public CacheRebuildPolicy getRebuildPolicy() {
         return rebuildPolicy;
     }
 
-    /** @return 归属服务名称。 */
+    /**
+     * 返回归属服务名称。
+     *
+     * @return 归属服务名称
+     */
     public String getOwnerService() {
         return ownerService;
     }
 
-    /** @return 是否允许启动重建。 */
+    /**
+     * 返回是否允许启动阶段自动重建。
+     *
+     * @return true 表示允许，false 表示不允许
+     */
     public boolean isBootRebuildEnabled() {
         return bootRebuildEnabled;
     }
 
     /**
      * 规范化逻辑 key 模板列表。
-     * <p>
-     * 要求列表非空，每个模板非空白；返回不可变列表，防止外部修改。
+     *
+     * @param logicalKeyPatterns 原始逻辑 key 模板列表
+     * @return 规范化后的只读列表
      */
     private static List<String> normalizePatterns(List<String> logicalKeyPatterns) {
         if (logicalKeyPatterns == null || logicalKeyPatterns.isEmpty()) {
@@ -121,18 +165,17 @@ public final class CacheDomainContract {
         }
         List<String> result = new ArrayList<>(logicalKeyPatterns.size());
         for (String pattern : logicalKeyPatterns) {
-            String normalized = requireText(pattern, "logicalKeyPattern");
-            result.add(normalized);
+            result.add(requireText(pattern, "logicalKeyPattern"));
         }
         return Collections.unmodifiableList(result);
     }
 
     /**
-     * 校验字符串字段必须非空白。
+     * 校验文本字段非空白。
      *
-     * @param value     字段值
-     * @param fieldName 字段名（用于错误提示）
-     * @return trim 后字符串
+     * @param value 字段值
+     * @param fieldName 字段名
+     * @return 去除首尾空白后的文本
      */
     private static String requireText(String value, String fieldName) {
         if (value == null || value.trim().isEmpty()) {
@@ -142,12 +185,12 @@ public final class CacheDomainContract {
     }
 
     /**
-     * 校验对象字段必须非 null。
+     * 校验对象字段不为 {@code null}。
      *
-     * @param value     对象值
-     * @param fieldName 字段名（用于错误提示）
-     * @param <T>       对象类型
-     * @return 原对象
+     * @param value 字段值
+     * @param fieldName 字段名
+     * @param <T> 对象类型
+     * @return 原始对象
      */
     private static <T> T requireNotNull(T value, String fieldName) {
         if (value == null) {

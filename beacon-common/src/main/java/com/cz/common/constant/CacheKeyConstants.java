@@ -4,7 +4,7 @@ package com.cz.common.constant;
 * @author cz
 * @description
 */
-public interface CacheConstant {
+public interface CacheKeyConstants {
     /**
      * 客户信息
      */

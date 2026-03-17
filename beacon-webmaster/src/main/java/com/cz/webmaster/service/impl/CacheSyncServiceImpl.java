@@ -1,6 +1,7 @@
 package com.cz.webmaster.service.impl;
 
 import com.cz.common.constant.CacheDomainContract;
+import com.cz.common.constant.CacheDeletePolicy;
 import com.cz.common.constant.CacheDomainRegistry;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.ApiException;
@@ -121,7 +122,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             key = buildKey(contract.getDomainCode(), entityOrId);
 
             // client_balance 删除策略为 OVERWRITE_ONLY：第一层先保守跳过删 key。
-            if (CacheDomainRegistry.OVERWRITE_ONLY.equals(contract.getDeletePolicy())) {
+            if (contract.getDeletePolicy() == CacheDeletePolicy.OVERWRITE_ONLY) {
                 CacheSyncLogHelper.info(log, contract.getDomainCode(), entityId, key, operation + ".skipOverwriteOnly", costMs(startAt));
                 return;
             }
