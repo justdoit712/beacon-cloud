@@ -48,7 +48,7 @@ public final class CacheDomainRegistry {
 
         contracts.add(new CacheDomainContract(
                 CLIENT_BUSINESS,
-                Collections.singletonList(CacheConstant.CLIENT_BUSINESS + "{apikey}"),
+                Collections.singletonList(CacheKeyConstants.CLIENT_BUSINESS + "{apikey}"),
                 CacheRedisType.HASH,
                 CacheSourceOfTruth.MYSQL,
                 CacheWritePolicy.WRITE_THROUGH,
@@ -60,7 +60,7 @@ public final class CacheDomainRegistry {
 
         contracts.add(new CacheDomainContract(
                 CLIENT_SIGN,
-                Collections.singletonList(CacheConstant.CLIENT_SIGN + "{clientId}"),
+                Collections.singletonList(CacheKeyConstants.CLIENT_SIGN + "{clientId}"),
                 CacheRedisType.SET,
                 CacheSourceOfTruth.MYSQL,
                 CacheWritePolicy.DELETE_AND_REBUILD,
@@ -72,7 +72,7 @@ public final class CacheDomainRegistry {
 
         contracts.add(new CacheDomainContract(
                 CLIENT_TEMPLATE,
-                Collections.singletonList(CacheConstant.CLIENT_TEMPLATE + "{signId}"),
+                Collections.singletonList(CacheKeyConstants.CLIENT_TEMPLATE + "{signId}"),
                 CacheRedisType.SET,
                 CacheSourceOfTruth.MYSQL,
                 CacheWritePolicy.DELETE_AND_REBUILD,
@@ -84,7 +84,7 @@ public final class CacheDomainRegistry {
 
         contracts.add(new CacheDomainContract(
                 CLIENT_CHANNEL,
-                Collections.singletonList(CacheConstant.CLIENT_CHANNEL + "{clientId}"),
+                Collections.singletonList(CacheKeyConstants.CLIENT_CHANNEL + "{clientId}"),
                 CacheRedisType.SET,
                 CacheSourceOfTruth.MYSQL,
                 CacheWritePolicy.DELETE_AND_REBUILD,
@@ -96,7 +96,7 @@ public final class CacheDomainRegistry {
 
         contracts.add(new CacheDomainContract(
                 CHANNEL,
-                Collections.singletonList(CacheConstant.CHANNEL + "{id}"),
+                Collections.singletonList(CacheKeyConstants.CHANNEL + "{id}"),
                 CacheRedisType.HASH,
                 CacheSourceOfTruth.MYSQL,
                 CacheWritePolicy.WRITE_THROUGH,
@@ -109,8 +109,8 @@ public final class CacheDomainRegistry {
         contracts.add(new CacheDomainContract(
                 BLACK,
                 Arrays.asList(
-                        CacheConstant.BLACK + "{mobile}",
-                        CacheConstant.BLACK + "{clientId}" + CacheConstant.SEPARATE + "{mobile}"
+                        CacheKeyConstants.BLACK + "{mobile}",
+                        CacheKeyConstants.BLACK + "{clientId}" + CacheKeyConstants.SEPARATE + "{mobile}"
                 ),
                 CacheRedisType.STRING,
                 CacheSourceOfTruth.MYSQL,
@@ -123,7 +123,7 @@ public final class CacheDomainRegistry {
 
         contracts.add(new CacheDomainContract(
                 DIRTY_WORD,
-                Collections.singletonList(CacheConstant.DIRTY_WORD),
+                Collections.singletonList(CacheKeyConstants.DIRTY_WORD),
                 CacheRedisType.SET,
                 CacheSourceOfTruth.MYSQL,
                 CacheWritePolicy.DELETE_AND_REBUILD,
@@ -135,7 +135,7 @@ public final class CacheDomainRegistry {
 
         contracts.add(new CacheDomainContract(
                 TRANSFER,
-                Collections.singletonList(CacheConstant.TRANSFER + "{mobile}"),
+                Collections.singletonList(CacheKeyConstants.TRANSFER + "{mobile}"),
                 CacheRedisType.STRING,
                 CacheSourceOfTruth.MYSQL,
                 CacheWritePolicy.WRITE_THROUGH,
@@ -147,7 +147,7 @@ public final class CacheDomainRegistry {
 
         contracts.add(new CacheDomainContract(
                 CLIENT_BALANCE,
-                Collections.singletonList(CacheConstant.CLIENT_BALANCE + "{clientId}"),
+                Collections.singletonList(CacheKeyConstants.CLIENT_BALANCE + "{clientId}"),
                 CacheRedisType.HASH,
                 CacheSourceOfTruth.MYSQL,
                 CacheWritePolicy.MYSQL_ATOMIC_UPDATE_THEN_REFRESH,
