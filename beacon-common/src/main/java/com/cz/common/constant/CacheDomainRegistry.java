@@ -3,6 +3,7 @@ package com.cz.common.constant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,10 @@ public final class CacheDomainRegistry {
     private static final List<CacheDomainContract> CONTRACTS;
     /** 域编码到契约的索引。 */
     private static final Map<String, CacheDomainContract> CONTRACT_MAP;
+    /** 当前主线域集合。 */
+    private static final Set<String> CURRENT_MAINLINE_DOMAIN_CODES;
+    /** 当前允许 ALL 展开的手工重建域集合。 */
+    private static final Set<String> CURRENT_MANUAL_REBUILD_DOMAIN_CODES;
 
     static {
         List<CacheDomainContract> contracts = new ArrayList<>();
@@ -167,6 +172,17 @@ public final class CacheDomainRegistry {
 
         CONTRACTS = Collections.unmodifiableList(contracts);
         CONTRACT_MAP = Collections.unmodifiableMap(index);
+        CURRENT_MAINLINE_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
+                CLIENT_BUSINESS,
+                CLIENT_CHANNEL,
+                CHANNEL,
+                CLIENT_BALANCE
+        )));
+        CURRENT_MANUAL_REBUILD_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
+                CLIENT_BUSINESS,
+                CLIENT_CHANNEL,
+                CHANNEL
+        )));
     }
 
     private CacheDomainRegistry() {
@@ -225,5 +241,45 @@ public final class CacheDomainRegistry {
      */
     public static boolean contains(String domainCode) {
         return CONTRACT_MAP.containsKey(domainCode);
+    }
+
+    /**
+     * 返回当前主线域集合。
+     *
+     * @return 当前主线域集合
+     */
+    public static Set<String> currentMainlineDomainCodes() {
+        return CURRENT_MAINLINE_DOMAIN_CODES;
+    }
+
+    /**
+     * 判断域是否属于当前主线范围。
+     *
+     * @param domainCode 域编码
+     * @return true 表示属于当前主线域
+     */
+    public static boolean isCurrentMainlineDomain(String domainCode) {
+        return CURRENT_MAINLINE_DOMAIN_CODES.contains(domainCode);
+    }
+
+    /**
+     * 返回当前允许由 ALL 展开的手工重建域集合。
+     *
+     * <p>当前只包含已纳入主线且允许进入第三层默认范围的域。</p>
+     *
+     * @return 当前允许 ALL 展开的手工重建域集合
+     */
+    public static Set<String> currentManualRebuildDomainCodes() {
+        return CURRENT_MANUAL_REBUILD_DOMAIN_CODES;
+    }
+
+    /**
+     * 判断域是否属于当前允许 ALL 展开的手工重建范围。
+     *
+     * @param domainCode 域编码
+     * @return true 表示属于当前手工重建允许范围
+     */
+    public static boolean isCurrentManualRebuildDomain(String domainCode) {
+        return CURRENT_MANUAL_REBUILD_DOMAIN_CODES.contains(domainCode);
     }
 }

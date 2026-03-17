@@ -1,5 +1,6 @@
 package com.cz.webmaster.config;
 
+import org.springframework.core.env.Environment;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -27,12 +28,18 @@ import java.util.List;
  *     enabled: false
  *     domains:
  *       - client_business
- *       - client_sign
+ *       - client_channel
  * </pre>
  */
 @Component
 @ConfigurationProperties(prefix = "sync")
 public class CacheSyncProperties {
+
+    private final Environment environment;
+
+    public CacheSyncProperties(Environment environment) {
+        this.environment = environment;
+    }
 
     /**
      * 全局总开关。
@@ -76,6 +83,7 @@ public class CacheSyncProperties {
             throw new IllegalArgumentException("sync.redis must not be null");
         }
         redis.setNamespace(normalizeNamespace(redis.getNamespace(), "sync.redis.namespace"));
+        validateNamespaceConsistency(resolveNamespace(), environment == null ? null : environment.getProperty("cache.namespace.fullPrefix"));
     }
 
     /**
@@ -95,6 +103,15 @@ public class CacheSyncProperties {
         }
         String value = namespace.trim();
         return value.endsWith(":") ? value : value + ":";
+    }
+
+    private static void validateNamespaceConsistency(String syncNamespace, String cacheNamespaceFullPrefix) {
+        String cacheNamespace = normalizeNamespace(cacheNamespaceFullPrefix, "cache.namespace.fullPrefix");
+        if (!syncNamespace.equals(cacheNamespace)) {
+            throw new IllegalArgumentException(
+                    "sync.redis.namespace must match cache.namespace.fullPrefix, sync="
+                            + syncNamespace + ", cache=" + cacheNamespace);
+        }
     }
 
     public boolean isEnabled() {

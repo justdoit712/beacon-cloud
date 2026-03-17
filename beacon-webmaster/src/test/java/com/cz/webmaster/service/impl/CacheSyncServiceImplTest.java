@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.mock.env.MockEnvironment;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,7 +31,9 @@ public class CacheSyncServiceImplTest {
     public void setUp() {
         cacheWriteClient = Mockito.mock(BeaconCacheWriteClient.class);
 
-        CacheSyncProperties properties = new CacheSyncProperties();
+        CacheSyncProperties properties = new CacheSyncProperties(
+                new MockEnvironment().withProperty("cache.namespace.fullPrefix", "beacon:dev:beacon-cloud:cz:")
+        );
         properties.setEnabled(true);
         properties.getRuntime().setEnabled(true);
         properties.getManual().setEnabled(true);
@@ -172,6 +175,31 @@ public class CacheSyncServiceImplTest {
     public void shouldRejectUnsupportedDomain() {
         try {
             cacheSyncService.syncUpsert("unknown_domain", new HashMap<String, Object>());
+            Assert.fail("expected ApiException");
+        } catch (ApiException ex) {
+            Assert.assertNotNull(ex.getCode());
+        }
+    }
+
+    @Test
+    public void shouldAllowAllManualRebuildForCurrentAllowedRange() {
+        cacheSyncService.rebuildDomain("ALL");
+    }
+
+    @Test
+    public void shouldRejectManualRebuildForNonMainlineDomain() {
+        try {
+            cacheSyncService.rebuildDomain("dirty_word");
+            Assert.fail("expected ApiException");
+        } catch (ApiException ex) {
+            Assert.assertNotNull(ex.getCode());
+        }
+    }
+
+    @Test
+    public void shouldRejectManualRebuildForBalanceDomainBeforeAllowed() {
+        try {
+            cacheSyncService.rebuildDomain("client_balance");
             Assert.fail("expected ApiException");
         } catch (ApiException ex) {
             Assert.assertNotNull(ex.getCode());

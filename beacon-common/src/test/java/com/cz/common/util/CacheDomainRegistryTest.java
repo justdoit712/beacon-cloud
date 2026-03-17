@@ -8,6 +8,10 @@ import com.cz.common.constant.CacheWritePolicy;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 /**
  * {@link CacheDomainRegistry} 的聚焦测试。
  *
@@ -31,6 +35,19 @@ public class CacheDomainRegistryTest {
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.CLIENT_BALANCE));
     }
 
+    @Test
+    public void shouldExposeCurrentMainlineDomains() {
+        Set<String> expected = new LinkedHashSet<>(Arrays.asList(
+                CacheDomainRegistry.CLIENT_BUSINESS,
+                CacheDomainRegistry.CLIENT_CHANNEL,
+                CacheDomainRegistry.CHANNEL,
+                CacheDomainRegistry.CLIENT_BALANCE
+        ));
+
+        Assert.assertEquals(expected, CacheDomainRegistry.currentMainlineDomainCodes());
+        Assert.assertTrue(CacheDomainRegistry.isCurrentMainlineDomain(CacheDomainRegistry.CLIENT_BALANCE));
+    }
+
     /**
      * 验证 4 个主线域的 Redis 结构契约没有漂移。
      *
@@ -47,6 +64,18 @@ public class CacheDomainRegistryTest {
                 CacheDomainRegistry.require(CacheDomainRegistry.CHANNEL).getRedisType());
         Assert.assertEquals(CacheRedisType.HASH,
                 CacheDomainRegistry.require(CacheDomainRegistry.CLIENT_BALANCE).getRedisType());
+    }
+
+    @Test
+    public void shouldRestrictCurrentManualRebuildDomains() {
+        Set<String> expected = new LinkedHashSet<>(Arrays.asList(
+                CacheDomainRegistry.CLIENT_BUSINESS,
+                CacheDomainRegistry.CLIENT_CHANNEL,
+                CacheDomainRegistry.CHANNEL
+        ));
+
+        Assert.assertEquals(expected, CacheDomainRegistry.currentManualRebuildDomainCodes());
+        Assert.assertFalse(CacheDomainRegistry.isCurrentManualRebuildDomain(CacheDomainRegistry.CLIENT_BALANCE));
     }
 
     /**

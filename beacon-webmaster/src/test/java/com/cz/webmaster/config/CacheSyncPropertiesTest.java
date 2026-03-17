@@ -2,6 +2,7 @@ package com.cz.webmaster.config;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.springframework.mock.env.MockEnvironment;
 
 /**
  * CacheSyncProperties 单元测试。
@@ -17,7 +18,9 @@ public class CacheSyncPropertiesTest {
      */
     @Test
     public void shouldNormalizeNamespaceWithSuffixColon() {
-        CacheSyncProperties properties = new CacheSyncProperties();
+        CacheSyncProperties properties = new CacheSyncProperties(
+                new MockEnvironment().withProperty("cache.namespace.fullPrefix", "beacon:dev:beacon-cloud:cz:")
+        );
         properties.getRedis().setNamespace("beacon:dev:beacon-cloud:cz");
 
         properties.validate();
@@ -30,7 +33,9 @@ public class CacheSyncPropertiesTest {
      */
     @Test
     public void shouldRejectBlankNamespaceWhenSyncEnabled() {
-        CacheSyncProperties properties = new CacheSyncProperties();
+        CacheSyncProperties properties = new CacheSyncProperties(
+                new MockEnvironment().withProperty("cache.namespace.fullPrefix", "beacon:dev:beacon-cloud:cz:")
+        );
         properties.setEnabled(true);
         properties.getRedis().setNamespace("   ");
 
@@ -41,5 +46,36 @@ public class CacheSyncPropertiesTest {
             Assert.assertTrue(ex.getMessage().contains("sync.redis.namespace"));
         }
     }
-}
 
+    @Test
+    public void shouldRejectBlankCacheNamespaceFullPrefixWhenSyncEnabled() {
+        CacheSyncProperties properties = new CacheSyncProperties(
+                new MockEnvironment().withProperty("cache.namespace.fullPrefix", " ")
+        );
+        properties.setEnabled(true);
+        properties.getRedis().setNamespace("beacon:dev:beacon-cloud:cz:");
+
+        try {
+            properties.validate();
+            Assert.fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException ex) {
+            Assert.assertTrue(ex.getMessage().contains("cache.namespace.fullPrefix"));
+        }
+    }
+
+    @Test
+    public void shouldRejectMismatchedNamespaceWhenSyncEnabled() {
+        CacheSyncProperties properties = new CacheSyncProperties(
+                new MockEnvironment().withProperty("cache.namespace.fullPrefix", "beacon:test:demo:owner:")
+        );
+        properties.setEnabled(true);
+        properties.getRedis().setNamespace("beacon:dev:beacon-cloud:cz:");
+
+        try {
+            properties.validate();
+            Assert.fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException ex) {
+            Assert.assertTrue(ex.getMessage().contains("must match"));
+        }
+    }
+}

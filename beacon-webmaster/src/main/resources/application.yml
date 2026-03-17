@@ -66,6 +66,8 @@ sync:
     domains: []
 
 cache:
+  namespace:
+    fullPrefix: "beacon:dev:beacon-cloud:cz:"
   client:
     auth:
       enabled: true

@@ -26,10 +26,10 @@ public interface CacheSyncService {
     /**
      * 按域执行重建（骨架实现）。
      * <p>
-     * 支持单域或 ALL（全域）入口，具体重建数据装配在后续层实现。
+     * 支持单域或 ALL 入口，ALL 当前表示“允许范围内的域集合”，
+     * 并不等于注册表全部域。
      *
      * @param domain 缓存域编码或 ALL
      */
     void rebuildDomain(String domain);
 }
-

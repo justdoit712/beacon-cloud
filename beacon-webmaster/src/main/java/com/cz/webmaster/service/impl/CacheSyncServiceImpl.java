@@ -170,11 +170,18 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             }
 
             if (DOMAIN_ALL.equalsIgnoreCase(normalizedDomain)) {
-                for (CacheDomainContract contract : CacheDomainRegistry.list()) {
-                    rebuildSingleDomain(contract.getDomainCode());
+                for (String allowedDomain : CacheDomainRegistry.currentManualRebuildDomainCodes()) {
+                    rebuildSingleDomain(allowedDomain);
                 }
                 CacheSyncLogHelper.info(log, DOMAIN_ALL, "-", "-", operation, costMs(startAt));
                 return;
+            }
+
+            if (!CacheDomainRegistry.isCurrentMainlineDomain(normalizedDomain)) {
+                throw new ApiException("unsupported manual rebuild domain: " + normalizedDomain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+            }
+            if (!CacheDomainRegistry.isCurrentManualRebuildDomain(normalizedDomain)) {
+                throw new ApiException("manual rebuild domain not allowed yet: " + normalizedDomain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
             }
 
             CacheDomainContract contract = requireDomainContract(normalizedDomain);
