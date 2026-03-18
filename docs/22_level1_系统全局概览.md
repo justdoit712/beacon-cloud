@@ -1,4 +1,4 @@
-# Level 1 - 系统全局概览
+# 系统总览与主链路总文档
 
 文档类型：系统总览  
 适用对象：新同学 / 答辩 / 架构理解  
@@ -7,6 +7,13 @@
 最后核对日期：2026-03-17
 
 ---
+
+原始来源（已合并）：
+
+1. `22_level1_系统全局概览.md`
+2. `23_level2_模块与架构构成.md`
+3. `24_level3_核心业务链路分析.md`
+4. `sms-send-workflow-analysis.md`
 
 本文面向第一次接触 `beacon-cloud` 的读者，目标是用最少前置知识建立系统整体认知。  
 内容仅描述当前仓库中已经落地的实现。
@@ -106,3 +113,80 @@ beacon-monitor 通过 XXL-Job 执行队列与余额巡检任务
 6. 搜索存储：Elasticsearch（`beacon-search` 使用 `elasticsearch-rest-high-level-client`）。
 7. 关系库：MySQL（`beacon-webmaster`、`beacon-test`）。
 8. 调度：XXL-Job（`beacon-monitor`）。
+
+---
+
+## 8. 模块与架构构成摘要
+
+从职责上看，当前系统可以拆成 5 层：
+
+1. 接入层：`beacon-api`、`beacon-webmaster`
+2. 策略层：`beacon-strategy`
+3. 通道网关层：`beacon-smsgateway`
+4. 日志与回调层：`beacon-search`、`beacon-push`
+5. 平台支撑层：`beacon-cache`、`beacon-monitor`、`beacon-common`、`beacon-test`
+
+关键模块边界可以简化理解为：
+
+1. `beacon-api`
+   - 统一受理短信请求
+2. `beacon-strategy`
+   - 执行客户策略链并路由到通道
+3. `beacon-smsgateway`
+   - 把平台对象转换成 CMPP 报文并处理运营商回执
+4. `beacon-search`
+   - 写日志、更新状态、提供检索统计
+5. `beacon-push`
+   - 对客户回调状态报告
+6. `beacon-cache`
+   - 提供统一 Redis 访问能力
+7. `beacon-webmaster`
+   - 提供管理后台与内部发送入口
+8. `beacon-monitor`
+   - 定时巡检和告警
+
+---
+
+## 9. 核心业务链路摘要
+
+### 9.1 外部接口发送
+
+1. `beacon-api /sms/single_send`
+2. 构建 `StandardSubmit`
+3. 投递 `sms_pre_send_topic`
+4. `beacon-strategy` 执行策略链
+5. 路由到 `sms_gateway_topic_{channelId}`
+6. `beacon-smsgateway` 下发 CMPP
+7. `beacon-search` 写入发送日志
+8. `beacon-smsgateway` 收到状态报告后更新 `StandardReport`
+9. `beacon-search` 更新最终状态
+10. `beacon-push` 在需要时执行客户回调
+
+### 9.2 后台批量发送
+
+1. `beacon-webmaster` 接收批量手机号
+2. 逐号码调用 `beacon-api /sms/internal/single_send`
+3. 后续进入与外部接口相同的主链路
+
+### 9.3 检索与统计
+
+1. `beacon-webmaster` 调 `beacon-search`
+2. `beacon-search` 从 ES 返回列表与状态聚合
+3. `beacon-webmaster` 做权限裁剪和页面展示
+
+---
+
+## 10. 关键对象流转摘要
+
+当前主链路里的两个关键对象是：
+
+1. `StandardSubmit`
+   - 贯穿 API -> 策略 -> 网关 -> 日志写入
+2. `StandardReport`
+   - 贯穿网关回执 -> 搜索状态更新 -> 客户回调
+
+最关键的流转关系：
+
+1. `StandardSubmit` 在网关提交成功后派生为 `StandardReport`
+2. `StandardReport` 再分流到“状态更新链路”和“客户回调链路”
+3. 这也是当前 `apiKey/apikey`、`fee`、回调字段一致性问题最集中的位置

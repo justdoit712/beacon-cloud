@@ -1,4 +1,4 @@
-# beacon-cache 模块重构文档
+# beacon-cache 模块总文档
 
 文档类型：重构指南  
 适用对象：开发 / 重构  
@@ -7,6 +7,11 @@
 最后核对日期：2026-03-17
 
 ---
+
+原始来源（已合并）：
+
+1. `03_beacon-cache_module_analysis.md`
+2. `04_beacon-cache_refactor_guide.md`
 
 ## 1. 模块定位
 

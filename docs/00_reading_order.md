@@ -2,69 +2,34 @@
 
 文档类型：阅读导航  
 适用对象：新同学 / 开发 / 排障 / 答辩  
-验证基线：文档目录清点  
+验证基线：精简后文档结构  
 关联模块：全局  
-最后核对日期：2026-03-17
+最后核对日期：2026-03-18
 
 ---
 
-## 1. 快速入口
+## 1. 当前文档结构
 
-1. 想先看系统整体：先读 `22` -> `23` -> `24`
-2. 想看主链路细节：读 `sms-send-workflow-analysis.md`
-3. 想看某个模块怎么改：先读对应 `*_module_analysis.md`，再读对应 `*_refactor_guide.md`
-4. 想看项目接下来往哪走：读 `sms-business-architecture-evolution-roadmap.md`
-5. 想看当前还没完成什么：读 `status_matrix.md`
-6. 想看缓存同步门面层怎么做增强：读 `增强_第五层AOP适用点说明.md`
+精简后，`docs` 目录保留 4 类文档：
 
-## 2. 按角色阅读
+1. 系统总览：1 份
+2. 模块总文档：10 份
+3. 专题方案：2 份
+4. 路线图：1 份
 
-### 2.1 新同学入门
+建议理解为：**一模块一总文档 + 少量跨模块专题**。
 
-1. `22_level1_系统全局概览.md`
-2. `23_level2_模块与架构构成.md`
-3. `24_level3_核心业务链路分析.md`
-4. `sms-send-workflow-analysis.md`
+---
 
-### 2.2 开发改模块
+## 2. 最推荐的阅读顺序
 
-1. 先找对应模块分析文档：
-   `01/03/05/07/10/12/14/16/18`
-2. 再看对应重构文档：
-   `02/04/06/09/11/13/15/17/19/20`
-3. 如果涉及缓存一致性，再补读：
-   `21_mysql_redis_sync_fix_guide.md`
-
-### 2.3 排障定位
-
-1. 主链路问题：`24_level3_核心业务链路分析.md`
-2. 对象流转问题：`sms-send-workflow-analysis.md`
-3. 模块风险深挖：对应模块分析文档，策略专项看 `08_strategy_module_risk_explanation.md`
-4. 当前未完成项总表：`status_matrix.md`
-
-### 2.4 答辩与展示
+### 2.1 第一次接触项目
 
 1. `22_level1_系统全局概览.md`
-2. `23_level2_模块与架构构成.md`
-3. `24_level3_核心业务链路分析.md`
-4. `21_mysql_redis_sync_fix_guide.md`
-5. `sms-business-architecture-evolution-roadmap.md`
+2. `25_统一重构优先级路线图.md`
+3. `26_P0_冻结边界止血实施方案.md`
 
-## 3. 文档分组
-
-### 3.1 模块分析
-
-1. `01_beacon-common_module_analysis.md`
-2. `03_beacon-cache_module_analysis.md`
-3. `05_beacon-api_module_analysis.md`
-4. `07_beacon-strategy_module_analysis.md`
-5. `10_beacon-smsgateway_module_analysis.md`
-6. `12_beacon-search_module_analysis.md`
-7. `14_beacon-push_module_analysis.md`
-8. `16_beacon-webmaster_module_analysis.md`
-9. `18_beacon-monitor_module_analysis.md`
-
-### 3.2 重构指南
+### 2.2 想看模块怎么改
 
 1. `02_beacon-common_refactor_guide.md`
 2. `04_beacon-cache_refactor_guide.md`
@@ -77,22 +42,46 @@
 9. `19_beacon-monitor_refactor_guide.md`
 10. `20_beacon-test_refactor_guide.md`
 
-### 3.3 专题文档
+### 2.3 想看跨模块专题
 
-1. `08_strategy_module_risk_explanation.md`
-2. `21_mysql_redis_sync_fix_guide.md`
-3. `sms-send-workflow-analysis.md`
-4. `sms-business-architecture-evolution-roadmap.md`
-5. `增强_第五层AOP适用点说明.md`
+1. `21_mysql_redis_sync_fix_guide.md`
+2. `26_P0_冻结边界止血实施方案.md`
+3. `25_统一重构优先级路线图.md`
 
-### 3.4 分层总览
+---
+
+## 3. 当前保留文档
+
+### 3.1 系统总览
 
 1. `22_level1_系统全局概览.md`
-2. `23_level2_模块与架构构成.md`
-3. `24_level3_核心业务链路分析.md`
+
+### 3.2 模块总文档
+
+1. `02_beacon-common_refactor_guide.md`
+2. `04_beacon-cache_refactor_guide.md`
+3. `06_beacon-api_refactor_guide.md`
+4. `09_beacon-strategy_refactor_guide.md`
+5. `11_beacon-smsgateway_refactor_guide.md`
+6. `13_beacon-search_refactor_guide.md`
+7. `15_beacon-push_refactor_guide.md`
+8. `17_beacon-webmaster_refactor_guide.md`
+9. `19_beacon-monitor_refactor_guide.md`
+10. `20_beacon-test_refactor_guide.md`
+
+### 3.3 专题方案
+
+1. `21_mysql_redis_sync_fix_guide.md`
+2. `26_P0_冻结边界止血实施方案.md`
+
+### 3.4 路线图
+
+1. `25_统一重构优先级路线图.md`
+
+---
 
 ## 4. 维护建议
 
-1. 新增模块文档时，优先补：模块分析 + 重构指南
-2. 新增专题时，补到“专题文档”分组，不必强行编号
-3. 文档更新后，同步维护 `status_matrix.md`
+1. 后续新增模块文档，优先追加到对应“模块总文档”，不要再拆一份分析文档和一份改造文档
+2. 新的跨模块问题，优先并入 `21`、`25`、`26` 这类已有专题或路线图，只有在明显独立时再新开专题
+3. 如果某一份模块总文档再次膨胀到难读，再考虑按主题拆分，而不是恢复“分析 + 重构”双份结构

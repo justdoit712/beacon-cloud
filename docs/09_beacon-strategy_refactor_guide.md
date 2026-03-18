@@ -1,4 +1,4 @@
-# beacon-strategy 重构文档
+# beacon-strategy 模块总文档
 
 文档类型：重构指南  
 适用对象：开发 / 重构  
@@ -7,6 +7,12 @@
 最后核对日期：2026-03-17
 
 ---
+
+原始来源（已合并）：
+
+1. `07_beacon-strategy_module_analysis.md`
+2. `08_strategy_module_risk_explanation.md`
+3. `09_beacon-strategy_refactor_guide.md`
 
 ## 1. 模块定位
 
