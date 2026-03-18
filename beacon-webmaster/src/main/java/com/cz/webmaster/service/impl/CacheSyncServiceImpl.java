@@ -1,7 +1,7 @@
 package com.cz.webmaster.service.impl;
 
-import com.cz.common.constant.CacheDomainContract;
 import com.cz.common.constant.CacheDeletePolicy;
+import com.cz.common.constant.CacheDomainContract;
 import com.cz.common.constant.CacheDomainRegistry;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.ApiException;
@@ -26,16 +26,17 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * CacheSyncService 骨架实现。
- * <p>
- * 第一层职责：
- * <p>
- * 1. 域路由：按 CacheDomainRegistry 解析域契约；<br>
- * 2. key 构建：统一调用 CacheKeyBuilder；<br>
- * 3. 写删调用：统一通过 BeaconCacheWriteClient；<br>
- * 4. 统一日志与错误码：复用 CacheSyncLogHelper + ExceptionEnums。<br>
- * <p>
- * 注意：本类当前是“骨架版本”，重建数据装配逻辑在后续层逐步补齐。
+ * {@link CacheSyncService} 的默认实现。
+ *
+ * <p>该类负责把上层发起的缓存同步请求，统一路由为实际的缓存写入、
+ * 删除或重建动作。</p>
+ *
+ * <p>主要职责包括：</p>
+ * <p>1. 根据 {@link CacheDomainRegistry} 解析缓存域契约；</p>
+ * <p>2. 使用 {@link CacheKeyBuilder} 统一构建逻辑 key；</p>
+ * <p>3. 通过 {@link BeaconCacheWriteClient} 执行实际的缓存写删；</p>
+ * <p>4. 通过 {@link CacheSyncLogHelper} 输出统一格式的同步日志；</p>
+ * <p>5. 在不同同步入口之间复用同一套路由规则。</p>
  */
 @Service
 public class CacheSyncServiceImpl implements CacheSyncService {
@@ -48,6 +49,14 @@ public class CacheSyncServiceImpl implements CacheSyncService {
     private final BeaconCacheWriteClient cacheWriteClient;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 构造缓存同步门面实现。
+     *
+     * @param cacheSyncProperties 缓存同步配置
+     * @param cacheKeyBuilder 逻辑 key 构建器
+     * @param cacheWriteClient 缓存写删客户端
+     * @param objectMapper 对象转换器
+     */
     public CacheSyncServiceImpl(CacheSyncProperties cacheSyncProperties,
                                 CacheKeyBuilder cacheKeyBuilder,
                                 BeaconCacheWriteClient cacheWriteClient,
@@ -58,6 +67,15 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 根据缓存域路由规则执行新增或更新同步。
+     *
+     * <p>该方法会依次完成运行时开关校验、域契约解析、key 构建、
+     * 缓存写入和日志记录。</p>
+     *
+     * @param domain 缓存域编码
+     * @param entityOrId 业务实体对象或主键标识
+     */
     @Override
     public void syncUpsert(String domain, Object entityOrId) {
         long startAt = System.currentTimeMillis();
@@ -105,6 +123,15 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         }
     }
 
+    /**
+     * 根据缓存域路由规则执行删除或失效同步。
+     *
+     * <p>对于删除策略为“只允许覆盖写”的缓存域，该方法会显式跳过删 key 操作，
+     * 并记录跳过日志。</p>
+     *
+     * @param domain 缓存域编码
+     * @param entityOrId 业务实体对象或主键标识
+     */
     @Override
     public void syncDelete(String domain, Object entityOrId) {
         long startAt = System.currentTimeMillis();
@@ -121,7 +148,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             CacheDomainContract contract = requireDomainContract(normalizedDomain);
             key = buildKey(contract.getDomainCode(), entityOrId);
 
-            // client_balance 删除策略为 OVERWRITE_ONLY：第一层先保守跳过删 key。
+            // 对于只允许覆盖写的镜像缓存域，删除动作会被显式跳过。
             if (contract.getDeletePolicy() == CacheDeletePolicy.OVERWRITE_ONLY) {
                 CacheSyncLogHelper.info(log, contract.getDomainCode(), entityId, key, operation + ".skipOverwriteOnly", costMs(startAt));
                 return;
@@ -158,6 +185,14 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         }
     }
 
+    /**
+     * 根据缓存域触发重建入口。
+     *
+     * <p>当传入 {@code ALL} 时，会遍历当前允许重建的域集合；
+     * 当传入单个域时，会校验该域是否允许进入重建范围。</p>
+     *
+     * @param domain 缓存域编码或 {@code ALL}
+     */
     @Override
     public void rebuildDomain(String domain) {
         long startAt = System.currentTimeMillis();
@@ -216,8 +251,15 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         }
     }
 
+    /**
+     * 执行单个缓存域的重建占位逻辑。
+     *
+     * <p>当前方法只保留重建入口和域路由位置，具体的“删旧 key、查库、回灌”
+     * 逻辑在后续重建能力完善时再补充。</p>
+     *
+     * @param domain 缓存域编码
+     */
     private void rebuildSingleDomain(String domain) {
-        // 第一层骨架：这里只做域路由占位。后续第三/四层在此补全“删除旧 key + DB 拉取 + 回灌”逻辑。
         CacheSyncLogHelper.info(log, domain, "-", "-", "rebuildDomain.skeleton", 0L);
     }
 
