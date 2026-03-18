@@ -1,0 +1,185 @@
+package com.cz.webmaster.service.impl;
+
+import com.cz.common.constant.CacheDomainRegistry;
+import com.cz.webmaster.dto.BalanceCommandResult;
+import com.cz.webmaster.entity.ClientBusiness;
+import com.cz.webmaster.mapper.ClientBusinessMapper;
+import com.cz.webmaster.service.BalanceCommandService;
+import com.cz.webmaster.service.CacheSyncService;
+import com.cz.webmaster.support.CacheSyncRuntimeExecutor;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+/**
+ * {@link BalanceCommandService} 的默认实现。
+ *
+ * <p>当前类先提供余额链路的公共能力骨架，不直接展开扣费、充值、调账
+ * 三个命令的具体业务细节。后续各命令实现时，应统一复用这里沉淀的公共流程。</p>
+ *
+ * <p>当前已沉淀的公共能力包括：</p>
+ * <p>1. 查询最新的 {@link ClientBusiness} 真源记录；</p>
+ * <p>2. 构造用于日志串联的实体标识；</p>
+ * <p>3. 在事务提交成功后，同时刷新 {@code client_balance} 和
+ * {@code client_business} 两个缓存域。</p>
+ */
+@Service
+public class BalanceCommandServiceImpl implements BalanceCommandService {
+
+    private final ClientBusinessMapper clientBusinessMapper;
+    private final CacheSyncService cacheSyncService;
+    private final CacheSyncRuntimeExecutor cacheSyncRuntimeExecutor;
+
+    /**
+     * 构造统一余额命令服务实现。
+     *
+     * @param clientBusinessMapper 客户业务 Mapper
+     * @param cacheSyncService 缓存同步统一门面
+     * @param cacheSyncRuntimeExecutor 运行时缓存同步执行器
+     */
+    public BalanceCommandServiceImpl(ClientBusinessMapper clientBusinessMapper,
+                                     CacheSyncService cacheSyncService,
+                                     CacheSyncRuntimeExecutor cacheSyncRuntimeExecutor) {
+        this.clientBusinessMapper = clientBusinessMapper;
+        this.cacheSyncService = cacheSyncService;
+        this.cacheSyncRuntimeExecutor = cacheSyncRuntimeExecutor;
+    }
+
+    /**
+     * 扣费命令入口。
+     *
+     * <p>当前阶段只先定义统一入口，具体扣费细节在后续任务中补齐。</p>
+     *
+     * @param clientId 客户 id
+     * @param fee 扣费金额
+     * @param amountLimit 最低余额限制
+     * @param requestId 请求标识
+     * @return 余额命令执行结果
+     */
+    @Override
+    public BalanceCommandResult debitAndSync(Long clientId, Long fee, Long amountLimit, String requestId) {
+        throw unsupported("debitAndSync");
+    }
+
+    /**
+     * 充值命令入口。
+     *
+     * <p>当前阶段只先定义统一入口，具体充值细节在后续任务中补齐。</p>
+     *
+     * @param clientId 客户 id
+     * @param amount 充值金额
+     * @param updateId 操作人 id
+     * @param requestId 请求标识
+     * @return 余额命令执行结果
+     */
+    @Override
+    public BalanceCommandResult rechargeAndSync(Long clientId, Long amount, Long updateId, String requestId) {
+        throw unsupported("rechargeAndSync");
+    }
+
+    /**
+     * 调账命令入口。
+     *
+     * <p>当前阶段只先定义统一入口，具体调账细节在后续任务中补齐。</p>
+     *
+     * @param clientId 客户 id
+     * @param delta 调账增量
+     * @param amountLimit 最低余额限制
+     * @param updateId 操作人 id
+     * @param requestId 请求标识
+     * @return 余额命令执行结果
+     */
+    @Override
+    public BalanceCommandResult adjustAndSync(Long clientId, Long delta, Long amountLimit, Long updateId, String requestId) {
+        throw unsupported("adjustAndSync");
+    }
+
+    /**
+     * 查询指定客户最新的真源记录。
+     *
+     * <p>余额相关命令在原子 SQL 执行成功后，可统一通过该方法读取最新状态，
+     * 作为后续结果返回和缓存刷新的基础数据。</p>
+     *
+     * @param clientId 客户 id
+     * @return 最新的客户业务记录；未命中时返回 {@code null}
+     */
+    private ClientBusiness loadLatestClientBusiness(Long clientId) {
+        if (clientId == null || clientId <= 0) {
+            return null;
+        }
+        return clientBusinessMapper.selectByPrimaryKey(clientId);
+    }
+
+    /**
+     * 在事务提交成功后执行余额双域刷新。
+     *
+     * <p>当前统一刷新两个缓存域：</p>
+     * <p>1. {@code client_balance:{clientId}}</p>
+     * <p>2. {@code client_business:{apiKey}}</p>
+     *
+     * <p>调用前要求 {@code latest} 已经是最新的真源记录，并且包含有效的
+     * {@code id} 和 {@code apiKey}。</p>
+     *
+     * @param latest 最新的客户业务记录
+     * @param operation 当前业务操作名称，用于日志区分
+     * @param entityId 日志实体标识
+     */
+    private void scheduleBalanceDoubleRefresh(ClientBusiness latest, String operation, String entityId) {
+        ClientBusiness refreshTarget = requireRefreshableClientBusiness(latest);
+        cacheSyncRuntimeExecutor.runAfterCommitOrNow(
+                () -> cacheSyncService.syncUpsert(CacheDomainRegistry.CLIENT_BALANCE, refreshTarget),
+                CacheDomainRegistry.CLIENT_BALANCE,
+                operation + ".clientBalance",
+                entityId
+        );
+        cacheSyncRuntimeExecutor.runAfterCommitOrNow(
+                () -> cacheSyncService.syncUpsert(CacheDomainRegistry.CLIENT_BUSINESS, refreshTarget),
+                CacheDomainRegistry.CLIENT_BUSINESS,
+                operation + ".clientBusiness",
+                entityId
+        );
+    }
+
+    /**
+     * 校验最新客户记录是否满足双域刷新的基本条件。
+     *
+     * @param latest 最新的客户业务记录
+     * @return 可用于刷新的客户业务记录
+     * @throws IllegalStateException 当记录为空、缺少客户 id 或缺少 apiKey 时抛出
+     */
+    private ClientBusiness requireRefreshableClientBusiness(ClientBusiness latest) {
+        if (latest == null) {
+            throw new IllegalStateException("latest client business must not be null");
+        }
+        if (latest.getId() == null || latest.getId() <= 0) {
+            throw new IllegalStateException("latest client business id must be positive");
+        }
+        if (!StringUtils.hasText(latest.getApikey())) {
+            throw new IllegalStateException("latest client business apiKey must not be blank");
+        }
+        return latest;
+    }
+
+    /**
+     * 构造用于日志串联的实体标识。
+     *
+     * <p>若同时存在客户 id 和请求 id，则拼成
+     * {@code clientId:requestId}，方便在日志里关联同一次业务请求。</p>
+     *
+     * @param clientId 客户 id
+     * @param requestId 请求标识
+     * @return 用于日志输出的安全实体标识；无有效客户 id 时返回 {@code "-"}
+     */
+    private String safeEntityId(Long clientId, String requestId) {
+        if (clientId == null || clientId <= 0) {
+            return "-";
+        }
+        if (!StringUtils.hasText(requestId)) {
+            return String.valueOf(clientId);
+        }
+        return clientId + ":" + requestId.trim();
+    }
+
+    private UnsupportedOperationException unsupported(String operation) {
+        return new UnsupportedOperationException(operation + " is not implemented yet");
+    }
+}
