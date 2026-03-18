@@ -1,6 +1,7 @@
 package com.cz.webmaster.service.impl;
 
 import com.cz.common.constant.CacheDomainRegistry;
+import com.cz.webmaster.dto.BalanceCommandResult;
 import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.entity.ClientChannel;
 import com.cz.webmaster.mapper.ChannelMapper;
@@ -61,6 +62,60 @@ public class CacheSyncServiceRuntimeRouteTest {
 
         Assert.assertTrue(service.save(input));
         verify(cacheSyncService, times(1)).syncUpsert(CacheDomainRegistry.CLIENT_BUSINESS, latest);
+    }
+
+    @Test
+    public void shouldDeleteOldClientBusinessKeyWhenApiKeyChanges() {
+        ClientBusinessMapper mapper = Mockito.mock(ClientBusinessMapper.class);
+        ClientBusinessServiceImpl service = new ClientBusinessServiceImpl();
+        ReflectionTestUtils.setField(service, "clientBusinessMapper", mapper);
+        ReflectionTestUtils.setField(service, "cacheSyncService", cacheSyncService);
+        ReflectionTestUtils.setField(service, "cacheSyncRuntimeExecutor", runtimeExecutor);
+
+        ClientBusiness before = new ClientBusiness();
+        before.setId(1001L);
+        before.setApikey("ak_old");
+
+        ClientBusiness latest = new ClientBusiness();
+        latest.setId(1001L);
+        latest.setApikey("ak_new");
+        latest.setCorpname("corp_a");
+
+        ClientBusiness update = new ClientBusiness();
+        update.setId(1001L);
+        update.setApikey("ak_new");
+
+        when(mapper.selectByPrimaryKey(1001L)).thenReturn(before, latest);
+        when(mapper.updateByPrimaryKeySelective(any(ClientBusiness.class))).thenReturn(1);
+
+        Assert.assertTrue(service.update(update));
+        verify(cacheSyncService, times(1)).syncDelete(CacheDomainRegistry.CLIENT_BUSINESS, before);
+        verify(cacheSyncService, times(1)).syncUpsert(CacheDomainRegistry.CLIENT_BUSINESS, latest);
+    }
+
+    @Test
+    public void shouldSyncClientBusinessDeleteAfterDeleteBatch() {
+        ClientBusinessMapper mapper = Mockito.mock(ClientBusinessMapper.class);
+        ClientBusinessServiceImpl service = new ClientBusinessServiceImpl();
+        ReflectionTestUtils.setField(service, "clientBusinessMapper", mapper);
+        ReflectionTestUtils.setField(service, "cacheSyncService", cacheSyncService);
+        ReflectionTestUtils.setField(service, "cacheSyncRuntimeExecutor", runtimeExecutor);
+
+        ClientBusiness first = new ClientBusiness();
+        first.setId(1001L);
+        first.setApikey("ak_1001");
+
+        ClientBusiness second = new ClientBusiness();
+        second.setId(1002L);
+        second.setApikey("ak_1002");
+
+        when(mapper.selectByPrimaryKey(1001L)).thenReturn(first);
+        when(mapper.selectByPrimaryKey(1002L)).thenReturn(second);
+        when(mapper.updateByPrimaryKeySelective(any(ClientBusiness.class))).thenReturn(1);
+
+        Assert.assertTrue(service.deleteBatch(Arrays.asList(1001L, 1002L)));
+        verify(cacheSyncService, times(1)).syncDelete(CacheDomainRegistry.CLIENT_BUSINESS, first);
+        verify(cacheSyncService, times(1)).syncDelete(CacheDomainRegistry.CLIENT_BUSINESS, second);
     }
 
     @Test
@@ -150,7 +205,7 @@ public class CacheSyncServiceRuntimeRouteTest {
                 runtimeExecutor
         );
 
-        ClientBalanceDebitService.DebitResult result = service.debitAndSync(9001L, 10L, -10000L, "req-1");
+        BalanceCommandResult result = service.debitAndSync(9001L, 10L, -10000L, "req-1");
         Assert.assertTrue(result.isSuccess());
         Assert.assertEquals(Long.valueOf(90L), result.getBalance());
     }
