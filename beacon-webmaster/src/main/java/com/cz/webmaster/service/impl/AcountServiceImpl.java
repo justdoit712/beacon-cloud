@@ -1,8 +1,10 @@
 package com.cz.webmaster.service.impl;
 
 import cn.hutool.core.util.IdUtil;
+import com.cz.webmaster.dto.BalanceCommandResult;
 import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.service.AcountService;
+import com.cz.webmaster.service.BalanceCommandService;
 import com.cz.webmaster.service.ClientBusinessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,8 @@ public class AcountServiceImpl implements AcountService {
 
     @Autowired
     private ClientBusinessService clientBusinessService;
+    @Autowired
+    private BalanceCommandService balanceCommandService;
 
     @Override
     public PageResult list(String keyword, int offset, int limit) {
@@ -119,7 +123,9 @@ public class AcountServiceImpl implements AcountService {
         ClientBusiness clientBusiness = clientBusinessService.findById(clientId);
         if (clientBusiness != null) {
             row.put("corpname", clientBusiness.getCorpname());
-            increaseClientMoney(clientBusiness, paidValue, operatorId);
+            if (!increaseClientMoney(clientBusiness, paidValue, operatorId)) {
+                return false;
+            }
         } else {
             row.put("corpname", valueOrDefault(row.get("corpname"), ""));
         }
@@ -177,17 +183,17 @@ public class AcountServiceImpl implements AcountService {
         return removed;
     }
 
-    private void increaseClientMoney(ClientBusiness clientBusiness, Long paidValue, Long operatorId) {
-        long original = toLong(clientBusiness.getExtend4()) == null ? 0L : toLong(clientBusiness.getExtend4());
-        long target = original + paidValue;
-
-        ClientBusiness update = new ClientBusiness();
-        update.setId(clientBusiness.getId());
-        update.setExtend4(String.valueOf(target));
-        if (operatorId != null) {
-            update.setUpdateId(operatorId);
+    private boolean increaseClientMoney(ClientBusiness clientBusiness, Long paidValue, Long operatorId) {
+        if (clientBusiness == null || clientBusiness.getId() == null || paidValue == null || paidValue <= 0) {
+            return false;
         }
-        clientBusinessService.update(update);
+        BalanceCommandResult result = balanceCommandService.rechargeAndSync(
+                clientBusiness.getId(),
+                paidValue,
+                operatorId,
+                null
+        );
+        return result.isSuccess();
     }
 
     private boolean matches(Map<String, Object> row, String keyword) {
@@ -229,4 +235,3 @@ public class AcountServiceImpl implements AcountService {
         return new LinkedHashMap<>(source);
     }
 }
-

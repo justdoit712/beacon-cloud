@@ -1,81 +1,45 @@
 package com.cz.webmaster.service.impl;
 
-import com.cz.common.constant.CacheDomainRegistry;
-import com.cz.webmaster.entity.ClientBusiness;
-import com.cz.webmaster.mapper.ClientBusinessMapper;
-import com.cz.webmaster.service.CacheSyncService;
+import com.cz.webmaster.dto.BalanceCommandResult;
+import com.cz.webmaster.service.BalanceCommandService;
 import com.cz.webmaster.service.ClientBalanceDebitService;
-import com.cz.webmaster.support.CacheSyncRuntimeExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
+/**
+ * {@link ClientBalanceDebitService} 的兼容实现。
+ *
+ * <p>该类保留原有的扣费服务入口，内部统一委托给
+ * {@link BalanceCommandService} 执行真实的余额扣费命令，
+ * 以避免系统中继续维护两套余额写入逻辑。</p>
+ */
 @Service
 public class ClientBalanceDebitServiceImpl implements ClientBalanceDebitService {
 
-    private static final long DEFAULT_AMOUNT_LIMIT = -10000L;
+    private final BalanceCommandService balanceCommandService;
 
-    private final ClientBusinessMapper clientBusinessMapper;
-    private final CacheSyncService cacheSyncService;
-    private final CacheSyncRuntimeExecutor cacheSyncRuntimeExecutor;
-
-    public ClientBalanceDebitServiceImpl(ClientBusinessMapper clientBusinessMapper,
-                                         CacheSyncService cacheSyncService,
-                                         CacheSyncRuntimeExecutor cacheSyncRuntimeExecutor) {
-        this.clientBusinessMapper = clientBusinessMapper;
-        this.cacheSyncService = cacheSyncService;
-        this.cacheSyncRuntimeExecutor = cacheSyncRuntimeExecutor;
+    /**
+     * 构造扣费兼容服务。
+     *
+     * @param balanceCommandService 统一余额命令服务
+     */
+    public ClientBalanceDebitServiceImpl(BalanceCommandService balanceCommandService) {
+        this.balanceCommandService = balanceCommandService;
     }
 
+    /**
+     * 执行一次客户余额扣费。
+     *
+     * <p>当前实现不再自行处理扣费细节，而是直接委托统一余额命令服务执行，
+     * 保证扣费、充值、调账都遵循同一套余额链路。</p>
+     *
+     * @param clientId 客户 id
+     * @param fee 扣费金额
+     * @param amountLimit 最低余额限制
+     * @param requestId 请求标识
+     * @return 余额命令执行结果
+     */
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public DebitResult debitAndSync(Long clientId, Long fee, Long amountLimit, String requestId) {
-        if (clientId == null || clientId <= 0) {
-            throw new IllegalArgumentException("clientId must be positive");
-        }
-        if (fee == null || fee <= 0) {
-            throw new IllegalArgumentException("fee must be positive");
-        }
-
-        long effectiveLimit = amountLimit == null ? DEFAULT_AMOUNT_LIMIT : amountLimit;
-        int affected = clientBusinessMapper.debitBalanceAtomic(clientId, fee, effectiveLimit, null);
-        if (affected <= 0) {
-            return new DebitResult(false, null, effectiveLimit, "balance not enough");
-        }
-
-        ClientBusiness latest = clientBusinessMapper.selectByPrimaryKey(clientId);
-        if (latest == null) {
-            return new DebitResult(false, null, effectiveLimit, "client not found");
-        }
-
-        cacheSyncRuntimeExecutor.runAfterCommitOrNow(
-                () -> cacheSyncService.syncUpsert(CacheDomainRegistry.CLIENT_BALANCE, latest),
-                CacheDomainRegistry.CLIENT_BALANCE,
-                "upsert",
-                safeEntityId(clientId, requestId)
-        );
-        return new DebitResult(true, parseBalance(latest.getExtend4()), effectiveLimit, "ok");
-    }
-
-    private long parseBalance(String text) {
-        if (!StringUtils.hasText(text)) {
-            return 0L;
-        }
-        try {
-            return Long.parseLong(text.trim());
-        } catch (Exception ignore) {
-            return 0L;
-        }
-    }
-
-    private String safeEntityId(Long clientId, String requestId) {
-        if (clientId == null) {
-            return "-";
-        }
-        if (!StringUtils.hasText(requestId)) {
-            return String.valueOf(clientId);
-        }
-        return clientId + ":" + requestId.trim();
+    public BalanceCommandResult debitAndSync(Long clientId, Long fee, Long amountLimit, String requestId) {
+        return balanceCommandService.debitAndSync(clientId, fee, amountLimit, requestId);
     }
 }
-

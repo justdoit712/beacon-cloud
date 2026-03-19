@@ -5,9 +5,11 @@ import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.converter.ClientBusinessConverter;
+import com.cz.webmaster.dto.BalanceCommandResult;
 import com.cz.webmaster.dto.ClientBusinessForm;
 import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.entity.SmsUser;
+import com.cz.webmaster.service.BalanceCommandService;
 import com.cz.webmaster.service.ClientBusinessService;
 import com.cz.webmaster.service.SmsRoleService;
 import com.cz.webmaster.vo.ClientBusinessDetailVO;
@@ -31,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 客户业务信息 Controller
+ * 客户业务信息 Controller。
  */
 @RestController
 @Slf4j
@@ -40,11 +42,14 @@ public class ClientBusinessController {
 
     private final SmsRoleService roleService;
     private final ClientBusinessService clientBusinessService;
+    private final BalanceCommandService balanceCommandService;
 
     public ClientBusinessController(SmsRoleService roleService,
-                                    ClientBusinessService clientBusinessService) {
+                                    ClientBusinessService clientBusinessService,
+                                    BalanceCommandService balanceCommandService) {
         this.roleService = roleService;
         this.clientBusinessService = clientBusinessService;
+        this.balanceCommandService = balanceCommandService;
     }
 
     @GetMapping("/list")
@@ -76,7 +81,7 @@ public class ClientBusinessController {
     @PostMapping("/save")
     public ResultVO save(@RequestBody ClientBusinessForm form) {
         if (form == null || !StringUtils.hasText(form.getCorpname())) {
-            return Result.error("公司名称不能为空");
+            return Result.error("鍏徃鍚嶇О涓嶈兘涓虹┖");
         }
         ClientBusiness cb = ClientBusinessConverter.toEntity(form);
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
@@ -85,13 +90,13 @@ public class ClientBusinessController {
             cb.setUpdateId(currentUser.getId().longValue());
         }
         boolean success = clientBusinessService.save(cb);
-        return success ? Result.ok("新增成功") : Result.error("新增失败");
+        return success ? Result.ok("鏂板鎴愬姛") : Result.error("鏂板澶辫触");
     }
 
     @PostMapping("/update")
     public ResultVO update(@RequestBody ClientBusinessForm form) {
         if (form == null || form.getId() == null) {
-            return Result.error("客户id不能为空");
+            return Result.error("瀹㈡埛id涓嶈兘涓虹┖");
         }
         ClientBusiness cb = ClientBusinessConverter.toEntity(form);
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
@@ -99,23 +104,23 @@ public class ClientBusinessController {
             cb.setUpdateId(currentUser.getId().longValue());
         }
         boolean success = clientBusinessService.update(cb);
-        return success ? Result.ok("修改成功") : Result.error("修改失败");
+        return success ? Result.ok("淇敼鎴愬姛") : Result.error("淇敼澶辫触");
     }
 
     @PostMapping("/del")
     public ResultVO delete(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            return Result.error("请选择要删除的数据");
+            return Result.error("璇烽€夋嫨瑕佸垹闄ょ殑鏁版嵁");
         }
         boolean success = clientBusinessService.deleteBatch(ids);
-        return success ? Result.ok("删除成功") : Result.error("删除失败");
+        return success ? Result.ok("鍒犻櫎鎴愬姛") : Result.error("鍒犻櫎澶辫触");
     }
 
     @GetMapping("/all")
     public Map<String, Object> all() {
         SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if (smsUser == null) {
-            log.info("【获取客户信息】用户未登录");
+            log.info("銆愯幏鍙栧鎴蜂俊鎭€戠敤鎴锋湭鐧诲綍");
             Map<String, Object> result = new HashMap<>();
             result.put("code", ExceptionEnums.NOT_LOGIN.getCode());
             result.put("msg", ExceptionEnums.NOT_LOGIN.getMsg());
@@ -149,11 +154,9 @@ public class ClientBusinessController {
 
     /**
      * 客户充值入口。
-     * <p>
-     * 当前阶段用于固化余额主口径约束：
-     * 1) 充值金额先写入 MySQL（extend4）；
-     * 2) Redis client_balance 仅作为镜像缓存，不作为主账本；
-     * 3) 镜像刷新由后续同步链路统一处理。
+     *
+     * <p>当前实现统一委托给余额命令服务完成充值，
+     * 不再通过“先读旧余额、再计算新余额、最后调用通用 update”的方式修改余额。</p>
      */
     @GetMapping("/pay")
     public ResultVO pay(@RequestParam("jine") Long amount,
@@ -199,27 +202,14 @@ public class ClientBusinessController {
             }
         }
 
-        long oldAmount = 0L;
-        String balanceValue = target.getExtend4();
-        if (StringUtils.hasText(balanceValue)) {
-            try {
-                oldAmount = Long.parseLong(balanceValue);
-            } catch (NumberFormatException e) {
-                log.warn("invalid current balance for clientId={}, value={}", target.getId(), balanceValue);
-            }
-        }
-        long newAmount = oldAmount + amount;
-
-        // 余额主口径约束（第二步）：MySQL 为真源。
-        // 这里将最新余额写回 MySQL（extend4 字段），
-        // Redis 中 client_balance 仅作为镜像缓存，后续由同步链路刷新。
-        ClientBusiness update = new ClientBusiness();
-        update.setId(target.getId());
-        update.setExtend4(String.valueOf(newAmount));
-        update.setUpdateId(currentUser.getId().longValue());
-        boolean success = clientBusinessService.update(update);
-        if (!success) {
-            return Result.error("pay failed");
+        BalanceCommandResult commandResult = balanceCommandService.rechargeAndSync(
+                target.getId(),
+                amount,
+                currentUser.getId().longValue(),
+                null
+        );
+        if (!commandResult.isSuccess()) {
+            return Result.error(commandResult.getCode(), commandResult.getMessage());
         }
 
         ResultVO resultVO = Result.ok("pay success");
@@ -227,9 +217,8 @@ public class ClientBusinessController {
         data.put("clientId", target.getId());
         data.put("corpname", target.getCorpname());
         data.put("amount", amount);
-        data.put("balance", newAmount);
+        data.put("balance", commandResult.getBalance());
         resultVO.setData(data);
         return resultVO;
     }
 }
-

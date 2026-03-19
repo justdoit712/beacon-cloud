@@ -4,11 +4,12 @@ import com.cz.common.constant.CacheDomainRegistry;
 import com.cz.webmaster.dto.BalanceCommandResult;
 import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.entity.ClientChannel;
+import com.cz.webmaster.enums.BalanceCommandStatus;
 import com.cz.webmaster.mapper.ChannelMapper;
 import com.cz.webmaster.mapper.ClientBusinessMapper;
 import com.cz.webmaster.mapper.ClientChannelMapper;
+import com.cz.webmaster.service.BalanceCommandService;
 import com.cz.webmaster.service.CacheSyncService;
-import com.cz.webmaster.service.ClientBalanceDebitService;
 import com.cz.webmaster.support.CacheSyncRuntimeExecutor;
 import org.junit.Assert;
 import org.junit.Before;
@@ -186,27 +187,16 @@ public class CacheSyncServiceRuntimeRouteTest {
     }
 
     @Test
-    public void shouldReturnSuccessWhenBalanceSyncFails() {
-        ClientBusinessMapper mapper = Mockito.mock(ClientBusinessMapper.class);
-        Mockito.doThrow(new RuntimeException("sync fail"))
-                .when(cacheSyncService)
-                .syncUpsert(eq(CacheDomainRegistry.CLIENT_BALANCE), any(ClientBusiness.class));
+    public void shouldDelegateDebitToBalanceCommandService() {
+        BalanceCommandService balanceCommandService = Mockito.mock(BalanceCommandService.class);
+        when(balanceCommandService.debitAndSync(9001L, 10L, -10000L, "req-1"))
+                .thenReturn(BalanceCommandResult.success(90L, -10000L));
 
-        ClientBusiness latest = new ClientBusiness();
-        latest.setId(9001L);
-        latest.setExtend4("90");
-
-        when(mapper.debitBalanceAtomic(9001L, 10L, -10000L, null)).thenReturn(1);
-        when(mapper.selectByPrimaryKey(9001L)).thenReturn(latest);
-
-        ClientBalanceDebitServiceImpl service = new ClientBalanceDebitServiceImpl(
-                mapper,
-                cacheSyncService,
-                runtimeExecutor
-        );
+        ClientBalanceDebitServiceImpl service = new ClientBalanceDebitServiceImpl(balanceCommandService);
 
         BalanceCommandResult result = service.debitAndSync(9001L, 10L, -10000L, "req-1");
         Assert.assertTrue(result.isSuccess());
         Assert.assertEquals(Long.valueOf(90L), result.getBalance());
+        Assert.assertEquals(BalanceCommandStatus.SUCCESS, result.getStatus());
     }
 }
