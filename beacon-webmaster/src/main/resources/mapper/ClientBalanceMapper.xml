@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cz.webmaster.mapper.ClientBalanceMapper">
+
+    <resultMap id="BaseResultMap" type="com.cz.webmaster.entity.ClientBalance">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="client_id" jdbcType="BIGINT" property="clientId"/>
+        <result column="balance" jdbcType="BIGINT" property="balance"/>
+        <result column="created" jdbcType="TIMESTAMP" property="created"/>
+        <result column="create_id" jdbcType="BIGINT" property="createId"/>
+        <result column="updated" jdbcType="TIMESTAMP" property="updated"/>
+        <result column="update_id" jdbcType="BIGINT" property="updateId"/>
+        <result column="is_delete" jdbcType="TINYINT" property="isDelete"/>
+        <result column="extend1" jdbcType="VARCHAR" property="extend1"/>
+        <result column="extend2" jdbcType="VARCHAR" property="extend2"/>
+        <result column="extend3" jdbcType="VARCHAR" property="extend3"/>
+        <result column="extend4" jdbcType="VARCHAR" property="extend4"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,
+        client_id,
+        balance,
+        created,
+        create_id,
+        updated,
+        update_id,
+        is_delete,
+        extend1,
+        extend2,
+        extend3,
+        extend4
+    </sql>
+
+    <select id="selectByClientId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from client_balance
+        where client_id = #{clientId,jdbcType=BIGINT}
+          and is_delete = 0
+        limit 1
+    </select>
+
+    <insert id="insertInitialBalance" parameterType="map">
+        insert into client_balance (
+            id,
+            client_id,
+            balance,
+            created,
+            create_id,
+            updated,
+            update_id,
+            is_delete
+        )
+        values (
+            #{id,jdbcType=BIGINT},
+            #{clientId,jdbcType=BIGINT},
+            #{initBalance,jdbcType=BIGINT},
+            now(),
+            #{operatorId,jdbcType=BIGINT},
+            now(),
+            #{operatorId,jdbcType=BIGINT},
+            0
+        )
+    </insert>
+
+    <update id="debitBalanceAtomic" parameterType="map">
+        update client_balance
+        set balance = balance - #{fee,jdbcType=BIGINT},
+            updated = now()
+            <if test="updateId != null">
+                , update_id = #{updateId,jdbcType=BIGINT}
+            </if>
+        where client_id = #{clientId,jdbcType=BIGINT}
+          and is_delete = 0
+          and balance - #{fee,jdbcType=BIGINT} <![CDATA[ >= ]]> #{amountLimit,jdbcType=BIGINT}
+    </update>
+
+    <update id="rechargeBalanceAtomic" parameterType="map">
+        update client_balance
+        set balance = balance + #{amount,jdbcType=BIGINT},
+            updated = now()
+            <if test="updateId != null">
+                , update_id = #{updateId,jdbcType=BIGINT}
+            </if>
+        where client_id = #{clientId,jdbcType=BIGINT}
+          and is_delete = 0
+    </update>
+
+    <update id="adjustBalanceAtomic" parameterType="map">
+        update client_balance
+        set balance = balance + #{delta,jdbcType=BIGINT},
+            updated = now()
+            <if test="updateId != null">
+                , update_id = #{updateId,jdbcType=BIGINT}
+            </if>
+        where client_id = #{clientId,jdbcType=BIGINT}
+          and is_delete = 0
+        <if test="amountLimit != null">
+            and balance + #{delta,jdbcType=BIGINT} <![CDATA[ >= ]]> #{amountLimit,jdbcType=BIGINT}
+        </if>
+    </update>
+
+</mapper>
