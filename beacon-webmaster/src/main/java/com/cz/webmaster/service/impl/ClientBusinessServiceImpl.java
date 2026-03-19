@@ -170,9 +170,6 @@ public class ClientBusinessServiceImpl implements ClientBusinessService {
         if (clientBusiness == null || clientBusiness.getId() == null) {
             return false;
         }
-        if (clientBusiness.getExtend4() != null) {
-            return false;
-        }
 
         ClientBusiness before = clientBusinessMapper.selectByPrimaryKey(clientBusiness.getId());
         clientBusiness.setUpdated(new Date());

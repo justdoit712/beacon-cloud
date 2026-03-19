@@ -416,49 +416,4 @@
     where id = #{id,jdbcType=BIGINT}
   </update>
 
-  <update id="debitBalanceAtomic" parameterType="map">
-    update client_business
-    set extend4 = cast(
-          cast(ifnull(nullif(extend4, ''), '0') as signed) - #{fee,jdbcType=BIGINT}
-          as char
-        ),
-      updated = now()
-      <if test="updateId != null">
-        , update_id = #{updateId,jdbcType=BIGINT}
-      </if>
-    where id = #{clientId,jdbcType=BIGINT}
-      and is_delete = 0
-      and cast(ifnull(nullif(extend4, ''), '0') as signed) - #{fee,jdbcType=BIGINT} <![CDATA[ >= ]]> #{amountLimit,jdbcType=BIGINT}
-  </update>
-
-  <update id="rechargeBalanceAtomic" parameterType="map">
-    update client_business
-    set extend4 = cast(
-          cast(ifnull(nullif(extend4, ''), '0') as signed) + #{amount,jdbcType=BIGINT}
-          as char
-        ),
-      updated = now()
-      <if test="updateId != null">
-        , update_id = #{updateId,jdbcType=BIGINT}
-      </if>
-    where id = #{clientId,jdbcType=BIGINT}
-      and is_delete = 0
-  </update>
-
-  <update id="adjustBalanceAtomic" parameterType="map">
-    update client_business
-    set extend4 = cast(
-          cast(ifnull(nullif(extend4, ''), '0') as signed) + #{delta,jdbcType=BIGINT}
-          as char
-        ),
-      updated = now()
-      <if test="updateId != null">
-        , update_id = #{updateId,jdbcType=BIGINT}
-      </if>
-    where id = #{clientId,jdbcType=BIGINT}
-      and is_delete = 0
-      <if test="amountLimit != null">
-        and cast(ifnull(nullif(extend4, ''), '0') as signed) + #{delta,jdbcType=BIGINT} <![CDATA[ >= ]]> #{amountLimit,jdbcType=BIGINT}
-      </if>
-  </update>
 </mapper>

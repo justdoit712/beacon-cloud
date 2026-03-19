@@ -29,7 +29,6 @@ public final class ClientBusinessConverter {
         cb.setExtend1(form.getPriority());
         cb.setExtend2(form.getUsertype());
         cb.setExtend3(form.getState());
-        cb.setExtend4(form.getMoney());
         return cb;
     }
 
@@ -49,7 +48,6 @@ public final class ClientBusinessConverter {
         vo.setPriority(cb.getExtend1());
         vo.setUsertype(cb.getExtend2());
         vo.setState(cb.getExtend3());
-        vo.setMoney(cb.getExtend4());
         return vo;
     }
 

@@ -95,25 +95,6 @@ public class CacheSyncServiceRuntimeRouteTest {
     }
 
     @Test
-    public void shouldRejectClientBusinessUpdateWhenExtend4IsPresent() {
-        ClientBusinessMapper mapper = Mockito.mock(ClientBusinessMapper.class);
-        ClientBusinessServiceImpl service = new ClientBusinessServiceImpl();
-        ReflectionTestUtils.setField(service, "clientBusinessMapper", mapper);
-        ReflectionTestUtils.setField(service, "cacheSyncService", cacheSyncService);
-        ReflectionTestUtils.setField(service, "cacheSyncRuntimeExecutor", runtimeExecutor);
-
-        ClientBusiness update = new ClientBusiness();
-        update.setId(1001L);
-        update.setExtend4("123");
-
-        Assert.assertFalse(service.update(update));
-        verify(mapper, times(0)).selectByPrimaryKey(any(Long.class));
-        verify(mapper, times(0)).updateByPrimaryKeySelective(any(ClientBusiness.class));
-        verify(cacheSyncService, times(0)).syncDelete(eq(CacheDomainRegistry.CLIENT_BUSINESS), any());
-        verify(cacheSyncService, times(0)).syncUpsert(eq(CacheDomainRegistry.CLIENT_BUSINESS), any());
-    }
-
-    @Test
     public void shouldSyncClientBusinessDeleteAfterDeleteBatch() {
         ClientBusinessMapper mapper = Mockito.mock(ClientBusinessMapper.class);
         ClientBusinessServiceImpl service = new ClientBusinessServiceImpl();
