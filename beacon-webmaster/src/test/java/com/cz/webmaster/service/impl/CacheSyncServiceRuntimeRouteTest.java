@@ -172,6 +172,129 @@ public class CacheSyncServiceRuntimeRouteTest {
     }
 
     @Test
+    public void shouldSyncClientChannelAfterSave() {
+        ClientChannelMapper mapper = Mockito.mock(ClientChannelMapper.class);
+        ClientChannelServiceImpl service = new ClientChannelServiceImpl();
+        ReflectionTestUtils.setField(service, "clientChannelMapper", mapper);
+        ReflectionTestUtils.setField(service, "cacheSyncService", cacheSyncService);
+        ReflectionTestUtils.setField(service, "cacheSyncRuntimeExecutor", runtimeExecutor);
+
+        ClientChannel input = new ClientChannel();
+        input.setId(2001L);
+        input.setClientId(3001L);
+        input.setChannelId(4001L);
+        input.setExtendNumber("001");
+        input.setPrice(3L);
+
+        Map<String, Object> member = new LinkedHashMap<>();
+        member.put("channelId", 4001L);
+        member.put("clientChannelWeight", 100);
+        member.put("clientChannelNumber", "1069");
+        member.put("isAvailable", 0);
+
+        when(mapper.insertSelective(any(ClientChannel.class))).thenReturn(1);
+        when(mapper.findRouteMembersByClientIds(eq(Collections.singletonList(3001L))))
+                .thenReturn(Collections.singletonList(member));
+
+        Assert.assertTrue(service.save(input));
+
+        ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(cacheSyncService, times(1))
+                .syncUpsert(eq(CacheDomainRegistry.CLIENT_CHANNEL), payloadCaptor.capture());
+
+        Object payload = payloadCaptor.getValue();
+        Assert.assertTrue(payload instanceof Map);
+        Map<String, Object> payloadMap = (Map<String, Object>) payload;
+        Assert.assertEquals(3001L, payloadMap.get("clientId"));
+        Assert.assertTrue(payloadMap.get("members") instanceof List);
+    }
+
+    @Test
+    public void shouldSyncClientChannelAfterDeleteBatch() {
+        ClientChannelMapper mapper = Mockito.mock(ClientChannelMapper.class);
+        ClientChannelServiceImpl service = new ClientChannelServiceImpl();
+        ReflectionTestUtils.setField(service, "clientChannelMapper", mapper);
+        ReflectionTestUtils.setField(service, "cacheSyncService", cacheSyncService);
+        ReflectionTestUtils.setField(service, "cacheSyncRuntimeExecutor", runtimeExecutor);
+
+        ClientChannel before = new ClientChannel();
+        before.setId(2001L);
+        before.setClientId(3001L);
+
+        Map<String, Object> member = new LinkedHashMap<>();
+        member.put("channelId", 4001L);
+        member.put("clientChannelWeight", 100);
+        member.put("clientChannelNumber", "1069");
+        member.put("isAvailable", 0);
+
+        when(mapper.findByIds(eq(Arrays.asList(2001L)))).thenReturn(Collections.singletonList(before));
+        when(mapper.deleteBatch(eq(Arrays.asList(2001L)), any(java.util.Date.class), eq(99L))).thenReturn(1);
+        when(mapper.findRouteMembersByClientIds(eq(Collections.singletonList(3001L))))
+                .thenReturn(Collections.singletonList(member));
+
+        Assert.assertTrue(service.deleteBatch(Arrays.asList(2001L), 99L));
+
+        ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(cacheSyncService, times(1))
+                .syncUpsert(eq(CacheDomainRegistry.CLIENT_CHANNEL), payloadCaptor.capture());
+
+        Object payload = payloadCaptor.getValue();
+        Assert.assertTrue(payload instanceof Map);
+        Map<String, Object> payloadMap = (Map<String, Object>) payload;
+        Assert.assertEquals(3001L, payloadMap.get("clientId"));
+    }
+
+    @Test
+    public void shouldSyncChannelAfterSave() {
+        ChannelMapper mapper = Mockito.mock(ChannelMapper.class);
+        ChannelServiceImpl service = new ChannelServiceImpl();
+        ReflectionTestUtils.setField(service, "channelMapper", mapper);
+        ReflectionTestUtils.setField(service, "cacheSyncService", cacheSyncService);
+        ReflectionTestUtils.setField(service, "cacheSyncRuntimeExecutor", runtimeExecutor);
+
+        com.cz.webmaster.entity.Channel input = new com.cz.webmaster.entity.Channel();
+        input.setId(7001L);
+        input.setChannelName("channel_a");
+        input.setChannelType(1);
+        input.setChannelArea("cn");
+        input.setChannelPrice(3L);
+        input.setProtocolType(1);
+
+        com.cz.webmaster.entity.Channel latest = new com.cz.webmaster.entity.Channel();
+        latest.setId(7001L);
+        latest.setChannelName("channel_a");
+
+        when(mapper.insertSelective(any(com.cz.webmaster.entity.Channel.class))).thenReturn(1);
+        when(mapper.findById(7001L)).thenReturn(latest);
+
+        Assert.assertTrue(service.save(input));
+        verify(cacheSyncService, times(1)).syncUpsert(CacheDomainRegistry.CHANNEL, latest);
+    }
+
+    @Test
+    public void shouldSyncChannelAfterUpdate() {
+        ChannelMapper mapper = Mockito.mock(ChannelMapper.class);
+        ChannelServiceImpl service = new ChannelServiceImpl();
+        ReflectionTestUtils.setField(service, "channelMapper", mapper);
+        ReflectionTestUtils.setField(service, "cacheSyncService", cacheSyncService);
+        ReflectionTestUtils.setField(service, "cacheSyncRuntimeExecutor", runtimeExecutor);
+
+        com.cz.webmaster.entity.Channel update = new com.cz.webmaster.entity.Channel();
+        update.setId(7001L);
+        update.setChannelName("channel_b");
+
+        com.cz.webmaster.entity.Channel latest = new com.cz.webmaster.entity.Channel();
+        latest.setId(7001L);
+        latest.setChannelName("channel_b");
+
+        when(mapper.updateById(any(com.cz.webmaster.entity.Channel.class))).thenReturn(1);
+        when(mapper.findById(7001L)).thenReturn(latest);
+
+        Assert.assertTrue(service.update(update));
+        verify(cacheSyncService, times(1)).syncUpsert(CacheDomainRegistry.CHANNEL, latest);
+    }
+
+    @Test
     public void shouldSyncChannelDeleteAfterDeleteBatch() {
         ChannelMapper mapper = Mockito.mock(ChannelMapper.class);
         ChannelServiceImpl service = new ChannelServiceImpl();
