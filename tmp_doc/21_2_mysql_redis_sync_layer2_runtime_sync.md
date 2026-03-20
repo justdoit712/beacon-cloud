@@ -61,7 +61,7 @@
 1. 充值仍是“先读后写”，不是原子更新。
 2. 充值路径当前不会同步刷新 `client_balance`。
 3. 余额入口没有完全收口。
-4. `ClientBusinessService.update` 仍可能被误用为余额修改入口。
+4. 旧余额更新路径仍可能绕过统一余额命令服务。
 
 ---
 
@@ -81,7 +81,7 @@
 
 ### 3.3 余额链路决策
 
-1. 真源固定为 `client_business.extend4`。
+1. 真源固定为 `client_balance` 表。
 2. 所有余额变更统一走专门余额命令服务。
 3. 每次余额提交后必须同时刷新：
    - `client_balance:{clientId}`
@@ -118,14 +118,14 @@
 1. `client_balance`
 2. `client_business`
 
-### 4.4 防止通用更新路径误用
+### 4.4 防止旧余额路径误用
 
-对 `ClientBusinessService.update` 增加保护：
+统一要求：
 
-1. 发现 `extend4` 被修改时直接拒绝
-2. 或只允许专门余额场景调用
+1. 不允许再通过 `ClientBusinessService.update` 等通用客户更新路径承担余额修改职责
+2. 所有余额变更必须统一委托余额命令服务
 
-推荐优先采用“直接拒绝”，减少误用空间。
+推荐优先采用“直接收口到统一余额命令服务”的方式，减少旧路径残留。
 
 ---
 
@@ -136,11 +136,12 @@
 2. `ClientBalanceDebitServiceImpl`
    - 保留扣费
    - 扩展为统一余额命令服务的一部分或兼容层
-3. `ClientBusinessMapper` / `ClientBusinessMapper.xml`
+3. `ClientBalanceMapper` / `ClientBalanceMapper.xml`
    - 增加充值原子 SQL
    - 按需增加调账 SQL
-4. `ClientBusinessServiceImpl`
-   - 增加 `extend4` 修改保护
+4. `BalanceCommandService` / `BalanceCommandServiceImpl`
+   - 统一实现扣费、充值、调账命令
+   - 在提交后补齐双域刷新
 5. `CacheSyncServiceImpl`
    - 保持域契约不变
    - 配合余额链路补齐双域刷新
@@ -154,7 +155,7 @@
 3. `channel` 在增删改后仍正常刷新。
 4. 充值并发下不再出现丢更新。
 5. 余额任意变更后，`client_balance` 与 `client_business` 两域都刷新。
-6. `ClientBusinessService.update` 直接改余额时被拦截。
+6. 旧余额路径无法通过通用客户更新接口绕过统一余额命令服务。
 
 ---
 

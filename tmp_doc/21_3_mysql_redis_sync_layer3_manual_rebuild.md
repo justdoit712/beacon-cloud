@@ -132,7 +132,7 @@
 
 ### 6.4 `client_balance`
 
-1. 真源固定为 `client_business.extend4`。
+1. 真源固定为 `client_balance` 表。
 2. 第二层未完成前不允许实现和启用该 loader。
 
 ---

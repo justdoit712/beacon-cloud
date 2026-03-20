@@ -204,7 +204,7 @@
 | `client_business` | `client_business:{apiKey}` | MySQL | Hash | `WRITE_THROUGH` | `DELETE_KEY` | 纳入 | 纳入 |
 | `client_channel` | `client_channel:{clientId}` | MySQL | Set（按 `clientId` 聚合后的客户通道绑定集合） | `DELETE_AND_REBUILD` | `DELETE_KEY` | 纳入 | 纳入 |
 | `channel` | `channel:{id}` | MySQL | Hash | `WRITE_THROUGH` | `DELETE_KEY` | 纳入 | 纳入 |
-| `client_balance` | `client_balance:{clientId}` | MySQL（`client_business.extend4`） | Hash | `MYSQL_ATOMIC_UPDATE_THEN_REFRESH` | `OVERWRITE_ONLY` | 第二层完成后纳入 | 第二层完成后纳入 |
+| `client_balance` | `client_balance:{clientId}` | MySQL（`client_balance` 表） | Hash | `MYSQL_ATOMIC_UPDATE_THEN_REFRESH` | `OVERWRITE_ONLY` | 第二层完成后纳入 | 第二层完成后纳入 |
 
 说明：
 
@@ -247,9 +247,9 @@
 
 ### 2.2.8 `client_balance` 基础口径
 
-1. 业务含义：客户余额镜像缓存。
+1. 业务含义：客户余额域。
 2. 逻辑 key：`client_balance:{clientId}`。
-3. 真源：MySQL（`client_business.extend4`）。
+3. 真源：MySQL（`client_balance` 表）。
 4. Redis 结构：Hash。
 5. 运行时写入策略：`MYSQL_ATOMIC_UPDATE_THEN_REFRESH`。
 6. 删除策略：`OVERWRITE_ONLY`。
@@ -267,7 +267,7 @@
 
 ### 2.3 `client_balance` 详细业务口径
 
-1. 真源固定为 `client_business.extend4`。
+1. 真源固定为 `client_balance` 表。
 2. Redis 仅作为镜像缓存。
 3. 任何余额变更不能绕过专门余额命令服务。
 
@@ -275,7 +275,7 @@
 
 余额域的真源在第一层固定为：
 
-1. MySQL `client_business.extend4`。
+1. MySQL `client_balance` 表。
 2. Redis `client_balance:{clientId}` 不作为主账本。
 3. 任意时刻若 MySQL 与 Redis 显示不一致，以 MySQL 为准。
 

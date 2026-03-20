@@ -83,7 +83,7 @@
 | `client_business` | `client_business:{apiKey}` | MySQL | Hash | `WRITE_THROUGH` | `DELETE_KEY` | 纳入 | 纳入 |
 | `client_channel` | `client_channel:{clientId}` | MySQL | Set | `DELETE_AND_REBUILD` | `DELETE_KEY` | 纳入 | 纳入 |
 | `channel` | `channel:{id}` | MySQL | Hash | `WRITE_THROUGH` | `DELETE_KEY` | 纳入 | 纳入 |
-| `client_balance` | `client_balance:{clientId}` | MySQL（`client_business.extend4`） | Hash | `MYSQL_ATOMIC_UPDATE_THEN_REFRESH` | `OVERWRITE_ONLY` | 第二层完成后纳入 | 第二层完成后纳入 |
+| `client_balance` | `client_balance:{clientId}` | MySQL（`client_balance` 表） | Hash | `MYSQL_ATOMIC_UPDATE_THEN_REFRESH` | `OVERWRITE_ONLY` | 第二层完成后纳入 | 第二层完成后纳入 |
 
 说明：
 
@@ -215,7 +215,7 @@
 
 ### 2.4 `client_balance` 主口径决策
 
-1. 真源固定为 `client_business.extend4`。
+1. 真源固定为 `client_balance` 表。
 2. 所有余额变更必须统一走专门余额命令服务。
 3. 余额提交成功后必须同时刷新：
    - `client_balance:{clientId}`
@@ -257,7 +257,7 @@
 | `client_business` | MySQL | Hash | 纳入 | 纳入 | 纳入 | 本轮主线 |
 | `client_channel` | MySQL | Set(Map) | 纳入 | 纳入 | 纳入 | 本轮主线 |
 | `channel` | MySQL | Hash | 纳入 | 纳入 | 纳入 | 本轮主线 |
-| `client_balance` | MySQL(`client_business.extend4`) | Hash | 纳入 | 第二层完成后纳入 | 第二层完成后纳入 | 本轮主线，但有前置条件 |
+| `client_balance` | MySQL(`client_balance` 表) | Hash | 纳入 | 第二层完成后纳入 | 第二层完成后纳入 | 本轮主线，但有前置条件 |
 | `client_sign` | 未落地 | Set | 不纳入 | 不纳入 | 不纳入 | 移出当前 P0 |
 | `client_template` | 未落地 | Set | 不纳入 | 不纳入 | 不纳入 | 移出当前 P0 |
 | `black` | 内存 | String | 维持现状 | 不纳入 | 不纳入 | 暂不进入 MySQL 主线 |
