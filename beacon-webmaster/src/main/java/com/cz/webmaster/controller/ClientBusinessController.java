@@ -6,6 +6,7 @@ import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.converter.ClientBusinessConverter;
 import com.cz.webmaster.dto.BalanceCommandResult;
+import com.cz.webmaster.dto.ClientBalanceRechargeCommand;
 import com.cz.webmaster.dto.ClientBusinessForm;
 import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.entity.SmsUser;
@@ -202,12 +203,13 @@ public class ClientBusinessController {
             }
         }
 
-        BalanceCommandResult commandResult = balanceCommandService.rechargeAndSync(
-                target.getId(),
-                amount,
-                currentUser.getId().longValue(),
-                null
-        );
+        ClientBalanceRechargeCommand command = new ClientBalanceRechargeCommand();
+        command.setClientId(target.getId());
+        command.setAmount(amount);
+        command.setOperatorId(currentUser.getId().longValue());
+        command.setRequestId(null);
+
+        BalanceCommandResult commandResult = balanceCommandService.rechargeAndSync(command);
         if (!commandResult.isSuccess()) {
             return Result.error(commandResult.getCode(), commandResult.getMessage());
         }

@@ -4,8 +4,9 @@ import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.dto.BalanceCommandResult;
+import com.cz.webmaster.dto.ClientBalanceDebitCommand;
 import com.cz.webmaster.dto.InternalBalanceDebitRequest;
-import com.cz.webmaster.service.ClientBalanceDebitService;
+import com.cz.webmaster.service.BalanceCommandService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,10 +48,10 @@ public class InternalBalanceController {
     /**
      * 客户余额扣费服务。
      */
-    private final ClientBalanceDebitService clientBalanceDebitService;
+    private final BalanceCommandService balanceCommandService;
 
-    public InternalBalanceController(ClientBalanceDebitService clientBalanceDebitService) {
-        this.clientBalanceDebitService = clientBalanceDebitService;
+    public InternalBalanceController(BalanceCommandService balanceCommandService) {
+        this.balanceCommandService = balanceCommandService;
     }
 
     /**
@@ -79,12 +80,13 @@ public class InternalBalanceController {
         }
 
         try {
-            BalanceCommandResult result = clientBalanceDebitService.debitAndSync(
-                    request.getClientId(),
-                    request.getFee(),
-                    request.getAmountLimit(),
-                    request.getRequestId()
-            );
+            ClientBalanceDebitCommand command = new ClientBalanceDebitCommand();
+            command.setClientId(request.getClientId());
+            command.setFee(request.getFee());
+            command.setAmountLimit(request.getAmountLimit());
+            command.setRequestId(request.getRequestId());
+
+            BalanceCommandResult result = balanceCommandService.debitAndSync(command);
             if (!result.isSuccess()) {
                 return Result.error(result.getCode(), result.getMessage());
             }
