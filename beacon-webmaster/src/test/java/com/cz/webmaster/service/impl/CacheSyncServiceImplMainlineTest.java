@@ -66,6 +66,22 @@ public class CacheSyncServiceImplMainlineTest {
     }
 
     @Test
+    public void shouldRouteClientBalanceUpsertToHmsetWithTrueSourcePayload() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("clientId", 1001L);
+        payload.put("balance", 520L);
+        payload.put("corpname", "should_not_leak");
+
+        cacheSyncService.syncUpsert("client_balance", payload);
+
+        ArgumentCaptor<Map> payloadCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(cacheWriteClient, times(1)).hmset(eq("client_balance:1001"), payloadCaptor.capture());
+        Assert.assertEquals(1001L, payloadCaptor.getValue().get("clientId"));
+        Assert.assertEquals(520L, payloadCaptor.getValue().get("balance"));
+        Assert.assertFalse(payloadCaptor.getValue().containsKey("corpname"));
+    }
+
+    @Test
     public void shouldRouteClientChannelUpsertToDeleteThenSaddMap() {
         Map<String, Object> member = new HashMap<>();
         member.put("channelId", 2001L);
@@ -84,6 +100,32 @@ public class CacheSyncServiceImplMainlineTest {
         verify(cacheWriteClient, times(1)).sadd(eq("client_channel:1001"), memberCaptor.capture());
         Assert.assertEquals(1, memberCaptor.getValue().length);
         Assert.assertEquals(2001L, memberCaptor.getValue()[0].get("channelId"));
+    }
+
+    @Test
+    public void shouldRejectClientBalanceUpsertWhenBalanceMissing() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("clientId", 1001L);
+
+        try {
+            cacheSyncService.syncUpsert("client_balance", payload);
+            Assert.fail("expected ApiException");
+        } catch (ApiException ex) {
+            Assert.assertNotNull(ex.getCode());
+        }
+    }
+
+    @Test
+    public void shouldRejectClientChannelUpsertWhenMembersMissing() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("clientId", 1001L);
+
+        try {
+            cacheSyncService.syncUpsert("client_channel", payload);
+            Assert.fail("expected ApiException");
+        } catch (ApiException ex) {
+            Assert.assertNotNull(ex.getCode());
+        }
     }
 
     @Test

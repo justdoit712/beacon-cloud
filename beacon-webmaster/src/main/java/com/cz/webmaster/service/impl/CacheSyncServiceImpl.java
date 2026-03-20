@@ -276,9 +276,12 @@ public class CacheSyncServiceImpl implements CacheSyncService {
     }
 
     private void doCurrentMainlineUpsert(String domain, String key, Object entityOrId) {
-        if (CacheDomainRegistry.CLIENT_BUSINESS.equals(domain)
-                || CacheDomainRegistry.CLIENT_BALANCE.equals(domain)) {
-            cacheWriteClient.hmset(key, resolveHashPayload(entityOrId));
+        if (CacheDomainRegistry.CLIENT_BUSINESS.equals(domain)) {
+            cacheWriteClient.hmset(key, resolveClientBusinessPayload(entityOrId));
+            return;
+        }
+        if (CacheDomainRegistry.CLIENT_BALANCE.equals(domain)) {
+            cacheWriteClient.hmset(key, resolveClientBalancePayload(entityOrId));
             return;
         }
         if (CacheDomainRegistry.CHANNEL.equals(domain)) {
@@ -286,6 +289,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             return;
         }
         if (CacheDomainRegistry.CLIENT_CHANNEL.equals(domain)) {
+            requireSnapshotPayload(entityOrId);
             rebuildSetDomain(key, entityOrId, true);
             return;
         }
@@ -345,10 +349,10 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             return cacheKeyBuilder.clientBusinessByApiKey(readText(entityOrId, "apiKey", "apikey"));
         }
         if (CacheDomainRegistry.CLIENT_BALANCE.equals(domain)) {
-            return cacheKeyBuilder.clientBalanceByClientId(readLong(entityOrId, "clientId", "id"));
+            return cacheKeyBuilder.clientBalanceByClientId(readLong(entityOrId, "clientId"));
         }
         if (CacheDomainRegistry.CLIENT_CHANNEL.equals(domain)) {
-            return cacheKeyBuilder.clientChannelByClientId(readLong(entityOrId, "clientId", "id"));
+            return cacheKeyBuilder.clientChannelByClientId(readLong(entityOrId, "clientId"));
         }
         if (CacheDomainRegistry.CHANNEL.equals(domain)) {
             return cacheKeyBuilder.channelById(readLong(entityOrId, "id", "channelId"));
@@ -410,6 +414,23 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         return map.isEmpty() ? new LinkedHashMap<>() : map;
     }
 
+    private Map<String, Object> resolveClientBusinessPayload(Object entityOrId) {
+        Map<String, Object> payload = resolveHashPayload(entityOrId);
+        readText(payload, "apiKey", "apikey");
+        return payload;
+    }
+
+    private Map<String, Object> resolveClientBalancePayload(Object entityOrId) {
+        Map<String, Object> source = resolveHashPayload(entityOrId);
+        Map<String, Object> payload = new LinkedHashMap<>();
+
+        payload.put("clientId", readLong(entityOrId, "clientId"));
+        payload.put("balance", readRequiredLongValue(entityOrId, "balance"));
+        copyIfPresent(source, payload, "id", "created", "createId", "updated", "updateId", "isDelete",
+                "extend1", "extend2", "extend3");
+        return payload;
+    }
+
     private Map<String, Object> resolveChannelPayload(Object entityOrId) {
         Map<String, Object> map = resolveHashPayload(entityOrId);
         Object channelNumber = firstNonNull(map, "channelNumber", "spNumber");
@@ -458,6 +479,21 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             }
         }
         return members.toArray(new Map[0]);
+    }
+
+    private Object requireSnapshotPayload(Object entityOrId) {
+        Map<String, Object> map = toMap(entityOrId);
+        if (map.isEmpty()) {
+            throw new ApiException("snapshot payload must contain clientId and members", ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+        }
+        readLong(entityOrId, "clientId");
+        if (map.containsKey("members")) {
+            return map.get("members");
+        }
+        if (map.containsKey("values")) {
+            return map.get("values");
+        }
+        throw new ApiException("snapshot payload must contain members/values", ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
     }
 
     private String[] resolveSetMembers(Object entityOrId) {
@@ -562,6 +598,44 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         }
     }
 
+    private Long readRequiredLongValue(Object entityOrId, String... aliases) {
+        Long value = tryReadLongValue(entityOrId, aliases);
+        if (value == null) {
+            throw new ApiException("required long field missing: " + String.join("/", aliases), ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+        }
+        return value;
+    }
+
+    private Long tryReadLongValue(Object entityOrId, String... aliases) {
+        if (entityOrId instanceof Number) {
+            return ((Number) entityOrId).longValue();
+        }
+        if (entityOrId instanceof String && StringUtils.hasText((String) entityOrId)) {
+            try {
+                return Long.parseLong(((String) entityOrId).trim());
+            } catch (NumberFormatException ignore) {
+                return null;
+            }
+        }
+        Map<String, Object> map = toMap(entityOrId);
+        Object value = firstNonNull(map, aliases);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        String text = String.valueOf(value).trim();
+        if (!StringUtils.hasText(text)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(text);
+        } catch (NumberFormatException ignore) {
+            return null;
+        }
+    }
+
     private Object firstNonNull(Map<String, Object> map, String... aliases) {
         if (map == null || map.isEmpty() || aliases == null) {
             return null;
@@ -578,6 +652,18 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             }
         }
         return null;
+    }
+
+    private void copyIfPresent(Map<String, Object> source, Map<String, Object> target, String... fields) {
+        if (source == null || source.isEmpty() || target == null || fields == null) {
+            return;
+        }
+        for (String field : fields) {
+            if (!StringUtils.hasText(field) || !source.containsKey(field)) {
+                continue;
+            }
+            target.put(field, source.get(field));
+        }
     }
 
     private Map<String, Object> toMap(Object value) {
