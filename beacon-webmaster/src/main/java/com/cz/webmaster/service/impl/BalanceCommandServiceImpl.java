@@ -2,6 +2,9 @@ package com.cz.webmaster.service.impl;
 
 import com.cz.common.constant.CacheDomainRegistry;
 import com.cz.webmaster.dto.BalanceCommandResult;
+import com.cz.webmaster.dto.ClientBalanceAdjustCommand;
+import com.cz.webmaster.dto.ClientBalanceDebitCommand;
+import com.cz.webmaster.dto.ClientBalanceRechargeCommand;
 import com.cz.webmaster.entity.ClientBalance;
 import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.enums.BalanceCommandStatus;
@@ -42,57 +45,111 @@ public class BalanceCommandServiceImpl implements BalanceCommandService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public BalanceCommandResult debitAndSync(Long clientId, Long fee, Long amountLimit, String requestId) {
-        validatePositiveClientId(clientId);
-        validatePositiveAmount(fee, "fee");
-
-        long effectiveLimit = amountLimit == null ? DEFAULT_AMOUNT_LIMIT : amountLimit;
-        int affected = clientBalanceMapper.debitBalanceAtomic(clientId, fee, effectiveLimit, null);
+    public BalanceCommandResult debitAndSync(ClientBalanceDebitCommand command) {
+        ClientBalanceDebitCommand normalized = normalizeDebitCommand(command);
+        int affected = clientBalanceMapper.debitBalanceAtomic(
+                normalized.getClientId(),
+                normalized.getFee(),
+                normalized.getAmountLimit(),
+                normalized.getOperatorId()
+        );
         if (affected <= 0) {
-            return resolveLowerBoundFailure(clientId, effectiveLimit);
+            return resolveLowerBoundFailure(normalized.getClientId(), normalized.getAmountLimit());
         }
 
-        ClientBalance latestBalance = requireLatestClientBalance(clientId);
-        ClientBusiness latestBusiness = requireLatestClientBusiness(clientId);
-        scheduleBalanceDoubleRefresh(latestBalance, latestBusiness, "debit", safeEntityId(clientId, requestId));
-        return BalanceCommandResult.success(latestBalance.getBalance(), effectiveLimit);
+        ClientBalance latestBalance = requireLatestClientBalance(normalized.getClientId());
+        ClientBusiness latestBusiness = requireLatestClientBusiness(normalized.getClientId());
+        scheduleBalanceDoubleRefresh(latestBalance, latestBusiness, "debit", safeEntityId(normalized.getClientId(), normalized.getRequestId()));
+        return BalanceCommandResult.success(latestBalance.getBalance(), normalized.getAmountLimit());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public BalanceCommandResult rechargeAndSync(Long clientId, Long amount, Long updateId, String requestId) {
-        validatePositiveClientId(clientId);
-        validatePositiveAmount(amount, "amount");
-
-        int affected = clientBalanceMapper.rechargeBalanceAtomic(clientId, amount, updateId);
+    public BalanceCommandResult rechargeAndSync(ClientBalanceRechargeCommand command) {
+        ClientBalanceRechargeCommand normalized = normalizeRechargeCommand(command);
+        int affected = clientBalanceMapper.rechargeBalanceAtomic(
+                normalized.getClientId(),
+                normalized.getAmount(),
+                normalized.getOperatorId()
+        );
         if (affected <= 0) {
-            return resolveMissingClientFailure(clientId);
+            return resolveMissingClientFailure(normalized.getClientId());
         }
 
-        ClientBalance latestBalance = requireLatestClientBalance(clientId);
-        ClientBusiness latestBusiness = requireLatestClientBusiness(clientId);
-        scheduleBalanceDoubleRefresh(latestBalance, latestBusiness, "recharge", safeEntityId(clientId, requestId));
+        ClientBalance latestBalance = requireLatestClientBalance(normalized.getClientId());
+        ClientBusiness latestBusiness = requireLatestClientBusiness(normalized.getClientId());
+        scheduleBalanceDoubleRefresh(latestBalance, latestBusiness, "recharge", safeEntityId(normalized.getClientId(), normalized.getRequestId()));
         return BalanceCommandResult.success(latestBalance.getBalance(), null);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public BalanceCommandResult adjustAndSync(Long clientId, Long delta, Long amountLimit, Long updateId, String requestId) {
-        validatePositiveClientId(clientId);
-        validateNonZeroDelta(delta);
-
-        int affected = clientBalanceMapper.adjustBalanceAtomic(clientId, delta, amountLimit, updateId);
+    public BalanceCommandResult adjustAndSync(ClientBalanceAdjustCommand command) {
+        ClientBalanceAdjustCommand normalized = normalizeAdjustCommand(command);
+        int affected = clientBalanceMapper.adjustBalanceAtomic(
+                normalized.getClientId(),
+                normalized.getDelta(),
+                normalized.getAmountLimit(),
+                normalized.getOperatorId()
+        );
         if (affected <= 0) {
-            if (amountLimit == null) {
-                return resolveMissingClientFailure(clientId);
+            if (normalized.getAmountLimit() == null) {
+                return resolveMissingClientFailure(normalized.getClientId());
             }
-            return resolveLowerBoundFailure(clientId, amountLimit);
+            return resolveLowerBoundFailure(normalized.getClientId(), normalized.getAmountLimit());
         }
 
-        ClientBalance latestBalance = requireLatestClientBalance(clientId);
-        ClientBusiness latestBusiness = requireLatestClientBusiness(clientId);
-        scheduleBalanceDoubleRefresh(latestBalance, latestBusiness, "adjust", safeEntityId(clientId, requestId));
-        return BalanceCommandResult.success(latestBalance.getBalance(), amountLimit);
+        ClientBalance latestBalance = requireLatestClientBalance(normalized.getClientId());
+        ClientBusiness latestBusiness = requireLatestClientBusiness(normalized.getClientId());
+        scheduleBalanceDoubleRefresh(latestBalance, latestBusiness, "adjust", safeEntityId(normalized.getClientId(), normalized.getRequestId()));
+        return BalanceCommandResult.success(latestBalance.getBalance(), normalized.getAmountLimit());
+    }
+
+    private ClientBalanceDebitCommand normalizeDebitCommand(ClientBalanceDebitCommand command) {
+        if (command == null) {
+            throw new IllegalArgumentException("debit command must not be null");
+        }
+        validatePositiveClientId(command.getClientId());
+        validatePositiveAmount(command.getFee(), "fee");
+
+        ClientBalanceDebitCommand normalized = new ClientBalanceDebitCommand();
+        normalized.setClientId(command.getClientId());
+        normalized.setFee(command.getFee());
+        normalized.setAmountLimit(command.getAmountLimit() == null ? DEFAULT_AMOUNT_LIMIT : command.getAmountLimit());
+        normalized.setOperatorId(command.getOperatorId());
+        normalized.setRequestId(trimToNull(command.getRequestId()));
+        return normalized;
+    }
+
+    private ClientBalanceRechargeCommand normalizeRechargeCommand(ClientBalanceRechargeCommand command) {
+        if (command == null) {
+            throw new IllegalArgumentException("recharge command must not be null");
+        }
+        validatePositiveClientId(command.getClientId());
+        validatePositiveAmount(command.getAmount(), "amount");
+
+        ClientBalanceRechargeCommand normalized = new ClientBalanceRechargeCommand();
+        normalized.setClientId(command.getClientId());
+        normalized.setAmount(command.getAmount());
+        normalized.setOperatorId(command.getOperatorId());
+        normalized.setRequestId(trimToNull(command.getRequestId()));
+        return normalized;
+    }
+
+    private ClientBalanceAdjustCommand normalizeAdjustCommand(ClientBalanceAdjustCommand command) {
+        if (command == null) {
+            throw new IllegalArgumentException("adjust command must not be null");
+        }
+        validatePositiveClientId(command.getClientId());
+        validateNonZeroDelta(command.getDelta());
+
+        ClientBalanceAdjustCommand normalized = new ClientBalanceAdjustCommand();
+        normalized.setClientId(command.getClientId());
+        normalized.setDelta(command.getDelta());
+        normalized.setAmountLimit(command.getAmountLimit());
+        normalized.setOperatorId(command.getOperatorId());
+        normalized.setRequestId(trimToNull(command.getRequestId()));
+        return normalized;
     }
 
     private ClientBalance loadLatestClientBalance(Long clientId) {
@@ -227,6 +284,10 @@ public class BalanceCommandServiceImpl implements BalanceCommandService {
             return String.valueOf(clientId);
         }
         return clientId + ":" + requestId.trim();
+    }
+
+    private String trimToNull(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 
     private void validatePositiveClientId(Long clientId) {

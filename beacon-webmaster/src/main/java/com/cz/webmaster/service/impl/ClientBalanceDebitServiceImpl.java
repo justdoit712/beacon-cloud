@@ -1,6 +1,7 @@
 package com.cz.webmaster.service.impl;
 
 import com.cz.webmaster.dto.BalanceCommandResult;
+import com.cz.webmaster.dto.ClientBalanceDebitCommand;
 import com.cz.webmaster.service.BalanceCommandService;
 import com.cz.webmaster.service.ClientBalanceDebitService;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,11 @@ public class ClientBalanceDebitServiceImpl implements ClientBalanceDebitService 
      */
     @Override
     public BalanceCommandResult debitAndSync(Long clientId, Long fee, Long amountLimit, String requestId) {
-        return balanceCommandService.debitAndSync(clientId, fee, amountLimit, requestId);
+        ClientBalanceDebitCommand command = new ClientBalanceDebitCommand();
+        command.setClientId(clientId);
+        command.setFee(fee);
+        command.setAmountLimit(amountLimit);
+        command.setRequestId(requestId);
+        return balanceCommandService.debitAndSync(command);
     }
 }

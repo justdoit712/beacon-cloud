@@ -2,6 +2,7 @@ package com.cz.webmaster.service.impl;
 
 import com.cz.common.constant.CacheDomainRegistry;
 import com.cz.webmaster.dto.BalanceCommandResult;
+import com.cz.webmaster.dto.ClientBalanceDebitCommand;
 import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.entity.ClientChannel;
 import com.cz.webmaster.enums.BalanceCommandStatus;
@@ -312,7 +313,7 @@ public class CacheSyncServiceRuntimeRouteTest {
     @Test
     public void shouldDelegateDebitToBalanceCommandService() {
         BalanceCommandService balanceCommandService = Mockito.mock(BalanceCommandService.class);
-        when(balanceCommandService.debitAndSync(9001L, 10L, -10000L, "req-1"))
+        when(balanceCommandService.debitAndSync(any(ClientBalanceDebitCommand.class)))
                 .thenReturn(BalanceCommandResult.success(90L, -10000L));
 
         ClientBalanceDebitServiceImpl service = new ClientBalanceDebitServiceImpl(balanceCommandService);
@@ -321,5 +322,12 @@ public class CacheSyncServiceRuntimeRouteTest {
         Assert.assertTrue(result.isSuccess());
         Assert.assertEquals(Long.valueOf(90L), result.getBalance());
         Assert.assertEquals(BalanceCommandStatus.SUCCESS, result.getStatus());
+
+        ArgumentCaptor<ClientBalanceDebitCommand> captor = ArgumentCaptor.forClass(ClientBalanceDebitCommand.class);
+        verify(balanceCommandService, times(1)).debitAndSync(captor.capture());
+        Assert.assertEquals(Long.valueOf(9001L), captor.getValue().getClientId());
+        Assert.assertEquals(Long.valueOf(10L), captor.getValue().getFee());
+        Assert.assertEquals(Long.valueOf(-10000L), captor.getValue().getAmountLimit());
+        Assert.assertEquals("req-1", captor.getValue().getRequestId());
     }
 }
