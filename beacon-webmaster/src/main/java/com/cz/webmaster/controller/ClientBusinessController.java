@@ -203,24 +203,28 @@ public class ClientBusinessController {
             }
         }
 
-        ClientBalanceRechargeCommand command = new ClientBalanceRechargeCommand();
-        command.setClientId(target.getId());
-        command.setAmount(amount);
-        command.setOperatorId(currentUser.getId().longValue());
-        command.setRequestId(null);
+        try {
+            ClientBalanceRechargeCommand command = new ClientBalanceRechargeCommand();
+            command.setClientId(target.getId());
+            command.setAmount(amount);
+            command.setOperatorId(currentUser.getId().longValue());
+            command.setRequestId(null);
 
-        BalanceCommandResult commandResult = balanceCommandService.rechargeAndSync(command);
-        if (!commandResult.isSuccess()) {
-            return Result.error(commandResult.getCode(), commandResult.getMessage());
+            BalanceCommandResult commandResult = balanceCommandService.rechargeAndSync(command);
+            if (!commandResult.isSuccess()) {
+                return Result.error(commandResult.getCode(), commandResult.getMessage());
+            }
+
+            ResultVO resultVO = Result.ok("pay success");
+            Map<String, Object> data = new HashMap<>();
+            data.put("clientId", target.getId());
+            data.put("corpname", target.getCorpname());
+            data.put("amount", amount);
+            data.put("balance", commandResult.getBalance());
+            resultVO.setData(data);
+            return resultVO;
+        } catch (IllegalArgumentException ex) {
+            return Result.error(ExceptionEnums.PARAMETER_ERROR.getCode(), ex.getMessage());
         }
-
-        ResultVO resultVO = Result.ok("pay success");
-        Map<String, Object> data = new HashMap<>();
-        data.put("clientId", target.getId());
-        data.put("corpname", target.getCorpname());
-        data.put("amount", amount);
-        data.put("balance", commandResult.getBalance());
-        resultVO.setData(data);
-        return resultVO;
     }
 }

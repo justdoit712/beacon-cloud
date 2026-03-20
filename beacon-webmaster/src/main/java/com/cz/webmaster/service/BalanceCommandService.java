@@ -39,47 +39,4 @@ public interface BalanceCommandService {
      * @return 命令执行结果
      */
     BalanceCommandResult adjustAndSync(ClientBalanceAdjustCommand command);
-
-    /**
-     * 兼容旧调用方的扣费入口。
-     *
-     * <p>内部会将标量参数组装为 {@link ClientBalanceDebitCommand} 再统一委托。</p>
-     */
-    default BalanceCommandResult debitAndSync(Long clientId, Long fee, Long amountLimit, String requestId) {
-        ClientBalanceDebitCommand command = new ClientBalanceDebitCommand();
-        command.setClientId(clientId);
-        command.setFee(fee);
-        command.setAmountLimit(amountLimit);
-        command.setRequestId(requestId);
-        return debitAndSync(command);
-    }
-
-    /**
-     * 兼容旧调用方的充值入口。
-     *
-     * <p>内部会将标量参数组装为 {@link ClientBalanceRechargeCommand} 再统一委托。</p>
-     */
-    default BalanceCommandResult rechargeAndSync(Long clientId, Long amount, Long updateId, String requestId) {
-        ClientBalanceRechargeCommand command = new ClientBalanceRechargeCommand();
-        command.setClientId(clientId);
-        command.setAmount(amount);
-        command.setOperatorId(updateId);
-        command.setRequestId(requestId);
-        return rechargeAndSync(command);
-    }
-
-    /**
-     * 兼容旧调用方的调账入口。
-     *
-     * <p>内部会将标量参数组装为 {@link ClientBalanceAdjustCommand} 再统一委托。</p>
-     */
-    default BalanceCommandResult adjustAndSync(Long clientId, Long delta, Long amountLimit, Long updateId, String requestId) {
-        ClientBalanceAdjustCommand command = new ClientBalanceAdjustCommand();
-        command.setClientId(clientId);
-        command.setDelta(delta);
-        command.setAmountLimit(amountLimit);
-        command.setOperatorId(updateId);
-        command.setRequestId(requestId);
-        return adjustAndSync(command);
-    }
 }

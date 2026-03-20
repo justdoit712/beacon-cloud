@@ -2,6 +2,7 @@ package com.cz.webmaster.service.impl;
 
 import cn.hutool.core.util.IdUtil;
 import com.cz.webmaster.dto.BalanceCommandResult;
+import com.cz.webmaster.dto.ClientBalanceRechargeCommand;
 import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.service.AcountService;
 import com.cz.webmaster.service.BalanceCommandService;
@@ -187,12 +188,12 @@ public class AcountServiceImpl implements AcountService {
         if (clientBusiness == null || clientBusiness.getId() == null || paidValue == null || paidValue <= 0) {
             return false;
         }
-        BalanceCommandResult result = balanceCommandService.rechargeAndSync(
-                clientBusiness.getId(),
-                paidValue,
-                operatorId,
-                null
-        );
+        ClientBalanceRechargeCommand command = new ClientBalanceRechargeCommand();
+        command.setClientId(clientBusiness.getId());
+        command.setAmount(paidValue);
+        command.setOperatorId(operatorId);
+        command.setRequestId(null);
+        BalanceCommandResult result = balanceCommandService.rechargeAndSync(command);
         return result.isSuccess();
     }
 

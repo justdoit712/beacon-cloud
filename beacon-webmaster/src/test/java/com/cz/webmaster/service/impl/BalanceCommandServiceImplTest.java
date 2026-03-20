@@ -53,7 +53,12 @@ public class BalanceCommandServiceImplTest {
         when(clientBalanceMapper.selectByClientId(1001L)).thenReturn(latestBalance);
         when(clientBusinessMapper.selectByPrimaryKey(1001L)).thenReturn(latestBusiness);
 
-        BalanceCommandResult result = service.debitAndSync(1001L, 10L, null, "req-1");
+        ClientBalanceDebitCommand command = new ClientBalanceDebitCommand();
+        command.setClientId(1001L);
+        command.setFee(10L);
+        command.setRequestId("req-1");
+
+        BalanceCommandResult result = service.debitAndSync(command);
 
         Assert.assertTrue(result.isSuccess());
         Assert.assertEquals(BalanceCommandStatus.SUCCESS, result.getStatus());
@@ -99,7 +104,13 @@ public class BalanceCommandServiceImplTest {
         when(clientBalanceMapper.debitBalanceAtomic(1001L, 10L, 0L, null)).thenReturn(0);
         when(clientBalanceMapper.selectByClientId(1001L)).thenReturn(existingBalance);
 
-        BalanceCommandResult result = service.debitAndSync(1001L, 10L, 0L, "req-1");
+        ClientBalanceDebitCommand command = new ClientBalanceDebitCommand();
+        command.setClientId(1001L);
+        command.setFee(10L);
+        command.setAmountLimit(0L);
+        command.setRequestId("req-1");
+
+        BalanceCommandResult result = service.debitAndSync(command);
 
         Assert.assertFalse(result.isSuccess());
         Assert.assertEquals(BalanceCommandStatus.BALANCE_NOT_ENOUGH, result.getStatus());
@@ -117,7 +128,13 @@ public class BalanceCommandServiceImplTest {
         when(clientBalanceMapper.selectByClientId(1001L)).thenReturn(latestBalance);
         when(clientBusinessMapper.selectByPrimaryKey(1001L)).thenReturn(latestBusiness);
 
-        BalanceCommandResult result = service.rechargeAndSync(1001L, 200L, 99L, "req-2");
+        ClientBalanceRechargeCommand command = new ClientBalanceRechargeCommand();
+        command.setClientId(1001L);
+        command.setAmount(200L);
+        command.setOperatorId(99L);
+        command.setRequestId("req-2");
+
+        BalanceCommandResult result = service.rechargeAndSync(command);
 
         Assert.assertTrue(result.isSuccess());
         Assert.assertEquals(BalanceCommandStatus.SUCCESS, result.getStatus());
@@ -164,7 +181,14 @@ public class BalanceCommandServiceImplTest {
         when(clientBalanceMapper.selectByClientId(1001L)).thenReturn(latestBalance);
         when(clientBusinessMapper.selectByPrimaryKey(1001L)).thenReturn(latestBusiness);
 
-        BalanceCommandResult result = service.adjustAndSync(1001L, -30L, -1000L, 99L, "req-3");
+        ClientBalanceAdjustCommand command = new ClientBalanceAdjustCommand();
+        command.setClientId(1001L);
+        command.setDelta(-30L);
+        command.setAmountLimit(-1000L);
+        command.setOperatorId(99L);
+        command.setRequestId("req-3");
+
+        BalanceCommandResult result = service.adjustAndSync(command);
 
         Assert.assertTrue(result.isSuccess());
         Assert.assertEquals(BalanceCommandStatus.SUCCESS, result.getStatus());
