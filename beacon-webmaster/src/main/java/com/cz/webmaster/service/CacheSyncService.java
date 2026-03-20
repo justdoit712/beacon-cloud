@@ -1,5 +1,7 @@
 package com.cz.webmaster.service;
 
+import com.cz.webmaster.dto.CacheRebuildReport;
+
 /**
  * 缓存同步统一门面服务。
  *
@@ -43,6 +45,7 @@ public interface CacheSyncService {
      * 并不等于系统中已注册的所有缓存域。</p>
      *
      * @param domain 缓存域编码或 {@code ALL}
+     * @return 结构化重建报告
      */
-    void rebuildDomain(String domain);
+    CacheRebuildReport rebuildDomain(String domain);
 }

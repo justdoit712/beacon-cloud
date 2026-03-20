@@ -3,6 +3,9 @@ package com.cz.webmaster.service.impl;
 import com.cz.common.exception.ApiException;
 import com.cz.webmaster.client.BeaconCacheWriteClient;
 import com.cz.webmaster.config.CacheSyncProperties;
+import com.cz.webmaster.dto.CacheRebuildReport;
+import com.cz.webmaster.rebuild.DomainRebuildLoader;
+import com.cz.webmaster.rebuild.DomainRebuildLoaderRegistry;
 import com.cz.webmaster.support.CacheKeyBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
@@ -13,7 +16,9 @@ import org.mockito.Mockito;
 import org.springframework.mock.env.MockEnvironment;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -50,7 +55,12 @@ public class CacheSyncServiceImplMainlineTest {
                 properties,
                 new CacheKeyBuilder(),
                 cacheWriteClient,
-                new ObjectMapper()
+                new ObjectMapper(),
+                new DomainRebuildLoaderRegistry(Arrays.asList(
+                        stubLoader("client_business"),
+                        stubLoader("client_channel"),
+                        stubLoader("channel")
+                ))
         );
     }
 
@@ -153,7 +163,16 @@ public class CacheSyncServiceImplMainlineTest {
 
     @Test
     public void shouldAllowAllManualRebuildForCurrentAllowedRange() {
-        cacheSyncService.rebuildDomain("ALL");
+        CacheRebuildReport report = cacheSyncService.rebuildDomain("ALL");
+
+        Assert.assertNotNull(report);
+        Assert.assertEquals("ALL", report.getDomain());
+        Assert.assertEquals("MANUAL", report.getTrigger());
+        Assert.assertEquals("SKELETON", report.getStatus());
+        Assert.assertEquals(3, report.getReports().size());
+        Assert.assertEquals("client_business", report.getReports().get(0).getDomain());
+        Assert.assertEquals("client_channel", report.getReports().get(1).getDomain());
+        Assert.assertEquals("channel", report.getReports().get(2).getDomain());
     }
 
     @Test
@@ -167,6 +186,63 @@ public class CacheSyncServiceImplMainlineTest {
     }
 
     @Test
+    public void shouldExcludeDomainWithoutRegisteredLoaderFromAllManualRebuild() {
+        CacheSyncProperties properties = new CacheSyncProperties(
+                new MockEnvironment().withProperty("cache.namespace.fullPrefix", "beacon:dev:beacon-cloud:cz:")
+        );
+        properties.setEnabled(true);
+        properties.getRuntime().setEnabled(true);
+        properties.getManual().setEnabled(true);
+        properties.getRedis().setNamespace("beacon:dev:beacon-cloud:cz:");
+        properties.validate();
+
+        CacheSyncServiceImpl service = new CacheSyncServiceImpl(
+                properties,
+                new CacheKeyBuilder(),
+                cacheWriteClient,
+                new ObjectMapper(),
+                new DomainRebuildLoaderRegistry(Arrays.asList(
+                        stubLoader("client_business"),
+                        stubLoader("channel")
+                ))
+        );
+
+        CacheRebuildReport report = service.rebuildDomain("ALL");
+
+        Assert.assertEquals(2, report.getReports().size());
+        Assert.assertEquals("client_business", report.getReports().get(0).getDomain());
+        Assert.assertEquals("channel", report.getReports().get(1).getDomain());
+    }
+
+    @Test
+    public void shouldRejectManualRebuildWhenLoaderNotRegistered() {
+        CacheSyncProperties properties = new CacheSyncProperties(
+                new MockEnvironment().withProperty("cache.namespace.fullPrefix", "beacon:dev:beacon-cloud:cz:")
+        );
+        properties.setEnabled(true);
+        properties.getRuntime().setEnabled(true);
+        properties.getManual().setEnabled(true);
+        properties.getRedis().setNamespace("beacon:dev:beacon-cloud:cz:");
+        properties.validate();
+
+        CacheSyncServiceImpl service = new CacheSyncServiceImpl(
+                properties,
+                new CacheKeyBuilder(),
+                cacheWriteClient,
+                new ObjectMapper(),
+                new DomainRebuildLoaderRegistry(Collections.singletonList(stubLoader("client_business")))
+        );
+
+        try {
+            service.rebuildDomain("channel");
+            Assert.fail("expected ApiException");
+        } catch (ApiException ex) {
+            Assert.assertNotNull(ex.getCode());
+            Assert.assertTrue(ex.getMessage().contains("loader not registered"));
+        }
+    }
+
+    @Test
     public void shouldRejectUnsupportedDomain() {
         try {
             cacheSyncService.syncUpsert("unknown_domain", new HashMap<String, Object>());
@@ -174,5 +250,19 @@ public class CacheSyncServiceImplMainlineTest {
         } catch (ApiException ex) {
             Assert.assertNotNull(ex.getCode());
         }
+    }
+
+    private DomainRebuildLoader stubLoader(String domainCode) {
+        return new DomainRebuildLoader() {
+            @Override
+            public String domainCode() {
+                return domainCode;
+            }
+
+            @Override
+            public List<Object> loadSnapshot() {
+                return Collections.emptyList();
+            }
+        };
     }
 }

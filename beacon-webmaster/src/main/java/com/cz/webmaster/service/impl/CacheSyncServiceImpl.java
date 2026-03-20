@@ -7,6 +7,8 @@ import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.ApiException;
 import com.cz.webmaster.client.BeaconCacheWriteClient;
 import com.cz.webmaster.config.CacheSyncProperties;
+import com.cz.webmaster.dto.CacheRebuildReport;
+import com.cz.webmaster.rebuild.DomainRebuildLoaderRegistry;
 import com.cz.webmaster.service.CacheSyncService;
 import com.cz.webmaster.support.CacheKeyBuilder;
 import com.cz.webmaster.support.CacheSyncLogHelper;
@@ -14,6 +16,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -43,11 +47,15 @@ public class CacheSyncServiceImpl implements CacheSyncService {
 
     private static final Logger log = LoggerFactory.getLogger(CacheSyncServiceImpl.class);
     private static final String DOMAIN_ALL = "ALL";
+    private static final String TRACE_ID_KEY = "traceId";
+    private static final String TRACE_ID_KEY_UPPER = "TraceId";
+    private static final String UNKNOWN = "-";
 
     private final CacheSyncProperties cacheSyncProperties;
     private final CacheKeyBuilder cacheKeyBuilder;
     private final BeaconCacheWriteClient cacheWriteClient;
     private final ObjectMapper objectMapper;
+    private final DomainRebuildLoaderRegistry domainRebuildLoaderRegistry;
 
     /**
      * 构造缓存同步门面实现。
@@ -61,10 +69,26 @@ public class CacheSyncServiceImpl implements CacheSyncService {
                                 CacheKeyBuilder cacheKeyBuilder,
                                 BeaconCacheWriteClient cacheWriteClient,
                                 ObjectMapper objectMapper) {
+        this(
+                cacheSyncProperties,
+                cacheKeyBuilder,
+                cacheWriteClient,
+                objectMapper,
+                new DomainRebuildLoaderRegistry(Collections.emptyList())
+        );
+    }
+
+    @Autowired
+    public CacheSyncServiceImpl(CacheSyncProperties cacheSyncProperties,
+                                CacheKeyBuilder cacheKeyBuilder,
+                                BeaconCacheWriteClient cacheWriteClient,
+                                ObjectMapper objectMapper,
+                                DomainRebuildLoaderRegistry domainRebuildLoaderRegistry) {
         this.cacheSyncProperties = cacheSyncProperties;
         this.cacheKeyBuilder = cacheKeyBuilder;
         this.cacheWriteClient = cacheWriteClient;
         this.objectMapper = objectMapper;
+        this.domainRebuildLoaderRegistry = domainRebuildLoaderRegistry;
     }
 
     /**
@@ -194,22 +218,23 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      * @param domain 缓存域编码或 {@code ALL}
      */
     @Override
-    public void rebuildDomain(String domain) {
+    public CacheRebuildReport rebuildDomain(String domain) {
         long startAt = System.currentTimeMillis();
         String operation = "rebuildDomain";
         String normalizedDomain = normalizeDomain(domain);
         try {
             if (!cacheSyncProperties.isEnabled() || !cacheSyncProperties.getManual().isEnabled()) {
                 CacheSyncLogHelper.info(log, normalizedDomain, "-", "-", operation + ".skip", costMs(startAt));
-                return;
+                return buildSkippedRebuildReport(normalizedDomain, startAt, "manual rebuild disabled");
             }
 
             if (DOMAIN_ALL.equalsIgnoreCase(normalizedDomain)) {
-                for (String allowedDomain : CacheDomainRegistry.currentManualRebuildDomainCodes()) {
-                    rebuildSingleDomain(allowedDomain);
+                List<CacheRebuildReport> childReports = new ArrayList<>();
+                for (String allowedDomain : resolveCurrentRegisteredManualRebuildDomains()) {
+                    childReports.add(rebuildSingleDomain(allowedDomain));
                 }
                 CacheSyncLogHelper.info(log, DOMAIN_ALL, "-", "-", operation, costMs(startAt));
-                return;
+                return buildAggregateRebuildReport(DOMAIN_ALL, startAt, childReports);
             }
 
             if (!CacheDomainRegistry.isCurrentMainlineDomain(normalizedDomain)) {
@@ -218,10 +243,14 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             if (!CacheDomainRegistry.isCurrentManualRebuildDomain(normalizedDomain)) {
                 throw new ApiException("manual rebuild domain not allowed yet: " + normalizedDomain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
             }
+            if (!domainRebuildLoaderRegistry.contains(normalizedDomain)) {
+                throw new ApiException("manual rebuild loader not registered: " + normalizedDomain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+            }
 
             CacheDomainContract contract = requireDomainContract(normalizedDomain);
-            rebuildSingleDomain(contract.getDomainCode());
+            CacheRebuildReport report = rebuildSingleDomain(contract.getDomainCode());
             CacheSyncLogHelper.info(log, contract.getDomainCode(), "-", "-", operation, costMs(startAt));
+            return report;
         } catch (ApiException ex) {
             CacheSyncLogHelper.error(
                     log,
@@ -259,8 +288,22 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      *
      * @param domain 缓存域编码
      */
-    private void rebuildSingleDomain(String domain) {
+    private CacheRebuildReport rebuildSingleDomain(String domain) {
+        long startAt = System.currentTimeMillis();
         CacheSyncLogHelper.info(log, domain, "-", "-", "rebuildDomain.skeleton", 0L);
+        CacheRebuildReport report = new CacheRebuildReport();
+        report.setTraceId(resolveTraceId());
+        report.setTrigger("MANUAL");
+        report.setDomain(domain);
+        report.setStartAt(startAt);
+        report.setEndAt(System.currentTimeMillis());
+        report.setAttemptedKeys(0);
+        report.setSuccessCount(0);
+        report.setFailCount(0);
+        report.setDirtyReplay(false);
+        report.setStatus("SKELETON");
+        report.setMessage("manual rebuild report interface ready; rebuild engine not implemented yet");
+        return report;
     }
 
     private void doUpsert(String domain, String key, Object entityOrId) {
@@ -707,5 +750,79 @@ public class CacheSyncServiceImpl implements CacheSyncService {
 
     private long costMs(long startAt) {
         return Math.max(System.currentTimeMillis() - startAt, 0);
+    }
+
+    private List<String> resolveCurrentRegisteredManualRebuildDomains() {
+        List<String> domains = new ArrayList<>();
+        for (String domainCode : CacheDomainRegistry.currentManualRebuildDomainCodes()) {
+            if (domainRebuildLoaderRegistry.contains(domainCode)) {
+                domains.add(domainCode);
+            }
+        }
+        return domains;
+    }
+
+    private CacheRebuildReport buildSkippedRebuildReport(String domain, long startAt, String message) {
+        CacheRebuildReport report = new CacheRebuildReport();
+        report.setTraceId(resolveTraceId());
+        report.setTrigger("MANUAL");
+        report.setDomain(domain);
+        report.setStartAt(startAt);
+        report.setEndAt(System.currentTimeMillis());
+        report.setAttemptedKeys(0);
+        report.setSuccessCount(0);
+        report.setFailCount(0);
+        report.setDirtyReplay(false);
+        report.setStatus("SKIPPED");
+        report.setMessage(message);
+        return report;
+    }
+
+    private CacheRebuildReport buildAggregateRebuildReport(String domain,
+                                                           long startAt,
+                                                           List<CacheRebuildReport> childReports) {
+        CacheRebuildReport report = new CacheRebuildReport();
+        report.setTraceId(resolveTraceId());
+        report.setTrigger("MANUAL");
+        report.setDomain(domain);
+        report.setStartAt(startAt);
+        report.setEndAt(System.currentTimeMillis());
+        report.setReports(childReports);
+
+        int attemptedKeys = 0;
+        int successCount = 0;
+        int failCount = 0;
+        boolean dirtyReplay = false;
+        List<String> failedKeys = new ArrayList<>();
+        if (childReports != null) {
+            for (CacheRebuildReport childReport : childReports) {
+                if (childReport == null) {
+                    continue;
+                }
+                attemptedKeys += childReport.getAttemptedKeys();
+                successCount += childReport.getSuccessCount();
+                failCount += childReport.getFailCount();
+                dirtyReplay = dirtyReplay || childReport.isDirtyReplay();
+                if (childReport.getFailedKeys() != null && !childReport.getFailedKeys().isEmpty()) {
+                    failedKeys.addAll(childReport.getFailedKeys());
+                }
+            }
+        }
+        report.setAttemptedKeys(attemptedKeys);
+        report.setSuccessCount(successCount);
+        report.setFailCount(failCount);
+        report.setFailedKeys(failedKeys);
+        report.setDirtyReplay(dirtyReplay);
+        report.setStatus("SKELETON");
+        report.setMessage("manual rebuild report interface ready; rebuild engine not implemented yet");
+        return report;
+    }
+
+    private String resolveTraceId() {
+        String traceId = MDC.get(TRACE_ID_KEY);
+        if (!StringUtils.hasText(traceId)) {
+            traceId = MDC.get(TRACE_ID_KEY_UPPER);
+        }
+        return StringUtils.hasText(traceId) ? traceId.trim() : UNKNOWN;
     }
 }
