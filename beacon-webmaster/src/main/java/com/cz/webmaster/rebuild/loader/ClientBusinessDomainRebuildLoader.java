@@ -1,18 +1,26 @@
 package com.cz.webmaster.rebuild.loader;
 
 import com.cz.common.constant.CacheDomainRegistry;
+import com.cz.webmaster.entity.ClientBusiness;
+import com.cz.webmaster.entity.ClientBusinessExample;
+import com.cz.webmaster.mapper.ClientBusinessMapper;
 import com.cz.webmaster.rebuild.DomainRebuildLoader;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * {@code client_business} 域缓存重建加载器。
- *
- * <p>当前阶段仅完成加载器注册，占位后续全量快照查询实现。</p>
  */
 @Component
 public class ClientBusinessDomainRebuildLoader implements DomainRebuildLoader {
+
+    private final ClientBusinessMapper clientBusinessMapper;
+
+    public ClientBusinessDomainRebuildLoader(ClientBusinessMapper clientBusinessMapper) {
+        this.clientBusinessMapper = clientBusinessMapper;
+    }
 
     @Override
     public String domainCode() {
@@ -21,6 +29,14 @@ public class ClientBusinessDomainRebuildLoader implements DomainRebuildLoader {
 
     @Override
     public List<Object> loadSnapshot() {
-        throw new UnsupportedOperationException("client_business rebuild loader snapshot not implemented yet");
+        ClientBusinessExample example = new ClientBusinessExample();
+        example.createCriteria().andIsDeleteEqualTo((byte) 0);
+        example.setOrderByClause("id asc");
+
+        List<ClientBusiness> rows = clientBusinessMapper.selectByExample(example);
+        if (rows == null || rows.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(rows);
     }
 }

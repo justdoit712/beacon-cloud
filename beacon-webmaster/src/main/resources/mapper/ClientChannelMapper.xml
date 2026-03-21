@@ -93,6 +93,13 @@
         </foreach>
     </select>
 
+    <select id="findActiveClientIds" resultType="java.lang.Long">
+        select distinct cc.client_id
+        from client_channel cc
+        where cc.is_delete = 0
+        order by cc.client_id asc
+    </select>
+
     <select id="findRouteMembersByClientIds" resultType="java.util.LinkedHashMap">
         select
         cc.client_id as clientId,
@@ -106,6 +113,7 @@
         <foreach collection="clientIds" item="clientId" open="(" separator="," close=")">
             #{clientId}
         </foreach>
+        order by cc.client_id asc, cc.id asc
     </select>
 
     <insert id="insertSelective" parameterType="com.cz.webmaster.entity.ClientChannel">

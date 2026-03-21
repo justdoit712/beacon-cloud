@@ -50,6 +50,16 @@ public interface ClientChannelMapper {
     List<ClientChannel> findByIds(@Param("ids") List<Long> ids);
 
     /**
+     * 查询当前存在有效绑定关系的客户 id 列表。
+     *
+     * <p>该查询用于全量重建 {@code client_channel} 域时确定需要输出的
+     * {@code client_channel:{clientId}} key 集合。</p>
+     *
+     * @return 当前存在有效通道绑定的客户 id 列表
+     */
+    List<Long> findActiveClientIds();
+
+    /**
      * 按客户 id 集合查询客户通道路由成员的全量快照。
      *
      * <p>该方法不是返回 {@link ClientChannel} 实体列表，而是返回用于构造
