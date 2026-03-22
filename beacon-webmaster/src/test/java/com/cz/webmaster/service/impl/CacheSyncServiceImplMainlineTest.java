@@ -3,6 +3,7 @@ package com.cz.webmaster.service.impl;
 import com.cz.common.exception.ApiException;
 import com.cz.webmaster.client.BeaconCacheWriteClient;
 import com.cz.webmaster.config.CacheSyncProperties;
+import com.cz.webmaster.dto.CacheDeleteResultDTO;
 import com.cz.webmaster.dto.CacheRebuildReport;
 import com.cz.webmaster.rebuild.CacheRebuildCoordinationSupport;
 import com.cz.webmaster.rebuild.DomainRebuildLoader;
@@ -175,7 +176,7 @@ public class CacheSyncServiceImplMainlineTest {
         Assert.assertNotNull(report);
         Assert.assertEquals("ALL", report.getDomain());
         Assert.assertEquals("MANUAL", report.getTrigger());
-        Assert.assertEquals("SKELETON", report.getStatus());
+        Assert.assertEquals("SUCCESS", report.getStatus());
         Assert.assertEquals(3, report.getReports().size());
         Assert.assertEquals("client_business", report.getReports().get(0).getDomain());
         Assert.assertEquals("client_channel", report.getReports().get(1).getDomain());
@@ -271,9 +272,69 @@ public class CacheSyncServiceImplMainlineTest {
         CacheRebuildReport report = cacheSyncService.rebuildDomain("channel");
 
         Assert.assertTrue(report.isDirtyReplay());
-        Assert.assertTrue(report.getMessage().contains("dirty replay observed"));
+        Assert.assertTrue(report.getMessage().contains("dirty replay"));
         verify(cacheRebuildCoordinationSupport, times(1))
                 .releaseRebuildLock(eq("channel"), Mockito.anyString());
+    }
+
+    @Test
+    public void shouldRebuildClientBusinessByDeletingOldKeysAndWritingSnapshot() {
+        CacheDeleteResultDTO deleteResult = new CacheDeleteResultDTO();
+        deleteResult.setSuccessCount(1);
+        deleteResult.setDeletedCount(1);
+        Mockito.when(cacheWriteClient.keys("client_business:*", 1000))
+                .thenReturn(new java.util.LinkedHashSet<>(Collections.singletonList("client_business:ak_old")));
+        Mockito.when(cacheWriteClient.deleteBatch(Collections.singletonList("client_business:ak_old")))
+                .thenReturn(deleteResult);
+
+        CacheSyncServiceImpl service = new CacheSyncServiceImpl(
+                buildEnabledProperties(),
+                new CacheKeyBuilder(),
+                cacheWriteClient,
+                new ObjectMapper(),
+                new DomainRebuildLoaderRegistry(Collections.singletonList(singlePayloadLoader(
+                        "client_business",
+                        new java.util.LinkedHashMap<String, Object>() {{
+                            put("apikey", "ak_new");
+                            put("corpname", "corp_new");
+                        }}
+                ))),
+                cacheRebuildCoordinationSupport
+        );
+
+        CacheRebuildReport report = service.rebuildDomain("client_business");
+
+        Assert.assertEquals("SUCCESS", report.getStatus());
+        Assert.assertEquals(1, report.getAttemptedKeys());
+        Assert.assertEquals(1, report.getSuccessCount());
+        Assert.assertEquals(0, report.getFailCount());
+        verify(cacheWriteClient, times(1)).deleteBatch(Collections.singletonList("client_business:ak_old"));
+        verify(cacheWriteClient, times(1)).hmset(eq("client_business:ak_new"), anyMap());
+    }
+
+    @Test
+    public void shouldRecordFailedKeyWhenRebuildItemFails() {
+        CacheSyncServiceImpl service = new CacheSyncServiceImpl(
+                buildEnabledProperties(),
+                new CacheKeyBuilder(),
+                cacheWriteClient,
+                new ObjectMapper(),
+                new DomainRebuildLoaderRegistry(Collections.singletonList(singlePayloadLoader(
+                        "client_business",
+                        new java.util.LinkedHashMap<String, Object>() {{
+                            put("corpname", "corp_without_api_key");
+                        }}
+                ))),
+                cacheRebuildCoordinationSupport
+        );
+
+        CacheRebuildReport report = service.rebuildDomain("client_business");
+
+        Assert.assertEquals("FAIL", report.getStatus());
+        Assert.assertEquals(1, report.getAttemptedKeys());
+        Assert.assertEquals(0, report.getSuccessCount());
+        Assert.assertEquals(1, report.getFailCount());
+        Assert.assertEquals(1, report.getFailedKeys().size());
     }
 
     @Test
@@ -298,5 +359,31 @@ public class CacheSyncServiceImplMainlineTest {
                 return Collections.emptyList();
             }
         };
+    }
+
+    private DomainRebuildLoader singlePayloadLoader(String domainCode, Object payload) {
+        return new DomainRebuildLoader() {
+            @Override
+            public String domainCode() {
+                return domainCode;
+            }
+
+            @Override
+            public List<Object> loadSnapshot() {
+                return Collections.singletonList(payload);
+            }
+        };
+    }
+
+    private CacheSyncProperties buildEnabledProperties() {
+        CacheSyncProperties properties = new CacheSyncProperties(
+                new MockEnvironment().withProperty("cache.namespace.fullPrefix", "beacon:dev:beacon-cloud:cz:")
+        );
+        properties.setEnabled(true);
+        properties.getRuntime().setEnabled(true);
+        properties.getManual().setEnabled(true);
+        properties.getRedis().setNamespace("beacon:dev:beacon-cloud:cz:");
+        properties.validate();
+        return properties;
     }
 }

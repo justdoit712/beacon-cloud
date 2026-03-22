@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * beacon-cache 写删能力 Feign 客户端。
@@ -70,6 +71,13 @@ public interface BeaconCacheWriteClient {
      */
     @GetMapping(value = "/cache/get/{key}")
     Object get(@PathVariable("key") String key);
+
+    /**
+     * 按 pattern 扫描逻辑 key 列表。
+     */
+    @GetMapping(value = "/cache/keys")
+    Set<String> keys(@RequestParam("pattern") String pattern,
+                     @RequestParam("count") Integer count);
 
     /**
      * 原子读取并删除单个 key。
