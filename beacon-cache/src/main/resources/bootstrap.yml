@@ -25,6 +25,8 @@ cache:
     test-api-enabled: false
     max-time-skew-seconds: 300
     key-pattern-allow-list:
+      - client_business:*
+      - client_channel:*
       - client_balance:*
       - channel:*
     caller-secrets:
@@ -45,6 +47,7 @@ cache:
         - KEYS
       beacon-webmaster:
         - WRITE
+        - KEYS
       beacon-smsgateway:
         - READ
       beacon-test:
