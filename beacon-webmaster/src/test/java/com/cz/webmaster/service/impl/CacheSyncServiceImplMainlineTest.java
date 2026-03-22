@@ -4,6 +4,7 @@ import com.cz.common.exception.ApiException;
 import com.cz.webmaster.client.BeaconCacheWriteClient;
 import com.cz.webmaster.config.CacheSyncProperties;
 import com.cz.webmaster.dto.CacheRebuildReport;
+import com.cz.webmaster.rebuild.CacheRebuildCoordinationSupport;
 import com.cz.webmaster.rebuild.DomainRebuildLoader;
 import com.cz.webmaster.rebuild.DomainRebuildLoaderRegistry;
 import com.cz.webmaster.support.CacheKeyBuilder;
@@ -37,10 +38,15 @@ public class CacheSyncServiceImplMainlineTest {
 
     private BeaconCacheWriteClient cacheWriteClient;
     private CacheSyncServiceImpl cacheSyncService;
+    private CacheRebuildCoordinationSupport cacheRebuildCoordinationSupport;
 
     @Before
     public void setUp() {
         cacheWriteClient = Mockito.mock(BeaconCacheWriteClient.class);
+        cacheRebuildCoordinationSupport = Mockito.mock(CacheRebuildCoordinationSupport.class);
+        Mockito.when(cacheRebuildCoordinationSupport.tryAcquireRebuildLock(Mockito.anyString(), Mockito.anyString())).thenReturn(true);
+        Mockito.when(cacheRebuildCoordinationSupport.releaseRebuildLock(Mockito.anyString(), Mockito.anyString())).thenReturn(true);
+        Mockito.when(cacheRebuildCoordinationSupport.consumeDirty(Mockito.anyString())).thenReturn(false);
 
         CacheSyncProperties properties = new CacheSyncProperties(
                 new MockEnvironment().withProperty("cache.namespace.fullPrefix", "beacon:dev:beacon-cloud:cz:")
@@ -60,7 +66,8 @@ public class CacheSyncServiceImplMainlineTest {
                         stubLoader("client_business"),
                         stubLoader("client_channel"),
                         stubLoader("channel")
-                ))
+                )),
+                cacheRebuildCoordinationSupport
         );
     }
 
@@ -204,7 +211,8 @@ public class CacheSyncServiceImplMainlineTest {
                 new DomainRebuildLoaderRegistry(Arrays.asList(
                         stubLoader("client_business"),
                         stubLoader("channel")
-                ))
+                )),
+                cacheRebuildCoordinationSupport
         );
 
         CacheRebuildReport report = service.rebuildDomain("ALL");
@@ -230,7 +238,8 @@ public class CacheSyncServiceImplMainlineTest {
                 new CacheKeyBuilder(),
                 cacheWriteClient,
                 new ObjectMapper(),
-                new DomainRebuildLoaderRegistry(Collections.singletonList(stubLoader("client_business")))
+                new DomainRebuildLoaderRegistry(Collections.singletonList(stubLoader("client_business"))),
+                cacheRebuildCoordinationSupport
         );
 
         try {
@@ -240,6 +249,31 @@ public class CacheSyncServiceImplMainlineTest {
             Assert.assertNotNull(ex.getCode());
             Assert.assertTrue(ex.getMessage().contains("loader not registered"));
         }
+    }
+
+    @Test
+    public void shouldRejectManualRebuildWhenDomainBusy() {
+        Mockito.when(cacheRebuildCoordinationSupport.tryAcquireRebuildLock(eq("channel"), Mockito.anyString())).thenReturn(false);
+
+        try {
+            cacheSyncService.rebuildDomain("channel");
+            Assert.fail("expected ApiException");
+        } catch (ApiException ex) {
+            Assert.assertTrue(ex.getMessage().contains("domain busy"));
+        }
+    }
+
+    @Test
+    public void shouldMarkDirtyReplayWhenDirtyFlagExistsAfterRebuild() {
+        Mockito.when(cacheRebuildCoordinationSupport.tryAcquireRebuildLock(eq("channel"), Mockito.anyString())).thenReturn(true);
+        Mockito.when(cacheRebuildCoordinationSupport.consumeDirty("channel")).thenReturn(true, false);
+
+        CacheRebuildReport report = cacheSyncService.rebuildDomain("channel");
+
+        Assert.assertTrue(report.isDirtyReplay());
+        Assert.assertTrue(report.getMessage().contains("dirty replay observed"));
+        verify(cacheRebuildCoordinationSupport, times(1))
+                .releaseRebuildLock(eq("channel"), Mockito.anyString());
     }
 
     @Test

@@ -8,6 +8,7 @@ import com.cz.common.exception.ApiException;
 import com.cz.webmaster.client.BeaconCacheWriteClient;
 import com.cz.webmaster.config.CacheSyncProperties;
 import com.cz.webmaster.dto.CacheRebuildReport;
+import com.cz.webmaster.rebuild.CacheRebuildCoordinationSupport;
 import com.cz.webmaster.rebuild.DomainRebuildLoaderRegistry;
 import com.cz.webmaster.service.CacheSyncService;
 import com.cz.webmaster.support.CacheKeyBuilder;
@@ -28,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * {@link CacheSyncService} 的默认实现。
@@ -56,39 +58,61 @@ public class CacheSyncServiceImpl implements CacheSyncService {
     private final BeaconCacheWriteClient cacheWriteClient;
     private final ObjectMapper objectMapper;
     private final DomainRebuildLoaderRegistry domainRebuildLoaderRegistry;
+    private final CacheRebuildCoordinationSupport cacheRebuildCoordinationSupport;
 
     /**
      * 构造缓存同步门面实现。
+     *
+     * <p>该构造方法用于完整装配缓存同步所需依赖，
+     * 包括重建加载器注册表与并发协调组件。</p>
      *
      * @param cacheSyncProperties 缓存同步配置
      * @param cacheKeyBuilder 逻辑 key 构建器
      * @param cacheWriteClient 缓存写删客户端
      * @param objectMapper 对象转换器
+     * @param domainRebuildLoaderRegistry 域级重建加载器注册表
+     * @param cacheRebuildCoordinationSupport 缓存重建并发协调组件；允许为 {@code null}
      */
-    public CacheSyncServiceImpl(CacheSyncProperties cacheSyncProperties,
-                                CacheKeyBuilder cacheKeyBuilder,
-                                BeaconCacheWriteClient cacheWriteClient,
-                                ObjectMapper objectMapper) {
-        this(
-                cacheSyncProperties,
-                cacheKeyBuilder,
-                cacheWriteClient,
-                objectMapper,
-                new DomainRebuildLoaderRegistry(Collections.emptyList())
-        );
-    }
-
     @Autowired
     public CacheSyncServiceImpl(CacheSyncProperties cacheSyncProperties,
                                 CacheKeyBuilder cacheKeyBuilder,
                                 BeaconCacheWriteClient cacheWriteClient,
                                 ObjectMapper objectMapper,
-                                DomainRebuildLoaderRegistry domainRebuildLoaderRegistry) {
+                                DomainRebuildLoaderRegistry domainRebuildLoaderRegistry,
+                                CacheRebuildCoordinationSupport cacheRebuildCoordinationSupport) {
         this.cacheSyncProperties = cacheSyncProperties;
         this.cacheKeyBuilder = cacheKeyBuilder;
         this.cacheWriteClient = cacheWriteClient;
         this.objectMapper = objectMapper;
         this.domainRebuildLoaderRegistry = domainRebuildLoaderRegistry;
+        this.cacheRebuildCoordinationSupport = cacheRebuildCoordinationSupport;
+    }
+
+    /**
+     * 构造缓存同步门面实现。
+     *
+     * <p>该构造方法用于仅指定重建加载器注册表的场景。
+     * 当未显式传入并发协调组件时，手工重建相关并发避让能力保持关闭。</p>
+     *
+     * @param cacheSyncProperties 缓存同步配置
+     * @param cacheKeyBuilder 逻辑 key 构建器
+     * @param cacheWriteClient 缓存写删客户端
+     * @param objectMapper 对象转换器
+     * @param domainRebuildLoaderRegistry 域级重建加载器注册表
+     */
+    public CacheSyncServiceImpl(CacheSyncProperties cacheSyncProperties,
+                                CacheKeyBuilder cacheKeyBuilder,
+                                BeaconCacheWriteClient cacheWriteClient,
+                                ObjectMapper objectMapper,
+                                DomainRebuildLoaderRegistry domainRebuildLoaderRegistry) {
+        this(
+                cacheSyncProperties,
+                cacheKeyBuilder,
+                cacheWriteClient,
+                objectMapper,
+                domainRebuildLoaderRegistry,
+                null
+        );
     }
 
     /**
@@ -281,29 +305,62 @@ public class CacheSyncServiceImpl implements CacheSyncService {
     }
 
     /**
-     * 执行单个缓存域的重建占位逻辑。
+     * 执行单个缓存域的手工重建骨架流程。
      *
-     * <p>当前方法只保留重建入口和域路由位置，具体的“删旧 key、查库、回灌”
-     * 逻辑在后续重建能力完善时再补充。</p>
+     * <p>当前方法负责单域重建阶段的并发协调与报告骨架生成，主要包括：</p>
+     * <p>1. 尝试获取域级重建锁，避免同域重建并发进入；</p>
+     * <p>2. 生成当前阶段的结构化重建报告；</p>
+     * <p>3. 在结束前消费脏标记，并将补跑观测结果写入报告；</p>
+     * <p>4. 最终释放本次重建持有的域级锁。</p>
+     *
+     * <p>实际的“清旧 key、加载快照、回灌 Redis”重建引擎逻辑仍在后续阶段补充。</p>
      *
      * @param domain 缓存域编码
+     * @return 单域重建报告
      */
     private CacheRebuildReport rebuildSingleDomain(String domain) {
         long startAt = System.currentTimeMillis();
-        CacheSyncLogHelper.info(log, domain, "-", "-", "rebuildDomain.skeleton", 0L);
-        CacheRebuildReport report = new CacheRebuildReport();
-        report.setTraceId(resolveTraceId());
-        report.setTrigger("MANUAL");
-        report.setDomain(domain);
-        report.setStartAt(startAt);
-        report.setEndAt(System.currentTimeMillis());
-        report.setAttemptedKeys(0);
-        report.setSuccessCount(0);
-        report.setFailCount(0);
-        report.setDirtyReplay(false);
-        report.setStatus("SKELETON");
-        report.setMessage("manual rebuild report interface ready; rebuild engine not implemented yet");
-        return report;
+        String lockToken = UUID.randomUUID().toString();
+        // 单域手工重建先尝试获取域级锁，避免同域重复进入重建流程。
+        if (cacheRebuildCoordinationSupport != null
+                && !cacheRebuildCoordinationSupport.tryAcquireRebuildLock(domain, lockToken)) {
+            throw new ApiException("manual rebuild domain busy: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+        }
+
+        try {
+            CacheSyncLogHelper.info(log, domain, "-", "-", "rebuildDomain.skeleton", 0L);
+            // 当前阶段先返回结构化骨架报告，后续再在此处接入真正的重建引擎统计结果。
+            CacheRebuildReport report = new CacheRebuildReport();
+            report.setTraceId(resolveTraceId());
+            report.setTrigger("MANUAL");
+            report.setDomain(domain);
+            report.setStartAt(startAt);
+            report.setEndAt(System.currentTimeMillis());
+            report.setAttemptedKeys(0);
+            report.setSuccessCount(0);
+            report.setFailCount(0);
+            report.setDirtyReplay(false);
+            report.setStatus("SKELETON");
+            report.setMessage("manual rebuild report interface ready; rebuild engine not implemented yet");
+
+            boolean dirtyReplay = false;
+            // 若重建窗口期内有运行时同步被避让为脏标记，这里消费掉并记录为补跑观测信号。
+            while (cacheRebuildCoordinationSupport != null && cacheRebuildCoordinationSupport.consumeDirty(domain)) {
+                dirtyReplay = true;
+                CacheSyncLogHelper.info(log, domain, "-", "-", "rebuildDomain.dirtyReplay.skeleton", 0L);
+            }
+            report.setDirtyReplay(dirtyReplay);
+            if (dirtyReplay) {
+                report.setMessage("manual rebuild report interface ready; dirty replay observed; rebuild engine not implemented yet");
+            }
+            report.setEndAt(System.currentTimeMillis());
+            return report;
+        } finally {
+            // 无论骨架流程是否成功结束，都尝试释放本次持有的域级锁。
+            if (cacheRebuildCoordinationSupport != null) {
+                cacheRebuildCoordinationSupport.releaseRebuildLock(domain, lockToken);
+            }
+        }
     }
 
     private void doUpsert(String domain, String key, Object entityOrId) {

@@ -4,6 +4,7 @@ import com.cz.webmaster.config.CacheFeignAuthConfig;
 import com.cz.webmaster.dto.CacheDeleteResultDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,6 +34,14 @@ public interface BeaconCacheWriteClient {
     void set(@PathVariable("key") String key, @RequestParam("value") String value);
 
     /**
+     * 仅当 key 不存在时写入，并设置 TTL。
+     */
+    @PostMapping(value = "/cache/setnx/{key}")
+    Boolean setIfAbsent(@PathVariable("key") String key,
+                        @RequestParam("value") String value,
+                        @RequestParam("ttlSeconds") Long ttlSeconds);
+
+    /**
      * Set 写入（对象元素）。
      */
     @PostMapping(value = "/cache/sadd/{key}")
@@ -55,5 +64,22 @@ public interface BeaconCacheWriteClient {
      */
     @PostMapping(value = "/cache/delete/batch")
     CacheDeleteResultDTO deleteBatch(@RequestBody List<String> keys);
-}
 
+    /**
+     * 读取单个 key。
+     */
+    @GetMapping(value = "/cache/get/{key}")
+    Object get(@PathVariable("key") String key);
+
+    /**
+     * 原子读取并删除单个 key。
+     */
+    @DeleteMapping(value = "/cache/pop/{key}")
+    Object pop(@PathVariable("key") String key);
+
+    /**
+     * 仅当当前 value 与入参一致时删除 key。
+     */
+    @DeleteMapping(value = "/cache/delete-if-match/{key}")
+    Boolean deleteIfValueMatches(@PathVariable("key") String key, @RequestParam("value") String value);
+}

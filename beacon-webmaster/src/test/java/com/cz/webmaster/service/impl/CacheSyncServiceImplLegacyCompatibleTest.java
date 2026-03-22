@@ -3,6 +3,7 @@ package com.cz.webmaster.service.impl;
 import com.cz.common.exception.ApiException;
 import com.cz.webmaster.client.BeaconCacheWriteClient;
 import com.cz.webmaster.config.CacheSyncProperties;
+import com.cz.webmaster.rebuild.DomainRebuildLoaderRegistry;
 import com.cz.webmaster.support.CacheKeyBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
@@ -48,7 +49,8 @@ public class CacheSyncServiceImplLegacyCompatibleTest {
                 properties,
                 new CacheKeyBuilder(),
                 cacheWriteClient,
-                new ObjectMapper()
+                new ObjectMapper(),
+                new DomainRebuildLoaderRegistry(java.util.Collections.emptyList())
         );
     }
 

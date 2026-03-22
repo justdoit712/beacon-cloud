@@ -1,8 +1,10 @@
 package com.cz.webmaster.support;
 
+import com.cz.webmaster.rebuild.CacheRebuildCoordinationSupport;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -84,5 +86,19 @@ public class CacheSyncRuntimeExecutorTest {
                 "upsert",
                 "1001"
         );
+    }
+
+    @Test
+    public void shouldMarkDirtyAndSkipWhenRebuildRunning() {
+        CacheRebuildCoordinationSupport support = Mockito.mock(CacheRebuildCoordinationSupport.class);
+        CacheSyncRuntimeExecutor guardedExecutor = new CacheSyncRuntimeExecutor(support);
+        Mockito.when(support.isRebuildRunning("client_business")).thenReturn(true);
+
+        AtomicInteger counter = new AtomicInteger(0);
+        guardedExecutor.runAfterCommitOrNow(counter::incrementAndGet, "client_business", "syncUpsert", "1001");
+
+        Assert.assertEquals(0, counter.get());
+        Mockito.verify(support, Mockito.times(1))
+                .markDirty(Mockito.eq("client_business"), Mockito.contains("syncUpsert.immediate|1001|"));
     }
 }
