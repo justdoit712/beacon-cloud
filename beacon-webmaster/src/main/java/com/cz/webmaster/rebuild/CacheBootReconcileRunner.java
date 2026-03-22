@@ -19,10 +19,10 @@ import java.util.Set;
  * 启动校准入口。
  *
  * <p>该类在应用启动完成后接管 {@code sync.boot.*} 配置，
- * 负责判断启动校准入口是否开启，并解析本次启动请求的域列表。</p>
+ * 负责判断启动校准入口是否开启，并解析、过滤本次启动请求的域列表。</p>
  *
- * <p>当前类只承担入口接线与域列表标准化职责，
- * 不在这里实现具体的域筛选、逐域重建和汇总逻辑。</p>
+ * <p>当前类只承担入口接线、域列表标准化和可执行域筛选职责，
+ * 不在这里实现逐域重建和汇总逻辑。</p>
  */
 @Component
 public class CacheBootReconcileRunner implements ApplicationRunner {
@@ -32,21 +32,26 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
 
     /** 同步配置入口，统一承接 {@code sync.*} 配置。 */
     private final CacheSyncProperties cacheSyncProperties;
+    /** 重建 loader 注册表，用于判断域是否具备可执行重建能力。 */
+    private final DomainRebuildLoaderRegistry domainRebuildLoaderRegistry;
 
     /**
      * 创建启动校准入口。
      *
      * @param cacheSyncProperties 同步配置
+     * @param domainRebuildLoaderRegistry 重建 loader 注册表
      */
-    public CacheBootReconcileRunner(CacheSyncProperties cacheSyncProperties) {
+    public CacheBootReconcileRunner(CacheSyncProperties cacheSyncProperties,
+                                    DomainRebuildLoaderRegistry domainRebuildLoaderRegistry) {
         this.cacheSyncProperties = cacheSyncProperties;
+        this.domainRebuildLoaderRegistry = domainRebuildLoaderRegistry;
     }
 
     /**
      * 在 Spring Boot 启动完成后触发启动校准入口。
      *
      * <p>若入口未开启，则仅输出跳过日志；若入口已开启，
-     * 则解析本次请求域列表并交给后续处理钩子。</p>
+     * 则解析请求域列表、过滤出真正可执行的域，并交给后续处理钩子。</p>
      *
      * @param args 启动参数
      */
@@ -58,7 +63,7 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
                     cacheSyncProperties.getBoot() != null && cacheSyncProperties.getBoot().isEnabled());
             return;
         }
-        onBootEntryReady(resolveRequestedDomains());
+        onBootEntryReady(resolveExecutableDomains(resolveRequestedDomains()));
     }
 
     /**
@@ -103,13 +108,59 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
     }
 
     /**
+     * 过滤本次请求域列表，保留真正可执行的启动校准域。
+     *
+     * <p>候选域必须同时满足以下条件：</p>
+     * <p>1. 域已注册；</p>
+     * <p>2. 域属于当前主线范围；</p>
+     * <p>3. 域契约允许启动阶段重建；</p>
+     * <p>4. 域已注册重建 loader。</p>
+     *
+     * @param requestedDomains 本次请求域列表
+     * @return 过滤后的可执行域列表
+     */
+    List<String> resolveExecutableDomains(List<String> requestedDomains) {
+        if (requestedDomains == null || requestedDomains.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Set<String> executableDomains = new LinkedHashSet<>();
+        for (String domain : requestedDomains) {
+            if (!isExecutableDomain(domain)) {
+                continue;
+            }
+            executableDomains.add(domain);
+        }
+        return new ArrayList<>(executableDomains);
+    }
+
+    /**
+     * 判断单个域是否允许进入启动校准执行范围。
+     *
+     * @param domain 域编码
+     * @return true 表示该域可执行
+     */
+    boolean isExecutableDomain(String domain) {
+        if (!StringUtils.hasText(domain) || !CacheDomainRegistry.contains(domain)) {
+            return false;
+        }
+        if (!CacheDomainRegistry.isCurrentMainlineDomain(domain)) {
+            return false;
+        }
+        if (!CacheDomainRegistry.require(domain).isBootRebuildEnabled()) {
+            return false;
+        }
+        return domainRebuildLoaderRegistry != null && domainRebuildLoaderRegistry.contains(domain);
+    }
+
+    /**
      * 启动入口完成域列表解析后的扩展点。
      *
      * <p>当前默认实现仅输出日志，后续可以在此处接入实际的启动校准执行流程。</p>
      *
-     * @param domains 已解析的请求域列表
+     * @param domains 已过滤的可执行域列表
      */
     protected void onBootEntryReady(List<String> domains) {
-        log.info("cache boot reconcile entry initialized, domains={}", domains);
+        log.info("cache boot reconcile entry initialized, executableDomains={}", domains);
     }
 }
