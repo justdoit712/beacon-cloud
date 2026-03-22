@@ -4,7 +4,7 @@ import com.cz.common.util.Result;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.controller.support.OperatorContextUtils;
 import com.cz.webmaster.dto.CacheRebuildReport;
-import com.cz.webmaster.service.CacheSyncService;
+import com.cz.webmaster.service.CacheRebuildService;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,10 +20,10 @@ import java.util.List;
 @RequestMapping({"/admin/cache", "/sys/cache"})
 public class CacheRebuildController {
 
-    private final CacheSyncService cacheSyncService;
+    private final CacheRebuildService cacheRebuildService;
 
-    public CacheRebuildController(CacheSyncService cacheSyncService) {
-        this.cacheSyncService = cacheSyncService;
+    public CacheRebuildController(CacheRebuildService cacheRebuildService) {
+        this.cacheRebuildService = cacheRebuildService;
     }
 
     @PostMapping("/rebuild")
@@ -31,7 +31,7 @@ public class CacheRebuildController {
         if (!StringUtils.hasText(domain)) {
             return Result.error("domain is required");
         }
-        CacheRebuildReport report = cacheSyncService.rebuildDomain(domain);
+        CacheRebuildReport report = cacheRebuildService.rebuildDomain(domain);
         applyOperator(report, OperatorContextUtils.currentOperatorId());
         return Result.ok(report);
     }
