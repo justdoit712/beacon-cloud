@@ -83,6 +83,20 @@ public class CacheDomainRegistryTest {
      * MySQL 为真源，Redis 为 HASH 镜像，且写策略为“原子更新后刷新缓存”。
      */
     @Test
+    public void shouldRestrictCurrentBootReconcileDomains() {
+        Set<String> expected = new LinkedHashSet<>(Arrays.asList(
+                CacheDomainRegistry.CLIENT_BUSINESS,
+                CacheDomainRegistry.CLIENT_CHANNEL,
+                CacheDomainRegistry.CHANNEL
+        ));
+
+        Assert.assertEquals(expected, CacheDomainRegistry.currentBootReconcileDomainCodes());
+        Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_BUSINESS));
+        Assert.assertFalse(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_BALANCE));
+        Assert.assertFalse(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_SIGN));
+    }
+
+    @Test
     public void clientBalanceShouldUseMysqlAsSourceOfTruth() {
         CacheDomainContract contract = CacheDomainRegistry.require(CacheDomainRegistry.CLIENT_BALANCE);
         Assert.assertEquals(CacheSourceOfTruth.MYSQL, contract.getSourceOfTruth());
