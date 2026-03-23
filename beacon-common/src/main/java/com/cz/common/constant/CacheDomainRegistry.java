@@ -104,7 +104,8 @@ public final class CacheDomainRegistry {
         CURRENT_MANUAL_REBUILD_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
                 CLIENT_BUSINESS,
                 CLIENT_CHANNEL,
-                CHANNEL
+                CHANNEL,
+                CLIENT_BALANCE
         )));
         CURRENT_BOOT_RECONCILE_DOMAIN_CODES = Collections.unmodifiableSet(
                 buildCurrentBootReconcileDomainCodes(CONTRACT_MAP, CURRENT_MANUAL_REBUILD_DOMAIN_CODES)
@@ -303,9 +304,9 @@ public final class CacheDomainRegistry {
                 CacheSourceOfTruth.MYSQL,
                 CacheWritePolicy.MYSQL_ATOMIC_UPDATE_THEN_REFRESH,
                 CacheDeletePolicy.OVERWRITE_ONLY,
-                CacheRebuildPolicy.FULL_REBUILD_SKIP_BOOT,
+                CacheRebuildPolicy.FULL_REBUILD,
                 "beacon-webmaster",
-                false
+                true
         ));
     }
 

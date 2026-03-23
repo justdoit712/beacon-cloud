@@ -25,6 +25,13 @@ public interface ClientBalanceMapper {
     ClientBalance selectByClientId(@Param("clientId") Long clientId);
 
     /**
+     * 查询全部有效余额记录，用于缓存全量重建。
+     *
+     * @return 有效余额记录列表
+     */
+    java.util.List<ClientBalance> selectAllActive();
+
+    /**
      * 初始化客户余额记录。
      *
      * <p>约定一客户一余额记录，调用方应确保 {@code client_id} 唯一约束已由数据库保证。</p>

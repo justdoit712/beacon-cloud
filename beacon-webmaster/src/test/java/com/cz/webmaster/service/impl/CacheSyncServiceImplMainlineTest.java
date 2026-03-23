@@ -66,7 +66,8 @@ public class CacheSyncServiceImplMainlineTest {
                 new DomainRebuildLoaderRegistry(Arrays.asList(
                         stubLoader("client_business"),
                         stubLoader("client_channel"),
-                        stubLoader("channel")
+                        stubLoader("channel"),
+                        stubLoader("client_balance")
                 )),
                 cacheRebuildCoordinationSupport
         );
@@ -177,10 +178,11 @@ public class CacheSyncServiceImplMainlineTest {
         Assert.assertEquals("ALL", report.getDomain());
         Assert.assertEquals("MANUAL", report.getTrigger());
         Assert.assertEquals("SUCCESS", report.getStatus());
-        Assert.assertEquals(3, report.getReports().size());
+        Assert.assertEquals(4, report.getReports().size());
         Assert.assertEquals("client_business", report.getReports().get(0).getDomain());
         Assert.assertEquals("client_channel", report.getReports().get(1).getDomain());
         Assert.assertEquals("channel", report.getReports().get(2).getDomain());
+        Assert.assertEquals("client_balance", report.getReports().get(3).getDomain());
     }
 
     @Test
@@ -206,7 +208,7 @@ public class CacheSyncServiceImplMainlineTest {
     }
 
     @Test
-    public void shouldRejectBootRebuildForBalanceDomainBeforeAllowed() {
+    public void shouldAllowBootRebuildForBalanceDomainWhenEnabled() {
         CacheSyncProperties properties = buildEnabledProperties();
         properties.getBoot().setEnabled(true);
 
@@ -219,23 +221,22 @@ public class CacheSyncServiceImplMainlineTest {
                 cacheRebuildCoordinationSupport
         );
 
-        try {
-            service.rebuildBootDomain("client_balance");
-            Assert.fail("expected ApiException");
-        } catch (ApiException ex) {
-            Assert.assertNotNull(ex.getCode());
-            Assert.assertTrue(ex.getMessage().contains("not allowed"));
-        }
+        CacheRebuildReport report = service.rebuildBootDomain("client_balance");
+
+        Assert.assertNotNull(report);
+        Assert.assertEquals("BOOT", report.getTrigger());
+        Assert.assertEquals("client_balance", report.getDomain());
+        Assert.assertEquals("SUCCESS", report.getStatus());
     }
 
     @Test
-    public void shouldRejectManualRebuildForBalanceDomainBeforeAllowed() {
-        try {
-            cacheSyncService.rebuildDomain("client_balance");
-            Assert.fail("expected ApiException");
-        } catch (ApiException ex) {
-            Assert.assertNotNull(ex.getCode());
-        }
+    public void shouldAllowManualRebuildForBalanceDomainWhenEnabled() {
+        CacheRebuildReport report = cacheSyncService.rebuildDomain("client_balance");
+
+        Assert.assertNotNull(report);
+        Assert.assertEquals("MANUAL", report.getTrigger());
+        Assert.assertEquals("client_balance", report.getDomain());
+        Assert.assertEquals("SUCCESS", report.getStatus());
     }
 
     @Test

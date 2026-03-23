@@ -1,8 +1,10 @@
 package com.cz.webmaster.rebuild.loader;
 
 import com.cz.webmaster.entity.Channel;
+import com.cz.webmaster.entity.ClientBalance;
 import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.mapper.ChannelMapper;
+import com.cz.webmaster.mapper.ClientBalanceMapper;
 import com.cz.webmaster.mapper.ClientBusinessMapper;
 import com.cz.webmaster.mapper.ClientChannelMapper;
 import org.junit.Assert;
@@ -68,6 +70,30 @@ public class MainlineDomainRebuildLoaderTest {
         Assert.assertSame(first, snapshot.get(0));
         Assert.assertSame(second, snapshot.get(1));
         verify(mapper, times(1)).findAllActive();
+    }
+
+    @Test
+    public void shouldLoadActiveClientBalanceSnapshot() {
+        ClientBalanceMapper mapper = Mockito.mock(ClientBalanceMapper.class);
+        ClientBalanceDomainRebuildLoader loader = new ClientBalanceDomainRebuildLoader(mapper);
+
+        ClientBalance first = new ClientBalance();
+        first.setId(5001L);
+        first.setClientId(1001L);
+        first.setBalance(200L);
+        ClientBalance second = new ClientBalance();
+        second.setId(5002L);
+        second.setClientId(1002L);
+        second.setBalance(350L);
+
+        when(mapper.selectAllActive()).thenReturn(Arrays.asList(first, second));
+
+        List<Object> snapshot = loader.loadSnapshot();
+
+        Assert.assertEquals(2, snapshot.size());
+        Assert.assertSame(first, snapshot.get(0));
+        Assert.assertSame(second, snapshot.get(1));
+        verify(mapper, times(1)).selectAllActive();
     }
 
     @Test

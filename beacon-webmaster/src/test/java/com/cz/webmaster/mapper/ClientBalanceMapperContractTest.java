@@ -22,6 +22,7 @@ public class ClientBalanceMapperContractTest {
 
         Set<String> expectedMethods = new LinkedHashSet<>(Arrays.asList(
                 "selectByClientId",
+                "selectAllActive",
                 "insertInitialBalance",
                 "debitBalanceAtomic",
                 "rechargeBalanceAtomic",
@@ -36,6 +37,7 @@ public class ClientBalanceMapperContractTest {
         String xml = loadMapperXml();
 
         Assert.assertTrue(xml.contains("<select id=\"selectByClientId\""));
+        Assert.assertTrue(xml.contains("<select id=\"selectAllActive\""));
         Assert.assertTrue(xml.contains("<insert id=\"insertInitialBalance\""));
         Assert.assertTrue(xml.contains("<update id=\"debitBalanceAtomic\""));
         Assert.assertTrue(xml.contains("<update id=\"rechargeBalanceAtomic\""));

@@ -39,6 +39,14 @@
         limit 1
     </select>
 
+    <select id="selectAllActive" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from client_balance
+        where is_delete = 0
+        order by id asc
+    </select>
+
     <insert id="insertInitialBalance" parameterType="map">
         insert into client_balance (
             id,

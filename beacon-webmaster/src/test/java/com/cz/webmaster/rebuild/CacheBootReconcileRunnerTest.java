@@ -41,7 +41,8 @@ public class CacheBootReconcileRunnerTest {
                 buildLoaderRegistry(
                         CacheDomainRegistry.CLIENT_BUSINESS,
                         CacheDomainRegistry.CLIENT_CHANNEL,
-                        CacheDomainRegistry.CHANNEL
+                        CacheDomainRegistry.CHANNEL,
+                        CacheDomainRegistry.CLIENT_BALANCE
                 ),
                 buildNoopRebuildService()
         );
@@ -51,7 +52,8 @@ public class CacheBootReconcileRunnerTest {
         Assert.assertEquals(Arrays.asList(
                 CacheDomainRegistry.CLIENT_BUSINESS,
                 CacheDomainRegistry.CLIENT_CHANNEL,
-                CacheDomainRegistry.CHANNEL
+                CacheDomainRegistry.CHANNEL,
+                CacheDomainRegistry.CLIENT_BALANCE
         ), runner.getCapturedDomains());
     }
 
@@ -80,7 +82,10 @@ public class CacheBootReconcileRunnerTest {
 
         runner.run(null);
 
-        Assert.assertEquals(Collections.singletonList(CacheDomainRegistry.CHANNEL), runner.getCapturedDomains());
+        Assert.assertEquals(Arrays.asList(
+                CacheDomainRegistry.CHANNEL,
+                CacheDomainRegistry.CLIENT_BALANCE
+        ), runner.getCapturedDomains());
     }
 
     @Test

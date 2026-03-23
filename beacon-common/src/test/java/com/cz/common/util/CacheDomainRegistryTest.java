@@ -71,11 +71,12 @@ public class CacheDomainRegistryTest {
         Set<String> expected = new LinkedHashSet<>(Arrays.asList(
                 CacheDomainRegistry.CLIENT_BUSINESS,
                 CacheDomainRegistry.CLIENT_CHANNEL,
-                CacheDomainRegistry.CHANNEL
+                CacheDomainRegistry.CHANNEL,
+                CacheDomainRegistry.CLIENT_BALANCE
         ));
 
         Assert.assertEquals(expected, CacheDomainRegistry.currentManualRebuildDomainCodes());
-        Assert.assertFalse(CacheDomainRegistry.isCurrentManualRebuildDomain(CacheDomainRegistry.CLIENT_BALANCE));
+        Assert.assertTrue(CacheDomainRegistry.isCurrentManualRebuildDomain(CacheDomainRegistry.CLIENT_BALANCE));
     }
 
     /**
@@ -87,12 +88,13 @@ public class CacheDomainRegistryTest {
         Set<String> expected = new LinkedHashSet<>(Arrays.asList(
                 CacheDomainRegistry.CLIENT_BUSINESS,
                 CacheDomainRegistry.CLIENT_CHANNEL,
-                CacheDomainRegistry.CHANNEL
+                CacheDomainRegistry.CHANNEL,
+                CacheDomainRegistry.CLIENT_BALANCE
         ));
 
         Assert.assertEquals(expected, CacheDomainRegistry.currentBootReconcileDomainCodes());
         Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_BUSINESS));
-        Assert.assertFalse(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_BALANCE));
+        Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_BALANCE));
         Assert.assertFalse(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_SIGN));
     }
 
@@ -101,7 +103,7 @@ public class CacheDomainRegistryTest {
         CacheDomainContract contract = CacheDomainRegistry.require(CacheDomainRegistry.CLIENT_BALANCE);
         Assert.assertEquals(CacheSourceOfTruth.MYSQL, contract.getSourceOfTruth());
         Assert.assertEquals(CacheRedisType.HASH, contract.getRedisType());
-        Assert.assertFalse(contract.isBootRebuildEnabled());
+        Assert.assertTrue(contract.isBootRebuildEnabled());
         Assert.assertEquals(CacheWritePolicy.MYSQL_ATOMIC_UPDATE_THEN_REFRESH, contract.getWritePolicy());
     }
 }
