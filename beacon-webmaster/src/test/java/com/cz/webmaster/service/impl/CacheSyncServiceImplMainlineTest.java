@@ -310,6 +310,31 @@ public class CacheSyncServiceImplMainlineTest {
     }
 
     @Test
+    public void shouldRejectBootRebuildWhenDomainBusy() {
+        CacheSyncProperties properties = buildEnabledProperties();
+        properties.getBoot().setEnabled(true);
+
+        CacheSyncServiceImpl service = new CacheSyncServiceImpl(
+                properties,
+                new CacheKeyBuilder(),
+                cacheWriteClient,
+                new ObjectMapper(),
+                new DomainRebuildLoaderRegistry(Collections.singletonList(stubLoader("channel"))),
+                cacheRebuildCoordinationSupport
+        );
+        Mockito.when(cacheRebuildCoordinationSupport.tryAcquireRebuildLock(eq("channel"), Mockito.anyString())).thenReturn(false);
+
+        try {
+            service.rebuildBootDomain("channel");
+            Assert.fail("expected ApiException");
+        } catch (ApiException ex) {
+            Assert.assertTrue(ex.getMessage().contains("boot reconcile domain busy"));
+        }
+        verify(cacheRebuildCoordinationSupport, never())
+                .releaseRebuildLock(eq("channel"), Mockito.anyString());
+    }
+
+    @Test
     public void shouldMarkDirtyReplayWhenDirtyFlagExistsAfterRebuild() {
         Mockito.when(cacheRebuildCoordinationSupport.tryAcquireRebuildLock(eq("channel"), Mockito.anyString())).thenReturn(true);
         Mockito.when(cacheRebuildCoordinationSupport.consumeDirty("channel")).thenReturn(true, false);
