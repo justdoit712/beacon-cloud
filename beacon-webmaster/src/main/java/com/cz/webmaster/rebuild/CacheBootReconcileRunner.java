@@ -2,6 +2,8 @@ package com.cz.webmaster.rebuild;
 
 import com.cz.common.constant.CacheDomainRegistry;
 import com.cz.webmaster.config.CacheSyncProperties;
+import com.cz.webmaster.dto.CacheRebuildReport;
+import com.cz.webmaster.service.CacheRebuildService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -19,10 +21,11 @@ import java.util.Set;
  * 启动校准入口。
  *
  * <p>该类在应用启动完成后接管 {@code sync.boot.*} 配置，
- * 负责判断启动校准入口是否开启，并解析、过滤本次启动请求的域列表。</p>
+ * 负责判断启动校准入口是否开启、解析请求域、过滤可执行域，
+ * 并逐域触发启动阶段缓存重建。</p>
  *
- * <p>当前类只承担入口接线、域列表标准化和可执行域筛选职责，
- * 不在这里实现逐域重建和汇总逻辑。</p>
+ * <p>启动校准执行失败不会阻塞应用启动。
+ * 单个域执行失败时，只记录失败并继续后续域。</p>
  */
 @Component
 public class CacheBootReconcileRunner implements ApplicationRunner {
@@ -34,24 +37,29 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
     private final CacheSyncProperties cacheSyncProperties;
     /** 重建 loader 注册表，用于判断域是否具备可执行重建能力。 */
     private final DomainRebuildLoaderRegistry domainRebuildLoaderRegistry;
+    /** 缓存重建协调服务，统一复用底层重建引擎。 */
+    private final CacheRebuildService cacheRebuildService;
 
     /**
      * 创建启动校准入口。
      *
      * @param cacheSyncProperties 同步配置
      * @param domainRebuildLoaderRegistry 重建 loader 注册表
+     * @param cacheRebuildService 缓存重建协调服务
      */
     public CacheBootReconcileRunner(CacheSyncProperties cacheSyncProperties,
-                                    DomainRebuildLoaderRegistry domainRebuildLoaderRegistry) {
+                                    DomainRebuildLoaderRegistry domainRebuildLoaderRegistry,
+                                    CacheRebuildService cacheRebuildService) {
         this.cacheSyncProperties = cacheSyncProperties;
         this.domainRebuildLoaderRegistry = domainRebuildLoaderRegistry;
+        this.cacheRebuildService = cacheRebuildService;
     }
 
     /**
      * 在 Spring Boot 启动完成后触发启动校准入口。
      *
-     * <p>若入口未开启，则仅输出跳过日志；若入口已开启，
-     * 则解析请求域列表、过滤出真正可执行的域，并交给后续处理钩子。</p>
+     * <p>若入口未开启，则只输出跳过日志；若入口已开启，则解析请求域、
+     * 过滤出真正可执行的域，并触发后续执行流程。</p>
      *
      * @param args 启动参数
      */
@@ -63,14 +71,16 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
                     cacheSyncProperties.getBoot() != null && cacheSyncProperties.getBoot().isEnabled());
             return;
         }
-        onBootEntryReady(resolveExecutableDomains(resolveRequestedDomains()));
+
+        try {
+            onBootEntryReady(resolveExecutableDomains(resolveRequestedDomains()));
+        } catch (Exception ex) {
+            log.error("cache boot reconcile entry failed without blocking application startup", ex);
+        }
     }
 
     /**
      * 判断启动校准入口是否开启。
-     *
-     * <p>只有同步总开关与启动校准开关同时开启时，
-     * 启动入口才允许继续执行。</p>
      *
      * @return true 表示入口可执行
      */
@@ -156,11 +166,55 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
     /**
      * 启动入口完成域列表解析后的扩展点。
      *
-     * <p>当前默认实现仅输出日志，后续可以在此处接入实际的启动校准执行流程。</p>
+     * <p>当前默认实现会逐域执行启动校准。</p>
      *
      * @param domains 已过滤的可执行域列表
      */
     protected void onBootEntryReady(List<String> domains) {
+        executeBootReconcile(domains);
+    }
+
+    /**
+     * 逐域执行启动校准。
+     *
+     * <p>单个域失败时不会中断后续域，整体失败也不会向外抛出异常。</p>
+     *
+     * @param domains 已过滤的可执行域列表
+     */
+    void executeBootReconcile(List<String> domains) {
+        if (domains == null || domains.isEmpty()) {
+            log.info("cache boot reconcile entry initialized, executableDomains=[]");
+            return;
+        }
+
         log.info("cache boot reconcile entry initialized, executableDomains={}", domains);
+        for (String domain : domains) {
+            long startAt = System.currentTimeMillis();
+            try {
+                CacheRebuildReport report = rebuildBootDomain(domain);
+                log.info("cache boot reconcile domain finished: domain={}, status={}, successCount={}, failCount={}, costMs={}",
+                        domain,
+                        report == null ? "-" : report.getStatus(),
+                        report == null ? 0 : report.getSuccessCount(),
+                        report == null ? 0 : report.getFailCount(),
+                        costMs(startAt));
+            } catch (Exception ex) {
+                log.error("cache boot reconcile domain failed: domain={}, costMs={}", domain, costMs(startAt), ex);
+            }
+        }
+    }
+
+    /**
+     * 触发单个域的启动阶段重建。
+     *
+     * @param domain 域编码
+     * @return 重建报告
+     */
+    protected CacheRebuildReport rebuildBootDomain(String domain) {
+        return cacheRebuildService.rebuildBootDomain(domain);
+    }
+
+    private long costMs(long startAt) {
+        return Math.max(0L, System.currentTimeMillis() - startAt);
     }
 }

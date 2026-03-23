@@ -51,6 +51,8 @@ public class CacheSyncServiceImpl implements CacheSyncService {
 
     private static final Logger log = LoggerFactory.getLogger(CacheSyncServiceImpl.class);
     private static final String DOMAIN_ALL = "ALL";
+    private static final String REBUILD_TRIGGER_MANUAL = "MANUAL";
+    private static final String REBUILD_TRIGGER_BOOT = "BOOT";
     private static final String TRACE_ID_KEY = "traceId";
     private static final String TRACE_ID_KEY_UPPER = "TraceId";
     private static final String UNKNOWN = "-";
@@ -290,6 +292,72 @@ public class CacheSyncServiceImpl implements CacheSyncService {
                     ex
             );
             throw ex;
+        } catch (Exception ex) {
+            CacheSyncLogHelper.error(
+                    log,
+                    normalizedDomain,
+                    "-",
+                    "-",
+                    operation,
+                    costMs(startAt),
+                    ExceptionEnums.CACHE_SYNC_CONFIG_INVALID,
+                    ex.getMessage(),
+                    ex
+            );
+            throw new ApiException(ExceptionEnums.CACHE_SYNC_CONFIG_INVALID);
+        }
+    }
+
+    /**
+     * 根据缓存域触发启动阶段重建入口。
+     *
+     * <p>该入口复用与手工重建相同的底层重建引擎与域级锁，
+     * 但是否允许执行由启动校准开关和启动校准域规则决定。</p>
+     *
+     * @param domain 缓存域编码
+     * @return 结构化重建报告
+     */
+    public CacheRebuildReport rebuildBootDomain(String domain) {
+        long startAt = System.currentTimeMillis();
+        String operation = "rebuildBootDomain";
+        String normalizedDomain = normalizeDomain(domain);
+        try {
+            if (!cacheSyncProperties.isEnabled()
+                    || cacheSyncProperties.getBoot() == null
+                    || !cacheSyncProperties.getBoot().isEnabled()) {
+                CacheSyncLogHelper.info(log, normalizedDomain, "-", "-", operation + ".skip", costMs(startAt));
+                return buildBootSkippedRebuildReport(normalizedDomain, startAt, "boot reconcile disabled");
+            }
+
+            if (!CacheDomainRegistry.isCurrentMainlineDomain(normalizedDomain)) {
+                throw new ApiException("unsupported boot reconcile domain: " + normalizedDomain,
+                        ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+            }
+            if (!CacheDomainRegistry.require(normalizedDomain).isBootRebuildEnabled()) {
+                throw new ApiException("boot reconcile domain not allowed yet: " + normalizedDomain,
+                        ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+            }
+            if (!domainRebuildLoaderRegistry.contains(normalizedDomain)) {
+                throw new ApiException("boot reconcile loader not registered: " + normalizedDomain,
+                        ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+            }
+
+            CacheRebuildReport report = rebuildSingleDomain(normalizedDomain);
+            return adaptBootReport(report, operation, startAt);
+        } catch (ApiException ex) {
+            ApiException bootException = adaptBootException(ex);
+            CacheSyncLogHelper.error(
+                    log,
+                    normalizedDomain,
+                    "-",
+                    "-",
+                    operation,
+                    costMs(startAt),
+                    ExceptionEnums.CACHE_SYNC_CONFIG_INVALID,
+                    bootException.getMessage(),
+                    bootException
+            );
+            throw bootException;
         } catch (Exception ex) {
             CacheSyncLogHelper.error(
                     log,
@@ -1034,7 +1102,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
     private CacheRebuildReport buildSkippedRebuildReport(String domain, long startAt, String message) {
         CacheRebuildReport report = new CacheRebuildReport();
         report.setTraceId(resolveTraceId());
-        report.setTrigger("MANUAL");
+        report.setTrigger(REBUILD_TRIGGER_MANUAL);
         report.setDomain(domain);
         report.setStartAt(startAt);
         report.setEndAt(System.currentTimeMillis());
@@ -1045,6 +1113,30 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         report.setStatus("SKIPPED");
         report.setMessage(message);
         return report;
+    }
+
+    private CacheRebuildReport buildBootSkippedRebuildReport(String domain, long startAt, String message) {
+        CacheRebuildReport report = buildSkippedRebuildReport(domain, startAt, message);
+        report.setTrigger(REBUILD_TRIGGER_BOOT);
+        return report;
+    }
+
+    private CacheRebuildReport adaptBootReport(CacheRebuildReport report, String operation, long startAt) {
+        if (report == null) {
+            CacheSyncLogHelper.info(log, UNKNOWN, "-", "-", operation, costMs(startAt));
+            return null;
+        }
+        report.setTrigger(REBUILD_TRIGGER_BOOT);
+        report.setMessage(rewriteManualMessageForBoot(report.getMessage()));
+        CacheSyncLogHelper.info(log, report.getDomain(), "-", "-", operation, costMs(startAt));
+        return report;
+    }
+
+    private ApiException adaptBootException(ApiException ex) {
+        if (ex == null) {
+            return null;
+        }
+        return new ApiException(rewriteManualMessageForBoot(ex.getMessage()), ex.getCode());
     }
 
     /**
@@ -1285,6 +1377,13 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         }
         report.setStatus(report.getSuccessCount() > 0 ? "PARTIAL" : "FAIL");
         report.setMessage(ex == null ? "manual rebuild failed" : ex.getMessage());
+    }
+
+    private String rewriteManualMessageForBoot(String message) {
+        if (!StringUtils.hasText(message)) {
+            return message;
+        }
+        return message.replace("manual rebuild", "boot reconcile");
     }
 
     /**

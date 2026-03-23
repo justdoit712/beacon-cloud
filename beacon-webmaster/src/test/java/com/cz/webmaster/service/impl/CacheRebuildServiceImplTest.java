@@ -26,4 +26,21 @@ public class CacheRebuildServiceImplTest {
         Assert.assertSame(report, result);
         verify(cacheSyncService, times(1)).rebuildDomain("channel");
     }
+
+    @Test
+    public void shouldDelegateBootRebuildToCacheSyncServiceImpl() {
+        CacheSyncServiceImpl cacheSyncService = Mockito.mock(CacheSyncServiceImpl.class);
+        CacheRebuildServiceImpl cacheRebuildService = new CacheRebuildServiceImpl(cacheSyncService);
+
+        CacheRebuildReport report = new CacheRebuildReport();
+        report.setDomain("channel");
+        report.setTrigger("BOOT");
+        report.setStatus("SUCCESS");
+        when(cacheSyncService.rebuildBootDomain("channel")).thenReturn(report);
+
+        CacheRebuildReport result = cacheRebuildService.rebuildBootDomain("channel");
+
+        Assert.assertSame(report, result);
+        verify(cacheSyncService, times(1)).rebuildBootDomain("channel");
+    }
 }

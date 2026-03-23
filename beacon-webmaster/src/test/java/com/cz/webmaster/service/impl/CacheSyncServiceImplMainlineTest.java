@@ -184,6 +184,51 @@ public class CacheSyncServiceImplMainlineTest {
     }
 
     @Test
+    public void shouldAllowBootRebuildWhenManualSwitchDisabled() {
+        CacheSyncProperties properties = buildEnabledProperties();
+        properties.getManual().setEnabled(false);
+        properties.getBoot().setEnabled(true);
+
+        CacheSyncServiceImpl service = new CacheSyncServiceImpl(
+                properties,
+                new CacheKeyBuilder(),
+                cacheWriteClient,
+                new ObjectMapper(),
+                new DomainRebuildLoaderRegistry(Collections.singletonList(stubLoader("channel"))),
+                cacheRebuildCoordinationSupport
+        );
+
+        CacheRebuildReport report = service.rebuildBootDomain("channel");
+
+        Assert.assertNotNull(report);
+        Assert.assertEquals("BOOT", report.getTrigger());
+        Assert.assertEquals("SUCCESS", report.getStatus());
+    }
+
+    @Test
+    public void shouldRejectBootRebuildForBalanceDomainBeforeAllowed() {
+        CacheSyncProperties properties = buildEnabledProperties();
+        properties.getBoot().setEnabled(true);
+
+        CacheSyncServiceImpl service = new CacheSyncServiceImpl(
+                properties,
+                new CacheKeyBuilder(),
+                cacheWriteClient,
+                new ObjectMapper(),
+                new DomainRebuildLoaderRegistry(Collections.singletonList(stubLoader("client_balance"))),
+                cacheRebuildCoordinationSupport
+        );
+
+        try {
+            service.rebuildBootDomain("client_balance");
+            Assert.fail("expected ApiException");
+        } catch (ApiException ex) {
+            Assert.assertNotNull(ex.getCode());
+            Assert.assertTrue(ex.getMessage().contains("not allowed"));
+        }
+    }
+
+    @Test
     public void shouldRejectManualRebuildForBalanceDomainBeforeAllowed() {
         try {
             cacheSyncService.rebuildDomain("client_balance");

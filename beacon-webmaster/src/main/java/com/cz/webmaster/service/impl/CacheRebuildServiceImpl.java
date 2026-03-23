@@ -35,4 +35,15 @@ public class CacheRebuildServiceImpl implements CacheRebuildService {
     public CacheRebuildReport rebuildDomain(String domain) {
         return cacheSyncService.rebuildDomain(domain);
     }
+
+    /**
+     * 委托底层重建引擎执行启动阶段缓存重建。
+     *
+     * @param domain 缓存域编码
+     * @return 结构化重建报告
+     */
+    @Override
+    public CacheRebuildReport rebuildBootDomain(String domain) {
+        return cacheSyncService.rebuildBootDomain(domain);
+    }
 }

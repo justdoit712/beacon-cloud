@@ -21,4 +21,15 @@ public interface CacheRebuildService {
      * @return 结构化重建报告
      */
     CacheRebuildReport rebuildDomain(String domain);
+
+    /**
+     * 按域触发启动阶段缓存重建。
+     *
+     * <p>该入口用于启动校准场景，复用与手工重建相同的底层重建引擎，
+     * 但是否允许执行由启动校准配置与启动校准域规则决定。</p>
+     *
+     * @param domain 缓存域编码
+     * @return 结构化重建报告
+     */
+    CacheRebuildReport rebuildBootDomain(String domain);
 }
