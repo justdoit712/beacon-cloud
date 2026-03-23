@@ -171,21 +171,23 @@ public class CacheBootReconcileRunnerTest {
     }
 
     @Test
-    public void shouldNotPropagateUnexpectedFailureFromBootHandler() throws Exception {
+    public void shouldBuildFailureSummaryWhenBootHandlerThrows() throws Exception {
         CacheSyncProperties properties = buildProperties();
         properties.getBoot().setEnabled(true);
-        CacheBootReconcileRunner runner = new CacheBootReconcileRunner(
+        CapturingFailureCacheBootReconcileRunner runner = new CapturingFailureCacheBootReconcileRunner(
                 properties,
                 buildLoaderRegistry(CacheDomainRegistry.CLIENT_BUSINESS),
                 buildNoopRebuildService()
-        ) {
-            @Override
-            protected void onBootEntryReady(List<String> domains) {
-                throw new IllegalStateException("boom");
-            }
-        };
+        );
 
         runner.run(null);
+
+        Assert.assertNotNull(runner.getFailureSummary());
+        Assert.assertEquals("BOOT", runner.getFailureSummary().getTrigger());
+        Assert.assertEquals("ALL", runner.getFailureSummary().getDomain());
+        Assert.assertEquals("FAIL", runner.getFailureSummary().getStatus());
+        Assert.assertEquals(1, runner.getFailureSummary().getFailCount());
+        Assert.assertEquals(Collections.singletonList("boom"), runner.getFailureSummary().getFailedKeys());
     }
 
     @Test
@@ -332,6 +334,34 @@ public class CacheBootReconcileRunnerTest {
 
         private List<String> getCapturedDomains() {
             return capturedDomains;
+        }
+    }
+
+    private static final class CapturingFailureCacheBootReconcileRunner extends CacheBootReconcileRunner {
+
+        private CacheRebuildReport failureSummary;
+
+        private CapturingFailureCacheBootReconcileRunner(CacheSyncProperties cacheSyncProperties,
+                                                         DomainRebuildLoaderRegistry domainRebuildLoaderRegistry,
+                                                         CacheRebuildService cacheRebuildService) {
+            super(cacheSyncProperties, domainRebuildLoaderRegistry, cacheRebuildService);
+        }
+
+        @Override
+        protected void onBootEntryReady(List<String> domains) {
+            throw new IllegalStateException("boom");
+        }
+
+        @Override
+        protected CacheRebuildReport handleBootEntryFailure(long startAt,
+                                                            List<String> executableDomains,
+                                                            Exception ex) {
+            this.failureSummary = super.handleBootEntryFailure(startAt, executableDomains, ex);
+            return failureSummary;
+        }
+
+        private CacheRebuildReport getFailureSummary() {
+            return failureSummary;
         }
     }
 

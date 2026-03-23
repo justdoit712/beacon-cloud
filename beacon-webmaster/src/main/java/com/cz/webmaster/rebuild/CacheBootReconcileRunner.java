@@ -66,6 +66,8 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
      */
     @Override
     public void run(ApplicationArguments args) {
+        long startAt = System.currentTimeMillis();
+        List<String> executableDomains = Collections.emptyList();
         if (!isBootEntryEnabled()) {
             log.info("cache boot reconcile entry skip: sync.enabled={}, boot.enabled={}",
                     cacheSyncProperties.isEnabled(),
@@ -74,9 +76,10 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
         }
 
         try {
-            onBootEntryReady(resolveExecutableDomains(resolveRequestedDomains()));
+            executableDomains = resolveExecutableDomains(resolveRequestedDomains());
+            onBootEntryReady(executableDomains);
         } catch (Exception ex) {
-            log.error("cache boot reconcile entry failed without blocking application startup", ex);
+            handleBootEntryFailure(startAt, executableDomains, ex);
         }
     }
 
@@ -173,6 +176,23 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
      */
     protected void onBootEntryReady(List<String> domains) {
         executeBootReconcile(domains);
+    }
+
+    /**
+     * 处理启动入口级别的异常。
+     *
+     * <p>该异常不会继续向外抛出，但会同时输出错误日志与汇总报告。</p>
+     *
+     * @param startAt 入口开始时间
+     * @param executableDomains 已解析出的可执行域列表
+     * @param ex 顶层异常
+     * @return 入口失败时生成的汇总报告
+     */
+    protected CacheRebuildReport handleBootEntryFailure(long startAt, List<String> executableDomains, Exception ex) {
+        log.error("cache boot reconcile entry failed without blocking application startup", ex);
+        CacheRebuildReport summaryReport = buildEntryFailureSummaryReport(startAt, executableDomains, ex);
+        logBootSummary(summaryReport);
+        return summaryReport;
     }
 
     /**
@@ -310,6 +330,28 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
             summaryReport.setStatus("PARTIAL");
             summaryReport.setMessage("boot reconcile partially succeeded");
         }
+        return summaryReport;
+    }
+
+    private CacheRebuildReport buildEntryFailureSummaryReport(long startAt,
+                                                              List<String> executableDomains,
+                                                              Exception ex) {
+        CacheRebuildReport summaryReport = new CacheRebuildReport();
+        summaryReport.setTrigger("BOOT");
+        summaryReport.setDomain("ALL");
+        summaryReport.setStartAt(startAt);
+        summaryReport.setEndAt(System.currentTimeMillis());
+        summaryReport.setReports(new ArrayList<>());
+        summaryReport.setAttemptedKeys(0);
+        summaryReport.setSuccessCount(0);
+        summaryReport.setFailCount(1);
+        summaryReport.setDirtyReplay(false);
+        summaryReport.setStatus("FAIL");
+        String message = ex == null || !StringUtils.hasText(ex.getMessage())
+                ? "boot reconcile entry failed"
+                : ex.getMessage();
+        summaryReport.setMessage(message);
+        summaryReport.setFailedKeys(Collections.singletonList(message));
         return summaryReport;
     }
 
