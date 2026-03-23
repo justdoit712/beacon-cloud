@@ -11,7 +11,9 @@ import org.springframework.mock.env.MockEnvironment;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CacheBootReconcileRunnerTest {
 
@@ -186,6 +188,60 @@ public class CacheBootReconcileRunnerTest {
         runner.run(null);
     }
 
+    @Test
+    public void shouldBuildSkippedSummaryWhenNoExecutableDomains() {
+        CacheSyncProperties properties = buildProperties();
+        properties.getBoot().setEnabled(true);
+        CacheBootReconcileRunner runner = new CacheBootReconcileRunner(
+                properties,
+                buildLoaderRegistry(),
+                buildNoopRebuildService()
+        );
+
+        CacheRebuildReport summaryReport = runner.executeBootReconcile(Collections.emptyList());
+
+        Assert.assertEquals("BOOT", summaryReport.getTrigger());
+        Assert.assertEquals("ALL", summaryReport.getDomain());
+        Assert.assertEquals("SKIPPED", summaryReport.getStatus());
+        Assert.assertEquals(0, summaryReport.getReports().size());
+        Assert.assertEquals(0, summaryReport.getSuccessCount());
+        Assert.assertEquals(0, summaryReport.getFailCount());
+    }
+
+    @Test
+    public void shouldAggregateBootSummaryReportAfterExecution() {
+        CacheSyncProperties properties = buildProperties();
+        properties.getBoot().setEnabled(true);
+        RecordingCacheRebuildService rebuildService = new RecordingCacheRebuildService();
+        rebuildService.setDomainReport(CacheDomainRegistry.CLIENT_BUSINESS,
+                buildReport(CacheDomainRegistry.CLIENT_BUSINESS, "SUCCESS", 10L, 30L, 2, 2, 0, Collections.emptyList()));
+        rebuildService.setDomainReport(CacheDomainRegistry.CHANNEL,
+                buildReport(CacheDomainRegistry.CHANNEL, "FAIL", 31L, 50L, 1, 0, 1,
+                        Collections.singletonList("channel:7001")));
+        CacheBootReconcileRunner runner = new CacheBootReconcileRunner(
+                properties,
+                buildLoaderRegistry(
+                        CacheDomainRegistry.CLIENT_BUSINESS,
+                        CacheDomainRegistry.CHANNEL
+                ),
+                rebuildService
+        );
+
+        CacheRebuildReport summaryReport = runner.executeBootReconcile(Arrays.asList(
+                CacheDomainRegistry.CLIENT_BUSINESS,
+                CacheDomainRegistry.CHANNEL
+        ));
+
+        Assert.assertEquals("BOOT", summaryReport.getTrigger());
+        Assert.assertEquals("ALL", summaryReport.getDomain());
+        Assert.assertEquals("PARTIAL", summaryReport.getStatus());
+        Assert.assertEquals(2, summaryReport.getReports().size());
+        Assert.assertEquals(3, summaryReport.getAttemptedKeys());
+        Assert.assertEquals(2, summaryReport.getSuccessCount());
+        Assert.assertEquals(1, summaryReport.getFailCount());
+        Assert.assertEquals(Collections.singletonList("channel:7001"), summaryReport.getFailedKeys());
+    }
+
     private CacheSyncProperties buildProperties() {
         return new CacheSyncProperties(
                 new MockEnvironment().withProperty("cache.namespace.fullPrefix", "beacon:dev:beacon-cloud:cz:")
@@ -238,6 +294,27 @@ public class CacheBootReconcileRunnerTest {
         return report;
     }
 
+    private CacheRebuildReport buildReport(String domain,
+                                           String status,
+                                           long startAt,
+                                           long endAt,
+                                           int attemptedKeys,
+                                           int successCount,
+                                           int failCount,
+                                           List<String> failedKeys) {
+        CacheRebuildReport report = new CacheRebuildReport();
+        report.setDomain(domain);
+        report.setTrigger("BOOT");
+        report.setStatus(status);
+        report.setStartAt(startAt);
+        report.setEndAt(endAt);
+        report.setAttemptedKeys(attemptedKeys);
+        report.setSuccessCount(successCount);
+        report.setFailCount(failCount);
+        report.setFailedKeys(failedKeys);
+        return report;
+    }
+
     private static final class CapturingCacheBootReconcileRunner extends CacheBootReconcileRunner {
 
         private List<String> capturedDomains;
@@ -261,6 +338,7 @@ public class CacheBootReconcileRunnerTest {
     private final class RecordingCacheRebuildService implements CacheRebuildService {
 
         private final List<String> invokedDomains = new ArrayList<>();
+        private final Map<String, CacheRebuildReport> domainReports = new LinkedHashMap<>();
         private String failingDomain;
 
         @Override
@@ -274,6 +352,9 @@ public class CacheBootReconcileRunnerTest {
             if (domain.equals(failingDomain)) {
                 throw new IllegalStateException("domain failed");
             }
+            if (domainReports.containsKey(domain)) {
+                return domainReports.get(domain);
+            }
             return buildSuccessReport(domain);
         }
 
@@ -283,6 +364,10 @@ public class CacheBootReconcileRunnerTest {
 
         private void setFailingDomain(String failingDomain) {
             this.failingDomain = failingDomain;
+        }
+
+        private void setDomainReport(String domain, CacheRebuildReport report) {
+            this.domainReports.put(domain, report);
         }
     }
 }

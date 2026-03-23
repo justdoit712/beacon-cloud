@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -181,27 +182,23 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
      *
      * @param domains 已过滤的可执行域列表
      */
-    void executeBootReconcile(List<String> domains) {
+    CacheRebuildReport executeBootReconcile(List<String> domains) {
+        long startAt = System.currentTimeMillis();
         if (domains == null || domains.isEmpty()) {
+            CacheRebuildReport summaryReport = buildBootSummaryReport(startAt, Collections.emptyList());
             log.info("cache boot reconcile entry initialized, executableDomains=[]");
-            return;
+            logBootSummary(summaryReport);
+            return summaryReport;
         }
 
         log.info("cache boot reconcile entry initialized, executableDomains={}", domains);
+        List<CacheRebuildReport> domainReports = new ArrayList<>();
         for (String domain : domains) {
-            long startAt = System.currentTimeMillis();
-            try {
-                CacheRebuildReport report = rebuildBootDomain(domain);
-                log.info("cache boot reconcile domain finished: domain={}, status={}, successCount={}, failCount={}, costMs={}",
-                        domain,
-                        report == null ? "-" : report.getStatus(),
-                        report == null ? 0 : report.getSuccessCount(),
-                        report == null ? 0 : report.getFailCount(),
-                        costMs(startAt));
-            } catch (Exception ex) {
-                log.error("cache boot reconcile domain failed: domain={}, costMs={}", domain, costMs(startAt), ex);
-            }
+            domainReports.add(executeSingleBootDomain(domain));
         }
+        CacheRebuildReport summaryReport = buildBootSummaryReport(startAt, domainReports);
+        logBootSummary(summaryReport);
+        return summaryReport;
     }
 
     /**
@@ -214,7 +211,185 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
         return cacheRebuildService.rebuildBootDomain(domain);
     }
 
+    private CacheRebuildReport executeSingleBootDomain(String domain) {
+        long startAt = System.currentTimeMillis();
+        try {
+            CacheRebuildReport report = rebuildBootDomain(domain);
+            CacheRebuildReport normalizedReport = normalizeDomainReport(domain, startAt, report);
+            logDomainReport(normalizedReport, null);
+            return normalizedReport;
+        } catch (Exception ex) {
+            CacheRebuildReport failureReport = buildFailedBootDomainReport(domain, startAt, ex);
+            logDomainReport(failureReport, ex);
+            return failureReport;
+        }
+    }
+
+    private CacheRebuildReport normalizeDomainReport(String domain, long startAt, CacheRebuildReport report) {
+        CacheRebuildReport normalized = report == null ? new CacheRebuildReport() : report;
+        if (!StringUtils.hasText(normalized.getDomain())) {
+            normalized.setDomain(domain);
+        }
+        if (!StringUtils.hasText(normalized.getTrigger())) {
+            normalized.setTrigger("BOOT");
+        }
+        if (normalized.getStartAt() == null) {
+            normalized.setStartAt(startAt);
+        }
+        if (normalized.getEndAt() == null) {
+            normalized.setEndAt(System.currentTimeMillis());
+        }
+        if (normalized.getFailedKeys() == null) {
+            normalized.setFailedKeys(new ArrayList<>());
+        }
+        return normalized;
+    }
+
+    private CacheRebuildReport buildFailedBootDomainReport(String domain, long startAt, Exception ex) {
+        CacheRebuildReport report = new CacheRebuildReport();
+        report.setTrigger("BOOT");
+        report.setDomain(domain);
+        report.setStartAt(startAt);
+        report.setEndAt(System.currentTimeMillis());
+        report.setAttemptedKeys(0);
+        report.setSuccessCount(0);
+        report.setFailCount(1);
+        report.setStatus("FAIL");
+        report.setMessage(ex == null ? "boot reconcile failed" : ex.getMessage());
+        if (ex == null || !StringUtils.hasText(ex.getMessage())) {
+            report.setFailedKeys(Collections.singletonList("boot reconcile failed"));
+        } else {
+            report.setFailedKeys(Collections.singletonList(ex.getMessage()));
+        }
+        return report;
+    }
+
+    private CacheRebuildReport buildBootSummaryReport(long startAt, List<CacheRebuildReport> domainReports) {
+        CacheRebuildReport summaryReport = new CacheRebuildReport();
+        summaryReport.setTrigger("BOOT");
+        summaryReport.setDomain("ALL");
+        summaryReport.setStartAt(startAt);
+        summaryReport.setEndAt(System.currentTimeMillis());
+        summaryReport.setReports(domainReports == null ? new ArrayList<>() : new ArrayList<>(domainReports));
+
+        int attemptedKeys = 0;
+        int successCount = 0;
+        int failCount = 0;
+        boolean dirtyReplay = false;
+        List<String> failedKeys = new ArrayList<>();
+        if (domainReports != null) {
+            for (CacheRebuildReport domainReport : domainReports) {
+                if (domainReport == null) {
+                    continue;
+                }
+                attemptedKeys += domainReport.getAttemptedKeys();
+                successCount += domainReport.getSuccessCount();
+                failCount += domainReport.getFailCount();
+                dirtyReplay = dirtyReplay || domainReport.isDirtyReplay();
+                if (domainReport.getFailedKeys() != null && !domainReport.getFailedKeys().isEmpty()) {
+                    failedKeys.addAll(domainReport.getFailedKeys());
+                }
+            }
+        }
+
+        summaryReport.setAttemptedKeys(attemptedKeys);
+        summaryReport.setSuccessCount(successCount);
+        summaryReport.setFailCount(failCount);
+        summaryReport.setDirtyReplay(dirtyReplay);
+        summaryReport.setFailedKeys(failedKeys);
+        if (summaryReport.getReports().isEmpty()) {
+            summaryReport.setStatus("SKIPPED");
+            summaryReport.setMessage("boot reconcile skipped: no executable domains");
+        } else if (failCount == 0) {
+            summaryReport.setStatus("SUCCESS");
+            summaryReport.setMessage("boot reconcile succeeded");
+        } else if (successCount == 0) {
+            summaryReport.setStatus("FAIL");
+            summaryReport.setMessage("boot reconcile failed");
+        } else {
+            summaryReport.setStatus("PARTIAL");
+            summaryReport.setMessage("boot reconcile partially succeeded");
+        }
+        return summaryReport;
+    }
+
+    private void logDomainReport(CacheRebuildReport report, Throwable throwable) {
+        if (report == null) {
+            return;
+        }
+        String message = "cache boot reconcile domain report: domain={}, status={}, startAt={}, endAt={}, costMs={}, successCount={}, failCount={}, failedKeys={}";
+        if (report.getFailCount() > 0) {
+            if (throwable == null) {
+                log.error(message,
+                        report.getDomain(),
+                        report.getStatus(),
+                        report.getStartAt(),
+                        report.getEndAt(),
+                        costMs(report),
+                        report.getSuccessCount(),
+                        report.getFailCount(),
+                        report.getFailedKeys());
+            } else {
+                log.error(message,
+                        report.getDomain(),
+                        report.getStatus(),
+                        report.getStartAt(),
+                        report.getEndAt(),
+                        costMs(report),
+                        report.getSuccessCount(),
+                        report.getFailCount(),
+                        report.getFailedKeys(),
+                        throwable);
+            }
+            return;
+        }
+        log.info(message,
+                report.getDomain(),
+                report.getStatus(),
+                report.getStartAt(),
+                report.getEndAt(),
+                costMs(report),
+                report.getSuccessCount(),
+                report.getFailCount(),
+                report.getFailedKeys());
+    }
+
+    private void logBootSummary(CacheRebuildReport summaryReport) {
+        if (summaryReport == null) {
+            return;
+        }
+        String message = "cache boot reconcile summary: status={}, startAt={}, endAt={}, costMs={}, domainCount={}, successCount={}, failCount={}, failedKeys={}";
+        if (summaryReport.getFailCount() > 0) {
+            log.error(message,
+                    summaryReport.getStatus(),
+                    summaryReport.getStartAt(),
+                    summaryReport.getEndAt(),
+                    costMs(summaryReport),
+                    summaryReport.getReports() == null ? 0 : summaryReport.getReports().size(),
+                    summaryReport.getSuccessCount(),
+                    summaryReport.getFailCount(),
+                    summaryReport.getFailedKeys());
+            return;
+        }
+        log.info(message,
+                summaryReport.getStatus(),
+                summaryReport.getStartAt(),
+                summaryReport.getEndAt(),
+                costMs(summaryReport),
+                summaryReport.getReports() == null ? 0 : summaryReport.getReports().size(),
+                summaryReport.getSuccessCount(),
+                summaryReport.getFailCount(),
+                summaryReport.getFailedKeys());
+    }
+
     private long costMs(long startAt) {
         return Math.max(0L, System.currentTimeMillis() - startAt);
+    }
+
+    private long costMs(CacheRebuildReport report) {
+        if (report == null || report.getStartAt() == null || report.getEndAt() == null) {
+            return 0L;
+        }
+        return Math.max(0L, report.getEndAt() - report.getStartAt());
     }
 }
