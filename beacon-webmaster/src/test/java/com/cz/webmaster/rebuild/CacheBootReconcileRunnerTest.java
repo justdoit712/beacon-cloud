@@ -244,6 +244,36 @@ public class CacheBootReconcileRunnerTest {
         Assert.assertEquals(Collections.singletonList("channel:7001"), summaryReport.getFailedKeys());
     }
 
+    @Test
+    public void shouldTreatSuccessDomainWithZeroKeyCountsAsPartialWhenAnotherDomainFails() {
+        CacheSyncProperties properties = buildProperties();
+        properties.getBoot().setEnabled(true);
+        RecordingCacheRebuildService rebuildService = new RecordingCacheRebuildService();
+        rebuildService.setDomainReport(CacheDomainRegistry.CLIENT_BUSINESS,
+                buildReport(CacheDomainRegistry.CLIENT_BUSINESS, "SUCCESS", 10L, 20L, 0, 0, 0, Collections.emptyList()));
+        rebuildService.setDomainReport(CacheDomainRegistry.CHANNEL,
+                buildReport(CacheDomainRegistry.CHANNEL, "FAIL", 21L, 40L, 1, 0, 1,
+                        Collections.singletonList("channel:8001")));
+        CacheBootReconcileRunner runner = new CacheBootReconcileRunner(
+                properties,
+                buildLoaderRegistry(
+                        CacheDomainRegistry.CLIENT_BUSINESS,
+                        CacheDomainRegistry.CHANNEL
+                ),
+                rebuildService
+        );
+
+        CacheRebuildReport summaryReport = runner.executeBootReconcile(Arrays.asList(
+                CacheDomainRegistry.CLIENT_BUSINESS,
+                CacheDomainRegistry.CHANNEL
+        ));
+
+        Assert.assertEquals("PARTIAL", summaryReport.getStatus());
+        Assert.assertEquals(0, summaryReport.getSuccessCount());
+        Assert.assertEquals(1, summaryReport.getFailCount());
+        Assert.assertEquals(Collections.singletonList("channel:8001"), summaryReport.getFailedKeys());
+    }
+
     private CacheSyncProperties buildProperties() {
         return new CacheSyncProperties(
                 new MockEnvironment().withProperty("cache.namespace.fullPrefix", "beacon:dev:beacon-cloud:cz:")

@@ -320,17 +320,56 @@ public class CacheBootReconcileRunner implements ApplicationRunner {
         if (summaryReport.getReports().isEmpty()) {
             summaryReport.setStatus("SKIPPED");
             summaryReport.setMessage("boot reconcile skipped: no executable domains");
-        } else if (failCount == 0) {
-            summaryReport.setStatus("SUCCESS");
-            summaryReport.setMessage("boot reconcile succeeded");
-        } else if (successCount == 0) {
-            summaryReport.setStatus("FAIL");
-            summaryReport.setMessage("boot reconcile failed");
         } else {
-            summaryReport.setStatus("PARTIAL");
-            summaryReport.setMessage("boot reconcile partially succeeded");
+            applyBootSummaryStatus(summaryReport);
         }
         return summaryReport;
+    }
+
+    private void applyBootSummaryStatus(CacheRebuildReport summaryReport) {
+        boolean hasSuccessDomain = false;
+        boolean hasFailureDomain = false;
+        boolean hasPartialDomain = false;
+        boolean hasSkippedDomain = false;
+        if (summaryReport.getReports() != null) {
+            for (CacheRebuildReport domainReport : summaryReport.getReports()) {
+                if (domainReport == null) {
+                    continue;
+                }
+                String status = domainReport.getStatus();
+                if ("PARTIAL".equalsIgnoreCase(status)) {
+                    hasPartialDomain = true;
+                    continue;
+                }
+                if ("FAIL".equalsIgnoreCase(status)) {
+                    hasFailureDomain = true;
+                    continue;
+                }
+                if ("SKIPPED".equalsIgnoreCase(status)) {
+                    hasSkippedDomain = true;
+                    continue;
+                }
+                hasSuccessDomain = true;
+            }
+        }
+
+        if (hasPartialDomain || (hasFailureDomain && (hasSuccessDomain || hasSkippedDomain))) {
+            summaryReport.setStatus("PARTIAL");
+            summaryReport.setMessage("boot reconcile partially succeeded");
+            return;
+        }
+        if (hasFailureDomain) {
+            summaryReport.setStatus("FAIL");
+            summaryReport.setMessage("boot reconcile failed");
+            return;
+        }
+        if (hasSuccessDomain) {
+            summaryReport.setStatus("SUCCESS");
+            summaryReport.setMessage("boot reconcile succeeded");
+            return;
+        }
+        summaryReport.setStatus("SKIPPED");
+        summaryReport.setMessage("boot reconcile skipped: no executable domains");
     }
 
     private CacheRebuildReport buildEntryFailureSummaryReport(long startAt,
