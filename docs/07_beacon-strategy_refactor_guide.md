@@ -12,7 +12,7 @@
 
 1. `07_beacon-strategy_module_analysis.md`
 2. `08_strategy_module_risk_explanation.md`
-3. `09_beacon-strategy_refactor_guide.md`
+3. `07_beacon-strategy_refactor_guide.md`
 
 ## 1. 模块定位
 

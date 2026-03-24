@@ -11,7 +11,7 @@
 原始来源（已合并）：
 
 1. `03_beacon-cache_module_analysis.md`
-2. `04_beacon-cache_refactor_guide.md`
+2. `05_beacon-cache_refactor_guide.md`
 
 ## 1. 模块定位
 
@@ -391,7 +391,7 @@ System.out.println("CacheStarterApp  mission complete");
 
 ## 7. 交付物建议
 
-1. `docs/04_beacon-cache_refactor_guide.md`（本文档）
+1. `docs/05_beacon-cache_refactor_guide.md`（本文档）
 2. `docs/beacon-cache-api-v2.md`（接口契约）
 3. `beacon-cache` V2 代码与兼容层
 4. 调用方 Feign 迁移 PR（分模块推进）

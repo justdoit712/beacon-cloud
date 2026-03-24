@@ -11,7 +11,7 @@
 原始来源（已合并）：
 
 1. `10_beacon-smsgateway_module_analysis.md`
-2. `11_beacon-smsgateway_refactor_guide.md`
+2. `08_beacon-smsgateway_refactor_guide.md`
 
 ## 1. 模块定位
 

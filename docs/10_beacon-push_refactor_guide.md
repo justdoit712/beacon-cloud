@@ -11,7 +11,7 @@
 原始来源（已合并）：
 
 1. `14_beacon-push_module_analysis.md`
-2. `15_beacon-push_refactor_guide.md`
+2. `10_beacon-push_refactor_guide.md`
 
 ## 1. 模块定位
 

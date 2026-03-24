@@ -8,10 +8,6 @@
 
 ---
 
-原始来源（已合并）：
-
-1. `01_beacon-common_module_analysis.md`
-2. `02_beacon-common_refactor_guide.md`
 
 ## 1. 目标与范围
 
