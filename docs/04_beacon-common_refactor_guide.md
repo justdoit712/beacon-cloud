@@ -37,11 +37,6 @@
 
 ### P1
 
-1. 常量接口命名与值不统一（如历史上的 `IS_CALLBACK = "is_Callback:"`）
-2. 枚举与映射工具类重复职责（`OperatorUtil`、`CMPP2ResultUtil`、`CMPP2DeliverUtil`）
-
-### P2
-
 1. `CMPP*MapUtil` 为无界内存容器，无过期策略
 2. 注释与字符集混乱（文件内容出现乱码）
 3. `ResultVO` 缺少泛型，接口契约表达能力弱
@@ -52,47 +47,56 @@
 
 ---
 
-## 3.5 SnowFlakeUtil：参数校验与位运算表达修复
+## 3.1 SnowFlakeUtil：收敛剩余运行时风险
 
 ### 现状代码（需要重构）
 
 文件：`beacon-common/src/main/java/com/cz/common/util/SnowFlakeUtil.java`
 
 ```java
-if(machineId > maxMachineId || serviceId > maxServiceId){
-    System.out.println("机器ID或服务ID超过最大范围值！！！");
-    throw new ApiException(ExceptionEnums.SNOWFLAKE_OUT_OF_RANGE);
+private static final long TIME_START = 1668096000000L;
+
+private long tilNextMillis(long lastTimestamp) {
+    long timestamp = timeGen();
+    while (timestamp <= lastTimestamp) {
+        timestamp = timeGen();
+    }
+    return timestamp;
 }
-...
-return  ((timestamp - timeStart) << timestampShift) |
-        (machineId << machineIdShift) |
-        (serviceId << serviceIdShift) |
-        sequence &
-                Long.MAX_VALUE;
+
+public synchronized long nextId() { ... }
 ```
 
 ### 原因
 
-1. 未校验负值（`machineId < 0`、`serviceId < 0`）
-2. `System.out.println` 不符合服务端日志规范
-3. 位运算表达式可读性差，易误解掩码作用范围
+1. 参数越界校验、日志替换和位运算括号问题已经修复，但仍有剩余运行时风险。
+2. `TIME_START` 仍然是硬编码，跨环境调整和长期演进不够灵活。
+3. `tilNextMillis(...)` 采用忙等，自增序列在同一毫秒耗尽时会空转占用 CPU。
+4. `nextId()` 为 `synchronized`，单实例高峰下吞吐会被串行化。
 
 ### 如何重构
 
-1. 增加负值校验
-2. 替换为 `log.error`
-3. 明确位运算括号，避免歧义
-4. `timeStart` 支持配置项注入，减少硬编码
+1. 保留现有越界校验、时间回拨校验和测试覆盖。
+2. 将 `TIME_START` 改为可配置项，保留当前默认值作为兜底。
+3. 在等待下一毫秒时增加轻量让步策略，避免纯忙等。
+4. 在压测结果支持的前提下，再评估是否需要进一步拆分实例维度或引入独立 ID 服务。
 
 ### 目标代码（建议）
 
 ```java
-if (machineId < 0 || machineId > maxMachineId || serviceId < 0 || serviceId > maxServiceId) {
-    log.error("snowflake config out of range, machineId={}, serviceId={}", machineId, serviceId);
-    throw new ApiException(ExceptionEnums.SNOWFLAKE_OUT_OF_RANGE);
+@Value("${snowflake.timeStart:1668096000000}")
+private long timeStart;
+
+private long tilNextMillis(long lastTimestamp) {
+    long timestamp = timeGen();
+    while (timestamp <= lastTimestamp) {
+        LockSupport.parkNanos(100_000L);
+        timestamp = timeGen();
+    }
+    return timestamp;
 }
-...
-long id = ((timestamp - timeStart) << timestampShift)
+
+long id = ((timestamp - timeStart) << TIMESTAMP_SHIFT)
         | (machineId << machineIdShift)
         | (serviceId << serviceIdShift)
         | sequence;
@@ -101,45 +105,60 @@ return id & Long.MAX_VALUE;
 
 ---
 
-## 3.6 常量定义：从 interface 常量迁移到 final class
+## 3.2 JsonUtil：统一序列化异常边界
 
 ### 现状代码（需要重构）
 
-文件：
+文件：`beacon-common/src/main/java/com/cz/common/util/JsonUtil.java`
 
-1. `beacon-common/src/main/java/com/cz/common/constant/CacheKeyConstants.java`
-2. `beacon-common/src/main/java/com/cz/common/constant/RabbitMQConstants.java`
-3. `beacon-common/src/main/java/com/cz/common/constant/SmsConstant.java`
-4. `beacon-common/src/main/java/com/cz/common/constant/ApiConstant.java`
-
-当前全部采用 `interface` 常量形式。
+```java
+public static String toJson(Object obj){
+    try {
+        return OBJECT_MAPPER.writeValueAsString(obj);
+    } catch (JsonProcessingException e) {
+        throw new IllegalStateException("serialize object to json failed", e);
+    }
+}
+```
 
 ### 原因
 
-1. `interface` 常量会产生“常量接口反模式”
-2. 无法约束实例化和继承语义
-3. 命名有不一致项（如 `IS_CALLBACK` 的 value 与其他字段风格不一致）
+1. 工具类当前统一抛 `IllegalStateException`，异常语义过于宽泛。
+2. 搜索写 ES 和推送客户回调都依赖 `JsonUtil`，但两边对序列化失败的处理策略不同。
+3. 排障时难以第一时间区分“对象序列化失败”和“下游 IO / HTTP 调用失败”。
 
 ### 如何重构
 
-1. 使用 `final class + private constructor`
-2. 按域拆分为更清晰的常量类（`CacheKeys`、`MqTopics`、`SmsStatus`）
-3. 保留旧常量类并标记 `@Deprecated`，迁移后再删除
+1. 为 JSON 序列化失败定义更明确的异常语义，如 `JsonSerializeException`。
+2. 调用方显式决定失败策略：
+   搜索链路将其视为消息处理失败，回调链路将其视为一次推送失败并记录上下文。
+3. 在日志中统一补足对象类型、主键和关键业务字段，减少排障成本。
 
 ### 目标代码（建议）
 
 ```java
-public final class MqTopics {
-    private MqTopics() {}
+public static String toJson(Object obj) {
+    try {
+        return OBJECT_MAPPER.writeValueAsString(obj);
+    } catch (JsonProcessingException e) {
+        throw new JsonSerializeException("serialize object to json failed", e);
+    }
+}
+```
 
-    public static final String SMS_PRE_SEND = "sms_pre_send_topic";
-    public static final String SMS_WRITE_LOG = "sms_write_log_topic";
+```java
+try {
+    String body = JsonUtil.toJson(report);
+    ...
+} catch (JsonSerializeException ex) {
+    log.warn("push callback serialize failed, sequenceId={}, callbackUrl={}",
+            report.getSequenceId(), report.getCallbackUrl(), ex);
 }
 ```
 
 ---
 
-## 3.8 CMPP 临时缓存：避免进程内状态成为长期瓶颈
+## 3.3 CMPP 临时缓存：避免进程内状态成为长期瓶颈
 
 ### 现状代码（需要重构）
 
@@ -166,6 +185,89 @@ public final class MqTopics {
 ```java
 // 方向一：继续增强本地缓存治理
 // 方向二：迁移到 Redis / 状态表
+```
+
+---
+
+## 3.4 注释与字符集：统一 UTF-8 与最小必要注释
+
+### 现状代码（需要重构）
+
+范围：`beacon-common/src/main/java/com/cz/common/**`
+
+当前仍存在以下情况：
+
+1. 注释风格不一致，既有正式说明，也有口语化或历史残留说明。
+2. 个别注释在代码完成重构后没有同步更新，容易误导维护者。
+3. 编码规范依赖人工约定，缺少一次性清理和持续约束。
+
+### 原因
+
+1. 公共模块会被多个子模块引用，误导性注释会放大理解偏差。
+2. 历史遗留注释和命名变更混在一起，增加 review 成本。
+3. 字符集不统一时，文档与注释容易在不同 IDE/终端中出现显示异常。
+
+### 如何重构
+
+1. 优先清理已经过时的注释和与现状不符的示例。
+2. 保留“为什么这样做”的注释，删除“代码做了什么”的重复性注释。
+3. 统一 `UTF-8` 编码约束，并在团队规范中明确注释风格。
+
+### 目标代码（建议）
+
+```java
+/**
+ * 雪花算法生成全局唯一 ID。
+ * 当前实现保留本地生成方案，需依赖 machineId/serviceId 配置避免冲突。
+ */
+public class SnowFlakeUtil { ... }
+```
+
+---
+
+## 3.5 ResultVO：补齐泛型表达能力
+
+### 现状代码（需要重构）
+
+文件：`beacon-common/src/main/java/com/cz/common/vo/ResultVO.java`
+
+```java
+public class ResultVO {
+    private Integer code;
+    private String msg;
+    private Object data;
+    private Long total;
+    private Object rows;
+}
+```
+
+### 原因
+
+1. `data` 和 `rows` 都是 `Object`，缺少编译期约束。
+2. 调用方和前端契约只能依赖约定，容易出现隐式类型漂移。
+3. 列表响应和普通响应复用同一个对象，表达力不够清晰。
+
+### 如何重构
+
+1. 将普通响应调整为 `ResultVO<T>`。
+2. 为分页场景补一个单独的分页响应对象，避免 `data/rows/total` 混杂。
+3. 同步调整 `Result` 工具类和接口层返回值声明。
+
+### 目标代码（建议）
+
+```java
+public class ResultVO<T> {
+    private Integer code;
+    private String msg;
+    private T data;
+}
+
+public class PageResultVO<T> {
+    private Integer code;
+    private String msg;
+    private Long total;
+    private List<T> rows;
+}
 ```
 
 ---
