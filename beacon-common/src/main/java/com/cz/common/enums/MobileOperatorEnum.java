@@ -2,6 +2,12 @@ package com.cz.common.enums;
 
 import lombok.Getter;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 @Getter
 public enum MobileOperatorEnum {
 
@@ -14,8 +20,17 @@ public enum MobileOperatorEnum {
 
     private String operatorName;
 
+    private static final Map<String, MobileOperatorEnum> BY_NAME = Collections.unmodifiableMap(
+            Arrays.stream(values()).collect(Collectors.toMap(MobileOperatorEnum::getOperatorName, Function.identity()))
+    );
+
     MobileOperatorEnum(Integer operatorId, String operatorName) {
         this.operatorId = operatorId;
         this.operatorName = operatorName;
+    }
+
+    public static Integer operatorIdByName(String operatorName) {
+        MobileOperatorEnum operator = BY_NAME.get(operatorName);
+        return operator == null ? null : operator.operatorId;
     }
 }

@@ -3,8 +3,8 @@ package com.cz.smsgateway.runnable;
 import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.constant.SmsConstant;
+import com.cz.common.enums.CMPP2DeliverEnums;
 import com.cz.common.model.StandardReport;
-import com.cz.common.util.CMPP2DeliverUtil;
 import com.cz.common.util.CMPPDeliverMapUtil;
 import com.cz.smsgateway.client.BeaconCacheClient;
 import com.cz.smsgateway.util.SpringUtil;
@@ -51,7 +51,7 @@ public class DeliverRunnable implements Runnable {
         }else{
             // 短信发送失败
             report.setReportState(SmsConstant.REPORT_FAIL);
-            report.setErrorMsg(CMPP2DeliverUtil.getResultMessage(stat));
+            report.setErrorMsg(CMPP2DeliverEnums.descriptionOf(stat));
         }
 
         //3、客户状态报告推送，让网关模块查询缓存，当前客户是否需要状态报告推送

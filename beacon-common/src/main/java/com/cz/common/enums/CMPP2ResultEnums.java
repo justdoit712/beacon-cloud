@@ -2,6 +2,12 @@ package com.cz.common.enums;
 
 import lombok.Getter;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 /**
  * @author cz
  * @description
@@ -25,8 +31,17 @@ public enum  CMPP2ResultEnums {
     private Integer result;
     private String msg;
 
+    private static final Map<Integer, CMPP2ResultEnums> BY_RESULT = Collections.unmodifiableMap(
+            Arrays.stream(values()).collect(Collectors.toMap(CMPP2ResultEnums::getResult, Function.identity()))
+    );
+
     CMPP2ResultEnums(Integer result, String msg) {
         this.result = result;
         this.msg = msg;
+    }
+
+    public static String messageOf(Integer result) {
+        CMPP2ResultEnums resultEnum = BY_RESULT.get(result);
+        return resultEnum == null ? null : resultEnum.msg;
     }
 }

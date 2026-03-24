@@ -2,9 +2,9 @@ package com.cz.smsgateway.runnable;
 
 import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.constant.SmsConstant;
+import com.cz.common.enums.CMPP2ResultEnums;
 import com.cz.common.model.StandardReport;
 import com.cz.common.model.StandardSubmit;
-import com.cz.common.util.CMPP2ResultUtil;
 import com.cz.common.util.CMPPDeliverMapUtil;
 import com.cz.common.util.CMPPSubmitRepoMapUtil;
 import com.cz.smsgateway.netty4.entity.CmppSubmitResp;
@@ -47,7 +47,7 @@ public class SubmitRepoRunnable implements Runnable {
         int result = submitResp.getResult();
         if (result != OK) {
             // 到这，说明运营商的提交应答中回馈的失败的情况
-            String resultMessage = CMPP2ResultUtil.getResultMessage(result);
+            String resultMessage = CMPP2ResultEnums.messageOf(result);
             submit.setReportState(SmsConstant.REPORT_FAIL);
             submit.setErrorMsg(resultMessage);
         } else {

@@ -26,21 +26,21 @@
 
 ## 2. 当前问题总览（按优先级）
 
-### P0（必须先做）
+### P0
 
 1. 雪花算法实现存在可读性和健壮性问题  
-  文件：`beacon-common/src/main/java/com/cz/common/util/SnowFlakeUtil.java`
+    文件：`beacon-common/src/main/java/com/cz/common/util/SnowFlakeUtil.java`
 
 2. 工具类与调用方的异常处理边界仍需统一  
-  文件：`beacon-common/src/main/java/com/cz/common/util/JsonUtil.java`  
-  需要统一序列化异常的接收与记录策略。
+    文件：`beacon-common/src/main/java/com/cz/common/util/JsonUtil.java`  
+    需要统一序列化异常的接收与记录策略。
 
-### P1（建议紧随其后）
+### P1
 
 1. 常量接口命名与值不统一（如历史上的 `IS_CALLBACK = "is_Callback:"`）
 2. 枚举与映射工具类重复职责（`OperatorUtil`、`CMPP2ResultUtil`、`CMPP2DeliverUtil`）
 
-### P2（中期优化）
+### P2
 
 1. `CMPP*MapUtil` 为无界内存容器，无过期策略
 2. 注释与字符集混乱（文件内容出现乱码）
@@ -134,48 +134,6 @@ public final class MqTopics {
 
     public static final String SMS_PRE_SEND = "sms_pre_send_topic";
     public static final String SMS_WRITE_LOG = "sms_write_log_topic";
-}
-```
-
----
-
-## 3.7 枚举映射：让 enum 自带查询，替代 util map
-
-### 现状代码（需要重构）
-
-文件：
-
-1. `beacon-common/src/main/java/com/cz/common/util/OperatorUtil.java`
-2. `beacon-common/src/main/java/com/cz/common/util/CMPP2ResultUtil.java`
-3. `beacon-common/src/main/java/com/cz/common/util/CMPP2DeliverUtil.java`
-
-### 原因
-
-1. `enum + util` 双轨维护，改一个漏一个
-2. `Map` 可变，存在被误改风险
-3. 查询逻辑散落
-
-### 如何重构
-
-把查询能力直接放到枚举里，util 类保留兼容方法并委托到 enum。
-
-### 目标代码（建议）
-
-```java
-@Getter
-public enum MobileOperatorEnum {
-    CHINA_MOBILE(1, "移动"),
-    CHINA_UNICOM(2, "联通"),
-    CHINA_TELECOM(3, "电信"),
-    UNKNOWN(0, "未知");
-
-    private static final Map<String, MobileOperatorEnum> BY_NAME = Arrays.stream(values())
-            .collect(Collectors.toMap(MobileOperatorEnum::getOperatorName, Function.identity()));
-
-    public static Integer idByName(String operatorName) {
-        MobileOperatorEnum operator = BY_NAME.get(operatorName);
-        return operator == null ? UNKNOWN.operatorId : operator.operatorId;
-    }
 }
 ```
 

@@ -3,8 +3,8 @@ package com.cz.strategy.filter.impl;
 
 import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.constant.RabbitMQConstants;
+import com.cz.common.enums.MobileOperatorEnum;
 import com.cz.common.model.StandardSubmit;
-import com.cz.common.util.OperatorUtil;
 import com.cz.strategy.client.BeaconCacheClient;
 import com.cz.strategy.filter.StrategyFilter;
 import com.cz.strategy.util.MobileOperatorUtil;
@@ -59,7 +59,7 @@ public class PhaseStrategyFilter implements StrategyFilter {
         String[] areaAndOperator = mobileInfo.split(SEPARATE);
         if (areaAndOperator.length == LENGTH) {
             submit.setArea(areaAndOperator[0]);
-            submit.setOperatorId(OperatorUtil.getOperatorIdByOperatorName(areaAndOperator[1]));
+            submit.setOperatorId(MobileOperatorEnum.operatorIdByName(areaAndOperator[1]));
         }
 
 
@@ -100,7 +100,7 @@ public class PhaseStrategyFilter implements StrategyFilter {
             // 设置归属地 (例如：云南 昆明)
             submit.setArea(areaAndOperator[0]);
             // 设置运营商ID (根据名称 "移动" -> 1)
-            Integer operatorId = OperatorUtil.getOperatorIdByOperatorName(areaAndOperator[1]);
+            Integer operatorId = MobileOperatorEnum.operatorIdByName(areaAndOperator[1]);
             // 防止运营商名称无法识别导致空指针
             submit.setOperatorId(operatorId != null ? operatorId : 0);
 

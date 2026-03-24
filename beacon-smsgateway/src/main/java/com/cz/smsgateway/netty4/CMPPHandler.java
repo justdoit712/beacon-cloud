@@ -1,12 +1,4 @@
 package com.cz.smsgateway.netty4;
-
-
-
-import com.cz.common.constant.SmsConstant;
-import com.cz.common.model.StandardReport;
-import com.cz.common.model.StandardSubmit;
-import com.cz.common.util.CMPP2ResultUtil;
-import com.cz.common.util.CMPPSubmitRepoMapUtil;
 import com.cz.smsgateway.netty4.entity.CmppDeliver;
 import com.cz.smsgateway.netty4.entity.CmppSubmitResp;
 import com.cz.smsgateway.netty4.utils.MsgUtils;
@@ -16,7 +8,6 @@ import com.cz.smsgateway.util.SpringUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
