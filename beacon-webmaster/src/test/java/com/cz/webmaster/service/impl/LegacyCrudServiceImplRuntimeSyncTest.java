@@ -1,6 +1,6 @@
 package com.cz.webmaster.service.impl;
 
-import com.cz.common.constant.CacheDomainRegistry;
+import com.cz.common.cache.meta.CacheDomainRegistry;
 import com.cz.webmaster.service.CacheSyncService;
 import com.cz.webmaster.support.CacheSyncRuntimeExecutor;
 import org.junit.Assert;

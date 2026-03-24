@@ -1,4 +1,4 @@
-package com.cz.common.constant;
+package com.cz.common.cache.meta;
 
 /**
  * Redis 数据结构类型。

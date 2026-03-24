@@ -1,6 +1,6 @@
 package com.cz.webmaster.support;
 
-import com.cz.common.constant.CacheDomainRegistry;
+import com.cz.common.cache.meta.CacheDomainRegistry;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.webmaster.rebuild.CacheRebuildCoordinationSupport;
 import org.slf4j.Logger;

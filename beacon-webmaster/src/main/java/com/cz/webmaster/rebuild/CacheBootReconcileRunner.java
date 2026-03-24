@@ -1,6 +1,6 @@
 package com.cz.webmaster.rebuild;
 
-import com.cz.common.constant.CacheDomainRegistry;
+import com.cz.common.cache.meta.CacheDomainRegistry;
 import com.cz.webmaster.config.CacheSyncProperties;
 import com.cz.webmaster.dto.CacheRebuildReport;
 import com.cz.webmaster.service.CacheRebuildService;

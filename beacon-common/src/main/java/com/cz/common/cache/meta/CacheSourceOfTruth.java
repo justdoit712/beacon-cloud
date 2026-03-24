@@ -1,4 +1,4 @@
-package com.cz.common.constant;
+package com.cz.common.cache.meta;
 
 /**
  * 缓存域主数据来源（真源）定义。

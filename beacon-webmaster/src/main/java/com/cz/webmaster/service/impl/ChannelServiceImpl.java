@@ -1,7 +1,7 @@
 package com.cz.webmaster.service.impl;
 
 import cn.hutool.core.util.IdUtil;
-import com.cz.common.constant.CacheDomainRegistry;
+import com.cz.common.cache.meta.CacheDomainRegistry;
 import com.cz.webmaster.entity.Channel;
 import com.cz.webmaster.mapper.ChannelMapper;
 import com.cz.webmaster.service.CacheSyncService;

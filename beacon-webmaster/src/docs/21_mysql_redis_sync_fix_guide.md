@@ -6,19 +6,11 @@
 关联模块：`beacon-webmaster` / `beacon-cache` / `beacon-common`  
 最后核对日期：2026-03-24
 
----
 
-原始来源（已合并并按当前代码刷新）：
-
-1. `21_mysql_redis_sync_fix_guide.md`
-2. `beacon-webmaster/src/docs/21_1_mysql_redis_sync_layer1_foundation.md`
-3. `beacon-webmaster/src/docs/21_2_mysql_redis_sync_layer2_runtime_sync.md`
-4. `beacon-webmaster/src/docs/21_3_mysql_redis_sync_layer3_manual_rebuild.md`
-5. `beacon-webmaster/src/docs/21_4_mysql_redis_sync_layer4_boot_reconcile.md`
 
 ## 0. 这份文档解决什么问题
 
-这份文档不再只停留在“方案概述”，而是直接对齐当前代码，回答下面 4 个问题：
+主要回答下面 4 个问题：
 
 1. 当前项目到底采用了什么缓存一致性方案
 2. 一次业务数据变更是怎样从 MySQL 走到 Redis 的
@@ -85,7 +77,7 @@
 
 ## 2. 先看“规则层”：常量、契约、范围
 
-缓存一致性链路的第一步不是写 Redis，而是先把规则冻结。
+缓存一致性链路的第一步是先把规则冻结。
 
 ### 2.1 关键常量 / 契约类总表
 

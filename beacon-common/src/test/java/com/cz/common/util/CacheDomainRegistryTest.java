@@ -1,10 +1,10 @@
 package com.cz.common.util;
 
-import com.cz.common.constant.CacheDomainContract;
-import com.cz.common.constant.CacheDomainRegistry;
-import com.cz.common.constant.CacheRedisType;
-import com.cz.common.constant.CacheSourceOfTruth;
-import com.cz.common.constant.CacheWritePolicy;
+import com.cz.common.cache.meta.CacheDomainContract;
+import com.cz.common.cache.meta.CacheDomainRegistry;
+import com.cz.common.cache.meta.CacheRedisType;
+import com.cz.common.cache.meta.CacheSourceOfTruth;
+import com.cz.common.cache.policy.CacheWritePolicy;
 import org.junit.Assert;
 import org.junit.Test;
 

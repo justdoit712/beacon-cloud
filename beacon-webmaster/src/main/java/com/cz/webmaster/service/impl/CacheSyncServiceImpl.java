@@ -1,8 +1,8 @@
 package com.cz.webmaster.service.impl;
 
-import com.cz.common.constant.CacheDeletePolicy;
-import com.cz.common.constant.CacheDomainContract;
-import com.cz.common.constant.CacheDomainRegistry;
+import com.cz.common.cache.meta.CacheDomainContract;
+import com.cz.common.cache.meta.CacheDomainRegistry;
+import com.cz.common.cache.policy.CacheDeletePolicy;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.ApiException;
 import com.cz.webmaster.client.BeaconCacheWriteClient;

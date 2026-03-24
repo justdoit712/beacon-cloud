@@ -1,6 +1,6 @@
 package com.cz.webmaster.rebuild.loader;
 
-import com.cz.common.constant.CacheDomainRegistry;
+import com.cz.common.cache.meta.CacheDomainRegistry;
 import com.cz.webmaster.entity.ClientBalance;
 import com.cz.webmaster.mapper.ClientBalanceMapper;
 import com.cz.webmaster.rebuild.DomainRebuildLoader;

@@ -1,4 +1,4 @@
-package com.cz.common.constant;
+package com.cz.common.cache.policy;
 
 /**
  * 缓存域写入策略枚举。
