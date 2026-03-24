@@ -1,6 +1,5 @@
 package com.cz.common.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
@@ -25,7 +24,7 @@ public class StandardReport implements Serializable {
     /**
      * 为了在网关运营商的二次回调中可以方便查询客户的状态报告的推送信息
      */
-    private String apikey;
+    private String apiKey;
 
     /**
      * 针对当前短信的唯一标识，雪花算法（保留）
@@ -33,7 +32,7 @@ public class StandardReport implements Serializable {
     private Long sequenceId;
 
     /**
-     * 客户端ID，基于apikey查询缓存模块得到客户的ID
+     * 客户端ID，基于 apiKey 查询缓存模块得到客户的ID
      */
     private Long clientId;
 

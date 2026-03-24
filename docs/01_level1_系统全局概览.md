@@ -86,7 +86,7 @@ beacon-monitor 通过 XXL-Job 执行队列与余额巡检任务
    - 典型字段：`sequenceId`、`clientId`、`mobile`、`text`、`state`、`fee`、`channelId`、`reportState`。
 2. `StandardReport`（`beacon-common`）
    - 表示短信回执/状态更新/回调推送的统一载体。
-   - 典型字段：`sequenceId`、`apikey`、`mobile`、`reportState`、`errorMsg`、`callbackUrl`、`resendCount`。
+   - 典型字段：`sequenceId`、`apiKey`、`mobile`、`reportState`、`errorMsg`、`callbackUrl`、`resendCount`。
 
 ## 6. 当前模块清单
 
@@ -189,4 +189,4 @@ beacon-monitor 通过 XXL-Job 执行队列与余额巡检任务
 
 1. `StandardSubmit` 在网关提交成功后派生为 `StandardReport`
 2. `StandardReport` 再分流到“状态更新链路”和“客户回调链路”
-3. 这也是当前 `apiKey/apikey`、`fee`、回调字段一致性问题最集中的位置
+3. 这也是当前 `apiKey`、`fee`、回调字段一致性问题最集中的位置

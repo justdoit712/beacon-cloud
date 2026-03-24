@@ -28,19 +28,16 @@
 
 ### P0（必须先做）
 
-1. `pom.xml` 存在重复依赖声明  
-文件：`beacon-common/pom.xml`
+1. `apiKey` 已统一，但仍需补契约回归测试防止回退  
+  文件：`beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java`  
+  关联文件：`beacon-common/src/main/java/com/cz/common/model/StandardReport.java`
 
-2. 跨对象命名仍存在不一致，影响序列化与维护  
-文件：`beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java`  
-典型问题：`StandardSubmit.apiKey` vs `StandardReport.apikey`
+2. 雪花算法实现存在可读性和健壮性问题  
+  文件：`beacon-common/src/main/java/com/cz/common/util/SnowFlakeUtil.java`
 
-3. 雪花算法实现存在可读性和健壮性问题  
-文件：`beacon-common/src/main/java/com/cz/common/util/SnowFlakeUtil.java`
-
-4. 工具类与调用方的异常处理边界仍需统一  
-文件：`beacon-common/src/main/java/com/cz/common/util/JsonUtil.java`  
-需要统一序列化异常的接收与记录策略。
+3. 工具类与调用方的异常处理边界仍需统一  
+  文件：`beacon-common/src/main/java/com/cz/common/util/JsonUtil.java`  
+  需要统一序列化异常的接收与记录策略。
 
 ### P1（建议紧随其后）
 
@@ -98,7 +95,7 @@
 
 ---
 
-## 3.2 模型字段命名：统一风格并保持兼容
+## 3.2 模型字段命名：统一风格并补回归测试
 
 ### 现状代码（需要重构）
 
@@ -112,29 +109,29 @@
 private String realIp;
 private Long signId;
 
-// 当前仍存在的跨对象命名差异（StandardReport）
-private String apikey;
+// 当前统一后的关键字段（StandardReport）
+private String apiKey;
 ```
 
 ### 原因
 
-1. `StandardSubmit` 内部命名已基本规范，但跨对象仍存在 `apiKey/apikey` 风格不一致。
-2. 关键链路仍有 `BeanUtils.copyProperties(...)`，命名差异会带来静默映射风险。
-3. 契约层一旦继续演进，兼容窗口和测试成本仍然较高。
+1. `StandardSubmit` 与 `StandardReport` 已统一使用 `apiKey`。
+2. 关键链路仍有 `BeanUtils.copyProperties(...)`，需要回归测试防止字段名再次漂移。
+3. 契约层继续演进时，仍要验证 MQ 消息和回调 JSON 的字段名保持一致。
 
 ### 如何重构
 
-采用“平滑迁移”而非一次性断裂：
+当前仓库已经按“一次性统一命名”落地：
 
-1. 将“字段命名治理”的重点从 `SignId/realIP` 转为 `apiKey/apikey` 统一。
-2. 对跨对象复制链路改为显式映射，避免依赖反射式同名复制。
-3. 为兼容字段建立契约测试，确保老消息与老索引数据仍可读。
+1. `StandardSubmit` / `StandardReport` 统一使用 `apiKey`。
+2. 保留 `BeanUtils.copyProperties(...)` 的同名复制能力，减少手工映射代码。
+3. 为关键复制链路和 JSON 契约建立回归测试，防止后续重构把字段改回去。
 
 ### 目标代码（建议）
 
 ```java
-// 示例：优先统一 apiKey/apikey 命名，或至少显式映射
-report.setApikey(submit.getApiKey());
+// 示例：字段名统一后，可直接沿用同名复制
+BeanUtils.copyProperties(submit, report);
 ```
 
 ---

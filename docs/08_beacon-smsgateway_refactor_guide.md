@@ -144,7 +144,7 @@ submit.setReportState(...);
 ```java
 StandardReport report = CMPPDeliverMapUtil.remove(msgId + "");
 report.setReportState(...);
-Integer isCallback = cacheClient.hgetInteger(... + report.getApikey(), "isCallback");
+Integer isCallback = cacheClient.hgetInteger(... + report.getApiKey(), "isCallback");
 ```
 
 ### 原因
