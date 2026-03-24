@@ -29,7 +29,7 @@
 
 | 模块 | 关键依赖 | 版本 |
 | --- | --- | --- |
-| `beacon-api` | `mysql-connector-j` | `9.1.0` |
+| `beacon-api` | `spring-cloud-starter-openfeign` / `spring-cloud-starter-alibaba-nacos-config` | 跟随根 POM 依赖管理 |
 | `beacon-common` | `spring-context` | `5.3.12` |
 | `beacon-monitor` | `xxl-job-core` | `2.3.1` |
 | `beacon-search` | `elasticsearch-rest-high-level-client` / `elasticsearch` | `7.6.2` |
@@ -37,6 +37,12 @@
 | `beacon-strategy` | `ikanalyzer` / `hutool-dfa` | `2012_u6` / `5.8.12` |
 | `beacon-test` | `mybatis-spring-boot-starter` / `mysql-connector-java` | `2.2.2` / `5.1.49` |
 | `beacon-webmaster` | `shiro-spring-boot-web-starter` / `druid-spring-boot-starter` / `mybatis-spring-boot-starter` | `1.4.0` / `1.1.10` / `2.2.2` |
+
+> 依赖治理说明（2026-03-24）
+>
+> - 当前仓库以根 POM 版本管理为准；子模块若未显式声明版本，按 `Spring Boot 2.3.12.RELEASE / Spring Cloud Hoxton.SR12 / Spring Cloud Alibaba 2.2.6.RELEASE` 解析。
+> - `beacon-webmaster` 的依赖升级先做文档化落地，暂不直接跨代修改代码；分阶段方案见 `docs/11_beacon-webmaster_refactor_guide.md` 的 `3.1`。
+> - 先前文档中 `beacon-api -> mysql-connector-j 9.1.0` 为过期记录，已按当前 `pom.xml` 修正。
 
 ## 2. 项目结构
 

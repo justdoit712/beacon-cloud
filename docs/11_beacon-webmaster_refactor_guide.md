@@ -96,6 +96,34 @@ spring:
 2. 替换驱动为 `com.mysql.cj.jdbc.Driver`，并验证时区与字符集行为。
 3. 统一父 POM 管理版本，做一次依赖治理（含 CVE 扫描）。
 
+### 依赖升级落地建议（2026-03-24 补充）
+
+1. 当前建议先落文档，不直接修改依赖代码。
+   - 原因一：当前全仓库执行 `mvn -DskipTests compile` 可以通过，直接跨代升级的收益暂时低于回归风险。
+   - 原因二：根工程基线仍是 `Spring Boot 2.3.12.RELEASE`、`Spring Cloud Hoxton.SR12`、`Spring Cloud Alibaba 2.2.6.RELEASE`，`beacon-webmaster` 同时使用 `Java 8`、`javax.*`、`Shiro 1.x`，不适合直接跳到 `Boot 3.x` 或 `Shiro 2.x`。
+2. 第一阶段建议只做“同代对齐”，并在有专门回归窗口时执行。
+   - 根 `spring.cloud.alibaba-version`：`2.2.6.RELEASE -> 2.2.9.RELEASE`，先与 `Boot 2.3.12 / Hoxton.SR12` 对齐。
+   - `shiro-spring-boot-web-starter`：`1.4.0 -> 1.13.0`。
+   - `druid-spring-boot-starter`：`1.1.10 -> 1.2.28`。
+   - `hibernate-validator`：从旧坐标 `org.hibernate:hibernate-validator` 调整为 `org.hibernate.validator:hibernate-validator`，或直接改为 `spring-boot-starter-validation` 由父依赖统一管理。
+3. 第二阶段将 MySQL 驱动升级作为独立变更执行，不与其它版本治理混在同一提交中。
+   - 依赖坐标从 `mysql:mysql-connector-java:5.1.49` 切到 `com.mysql:mysql-connector-j`。
+   - `driver-class-name` 同步切到 `com.mysql.cj.jdbc.Driver`。
+   - `mybatis-generator-maven-plugin` 中的驱动依赖一并调整，避免生成器与运行时驱动分裂。
+4. 当前窗口不建议直接做以下升级。
+   - `Spring Boot 2.7/3.x`
+   - `Spring Cloud 202x`
+   - `Spring Cloud Alibaba 202x`
+   - `Shiro 2.x`
+   - `MyBatis Spring Boot Starter 2.3+/3.x`
+   - 原因：会同时引入 `bootstrap.yml` / Nacos 配置加载机制变化、`javax -> jakarta` 迁移、Java 版本要求变化，以及安全框架行为变化，超出本次 `P0` 快速整改范围。
+5. 每次依赖升级前后都要执行最小验收清单。
+   - `mvn -DskipTests compile`
+   - 后台登录、验证码、Shiro 会话链路
+   - MySQL 连接、Mapper 查询、MyBatis Generator
+   - Nacos 注册与配置拉取
+   - 调用 `beacon-search`、`beacon-api` 的 Feign 链路
+
 ### 目标代码（建议）
 
 ```yml
