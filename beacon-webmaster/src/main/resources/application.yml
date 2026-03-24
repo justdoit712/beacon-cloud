@@ -56,12 +56,13 @@ sync:
   runtime:
     # 运行时同步开关（业务写路径触发）
     enabled: true
+    domains: ["client_business"]
   manual:
     # 手工重建开关（管理入口触发）
     enabled: true
   boot:
     # 启动校准开关（服务启动触发）
-    enabled: false
+    enabled: true
     # 启动校准域清单，留空表示由后续逻辑决定默认域策略
     domains: []
 
@@ -75,6 +76,6 @@ cache:
       caller: beacon-webmaster
       secret: cache_webmaster_secret
     feign:
-      connect-timeout-ms: 3000
-      read-timeout-ms: 5000
+      connect-timeout-ms: 10000
+      read-timeout-ms: 120000
 

@@ -1,6 +1,6 @@
 package com.cz.strategy.filter.impl;
 
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.StrategyException;
 import com.cz.common.model.StandardSubmit;
@@ -30,7 +30,7 @@ public class BlackGlobalStrategyFilter implements StrategyFilter {
         String mobile = submit.getMobile();
 
         //2、调用Redis查询
-        String value = cacheClient.getString(CacheConstant.BLACK + mobile);
+        String value = cacheClient.getString(CacheKeyConstants.BLACK + mobile);
 
         //3、如果查询的结果为"1"，代表是黑名单
         if (TRUE.equals(value)) {

@@ -1,6 +1,6 @@
 package com.cz.strategy.filter.impl;
 
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.constant.SmsConstant;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.StrategyException;
@@ -62,7 +62,7 @@ public class LimitOneHourStrategyFilter implements StrategyFilter {
     }
 
     private void minuteLimit(StandardSubmit submit, Long clientId, String mobile, long sendTimeMilli) {
-        String key = CacheConstant.LIMIT_MINUTES + clientId + CacheConstant.SEPARATE + mobile;
+        String key = CacheKeyConstants.LIMIT_MINUTES + clientId + CacheKeyConstants.SEPARATE + mobile;
         if (!Boolean.TRUE.equals(cacheClient.zadd(key, sendTimeMilli, sendTimeMilli))) {
             reject(submit, mobile, ExceptionEnums.ONE_MINUTE_LIMIT, "【策略模块-一分钟限流策略】 插入失败，满足一分钟限流规则，无法发送！");
         }
@@ -76,7 +76,7 @@ public class LimitOneHourStrategyFilter implements StrategyFilter {
     }
 
     private void hourLimit(StandardSubmit submit, Long clientId, String mobile, long sendTimeMilli) {
-        String key = CacheConstant.LIMIT_HOURS + clientId + CacheConstant.SEPARATE + mobile;
+        String key = CacheKeyConstants.LIMIT_HOURS + clientId + CacheKeyConstants.SEPARATE + mobile;
         long member = tryInsertWithRetry(key, sendTimeMilli, ExceptionEnums.ONE_HOUR_LIMIT, submit, mobile,
                 "【策略模块-一小时限流策略】 插入失败，满足一小时限流规则，无法发送！");
 
@@ -89,7 +89,7 @@ public class LimitOneHourStrategyFilter implements StrategyFilter {
     }
 
     private void dayLimit(StandardSubmit submit, Long clientId, String mobile, long sendTimeMilli) {
-        String key = CacheConstant.LIMIT_DAYS + clientId + CacheConstant.SEPARATE + mobile;
+        String key = CacheKeyConstants.LIMIT_DAYS + clientId + CacheKeyConstants.SEPARATE + mobile;
         long member = tryInsertWithRetry(key, sendTimeMilli, ExceptionEnums.ONE_DAY_LIMIT, submit, mobile,
                 "【策略模块-一天限流策略】 插入失败，满足一天限流规则，无法发送！");
 

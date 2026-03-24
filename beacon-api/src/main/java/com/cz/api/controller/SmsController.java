@@ -6,7 +6,7 @@ import com.cz.api.form.InternalSingleSendForm;
 import com.cz.api.form.SingleSendForm;
 import com.cz.api.utils.Result;
 import com.cz.api.vo.ResultVO;
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.model.StandardSubmit;
@@ -131,7 +131,7 @@ public class SmsController {
     }
 
     private Long resolveClientId(String apiKey) {
-        Map clientBusiness = cacheClient.hGetAll(CacheConstant.CLIENT_BUSINESS + apiKey);
+        Map clientBusiness = cacheClient.hGetAll(CacheKeyConstants.CLIENT_BUSINESS + apiKey);
         if (clientBusiness == null || clientBusiness.isEmpty()) {
             return null;
         }

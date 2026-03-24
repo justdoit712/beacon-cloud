@@ -1,6 +1,6 @@
 package com.cz.strategy.filter;
 
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.model.StandardSubmit;
 import com.cz.strategy.client.BeaconCacheClient;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class StrategyFilterContext {
      * Read strategy chain from redis and execute in configured order.
      */
     public void strategy(StandardSubmit submit) {
-        String filters = cacheClient.hget(CacheConstant.CLIENT_BUSINESS + submit.getApiKey(), CLIENT_FILTERS);
+        String filters = cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), CLIENT_FILTERS);
         if (filters == null) {
             return;
         }

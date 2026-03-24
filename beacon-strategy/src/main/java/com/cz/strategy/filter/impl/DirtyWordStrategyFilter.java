@@ -1,6 +1,6 @@
 package com.cz.strategy.filter.impl;
 
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.model.StandardSubmit;
 import com.cz.strategy.filter.StrategyFilter;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +45,7 @@ public class DirtyWordStrategyFilter implements StrategyFilter {
 
         //3、 调用Cache缓存模块的交集方法，拿到结果
 
-        Set<Object> dirtyWords = cacheClient.sinterStr(UUID.randomUUID().toString(), CacheConstant.DIRTY_WORD, contents.toArray(new String[]{}));
+        Set<Object> dirtyWords = cacheClient.sinterStr(UUID.randomUUID().toString(), CacheKeyConstants.DIRTY_WORD, contents.toArray(new String[]{}));
 
         //4、 根据返回的set集合，判断是否包含敏感词
         if(dirtyWords != null && dirtyWords.size() > 0){

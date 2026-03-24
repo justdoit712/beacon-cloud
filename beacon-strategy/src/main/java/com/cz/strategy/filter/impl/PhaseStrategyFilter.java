@@ -1,7 +1,7 @@
 package com.cz.strategy.filter.impl;
 
 
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.model.StandardSubmit;
 import com.cz.common.util.OperatorUtil;
@@ -70,7 +70,7 @@ public class PhaseStrategyFilter implements StrategyFilter {
 
         // 1. 获取手机号前7位
         String mobile = submit.getMobile().substring(0, MOBILE_FRONT);
-        String mobileInfo = beaconCacheClient.getString(CacheConstant.PHASE + mobile);
+        String mobileInfo = beaconCacheClient.getString(CacheKeyConstants.PHASE + mobile);
 
         // 2. 缓存未命中，调用第三方接口
         if (StringUtils.isEmpty(mobileInfo)) {

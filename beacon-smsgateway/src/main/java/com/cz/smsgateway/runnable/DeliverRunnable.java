@@ -1,6 +1,6 @@
 package com.cz.smsgateway.runnable;
 
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.constant.SmsConstant;
 import com.cz.common.model.StandardReport;
@@ -56,10 +56,10 @@ public class DeliverRunnable implements Runnable {
 
         //3、客户状态报告推送，让网关模块查询缓存，当前客户是否需要状态报告推送
         // 查询当前客户的isCallback
-        Integer isCallback = cacheClient.hgetInteger(CacheConstant.CLIENT_BUSINESS + report.getApikey(), "isCallback");
+        Integer isCallback = cacheClient.hgetInteger(CacheKeyConstants.CLIENT_BUSINESS + report.getApikey(), "isCallback");
         if(isCallback != null && isCallback == 1){
             // 如果需要回调，再查询客户的回调地址
-            String callbackUrl = cacheClient.hget(CacheConstant.CLIENT_BUSINESS + report.getApikey(), "callbackUrl");
+            String callbackUrl = cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + report.getApikey(), "callbackUrl");
             // 如果回调地址不为空。
             if(!StringUtils.isEmpty(callbackUrl)){
                 // 封装客户的报告推送的信息，开始封装StandardReport

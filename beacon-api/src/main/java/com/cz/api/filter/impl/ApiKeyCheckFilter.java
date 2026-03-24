@@ -3,7 +3,7 @@ package com.cz.api.filter.impl;
 import com.cz.api.client.BeaconCacheClient;
 import com.cz.api.filter.CheckFilter;
 import com.cz.common.model.StandardSubmit;
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class ApiKeyCheckFilter implements CheckFilter {
     public void check(StandardSubmit submit) {
         log.info("【接口模块-校验apikey】   校验ing…………");
         //1. 基于cacheClient查询客户信息
-        Map clientBusiness = cacheClient.hGetAll(CacheConstant.CLIENT_BUSINESS + submit.getApiKey());
+        Map clientBusiness = cacheClient.hGetAll(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey());
 
         //2. 如果为null，直接扔异常
         if(clientBusiness == null || clientBusiness.size() == 0){

@@ -1,6 +1,6 @@
 package com.cz.strategy.filter.impl;
 
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.StrategyException;
@@ -43,7 +43,7 @@ public class RouteStrategyFilter implements StrategyFilter {
         // 1,获取客户id
         Long clientId = submit.getClientId();
         // 2.基于redis获取当前客户绑定的所有通道信息
-        Set<Map> clientChannels = cacheClient.smemberMap(CacheConstant.CLIENT_CHANNEL + clientId);
+        Set<Map> clientChannels = cacheClient.smemberMap(CacheKeyConstants.CLIENT_CHANNEL + clientId);
 
         // 3.基于获取到的通道进行按照权重排序
         TreeSet<Map> clientWeightChannels = new TreeSet<>(new Comparator<Map>() {
@@ -68,7 +68,7 @@ public class RouteStrategyFilter implements StrategyFilter {
             }
 
             //6、如果通道信息查询后，判断通道是否可用，其次运营商可以匹配。
-            channel = cacheClient.hGetAll(CacheConstant.CHANNEL + clientWeightChannel.get("channelId"));
+            channel = cacheClient.hGetAll(CacheKeyConstants.CHANNEL + clientWeightChannel.get("channelId"));
             if((int)(channel.get("isAvailable")) != 0){
                 // 当前通道不可用，选择权重更低的通道~
                 continue;

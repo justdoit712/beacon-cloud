@@ -15,10 +15,10 @@ public interface BeaconCacheClient {
     Map hGetAll(@PathVariable(value = "key")String key);
 
     @GetMapping("/cache/hget/{key}/{field}")
-    Object hget(@PathVariable(value = "key")String key,@PathVariable(value = "field")String field);
+    String hgetString(@PathVariable(value = "key")String key,@PathVariable(value = "field")String field);
 
     @GetMapping("/cache/hget/{key}/{field}")
-    String hgetString(@PathVariable(value = "key")String key,@PathVariable(value = "field")String field);
+    Integer hgetInteger(@PathVariable(value = "key")String key,@PathVariable(value = "field")String field);
 
     @GetMapping("/cache/smember/{key}")
     Set<Map> smember(@PathVariable(value = "key")String key);

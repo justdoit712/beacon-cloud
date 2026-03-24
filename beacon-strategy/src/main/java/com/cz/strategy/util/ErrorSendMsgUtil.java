@@ -1,7 +1,7 @@
 package com.cz.strategy.util;
 
 import com.alibaba.cloud.commons.lang.StringUtils;
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.constant.SmsConstant;
 import com.cz.common.model.StandardReport;
@@ -34,10 +34,10 @@ public class ErrorSendMsgUtil {
      */
 
     public void sendPushReport(StandardSubmit submit) {
-        Integer isCallback = cacheClient.hgetInteger(CacheConstant.CLIENT_BUSINESS + submit.getApiKey(), "isCallback");
+        Integer isCallback = cacheClient.hgetInteger(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), "isCallback");
         if(isCallback == 1){
             // 如果需要回调，再查询客户的回调地址
-            String callbackUrl = cacheClient.hget(CacheConstant.CLIENT_BUSINESS + submit.getApiKey(), "callbackUrl");
+            String callbackUrl = cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), "callbackUrl");
             // 如果回调地址不为空
             if(!StringUtils.isEmpty(callbackUrl)){
                 //客户需要状态报告推送，开始封装StandardReport

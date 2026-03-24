@@ -1,7 +1,7 @@
 package com.cz.strategy.filter.impl;
 
 import com.alibaba.cloud.commons.lang.StringUtils;
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.model.StandardSubmit;
 import com.cz.strategy.client.BeaconCacheClient;
 import com.cz.strategy.filter.StrategyFilter;
@@ -26,7 +26,7 @@ public class TransferStrategyFilter implements StrategyFilter {
         String mobile = submit.getMobile();
 
         //2、直接基于Redis查询携号转网信息
-        String value = cacheClient.getString(CacheConstant.TRANSFER + mobile);
+        String value = cacheClient.getString(CacheKeyConstants.TRANSFER + mobile);
 
         //3、如果存在携号转网，设置运营商信息
         if(!StringUtils.isEmpty(value)){

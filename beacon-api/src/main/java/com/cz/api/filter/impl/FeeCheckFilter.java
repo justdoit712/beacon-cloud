@@ -4,7 +4,7 @@ import com.cz.api.client.BeaconCacheClient;
 import com.cz.api.filter.CheckFilter;
 import com.cz.common.model.StandardSubmit;
 import com.cz.common.constant.ApiConstant;
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +65,8 @@ public class FeeCheckFilter implements CheckFilter {
         //3、从 Redis 中读取余额镜像
         // 约束说明：client_balance 的主口径为 MySQL，Redis 为派生缓存。
         // 此处读取的是缓存镜像，后续由运行时同步链路保障与 MySQL 一致。
-        Long balance = ((Integer) cacheClient.hget(CacheConstant.CLIENT_BALANCE + submit.getClientId(), BALANCE)).longValue();
+        Integer balanceValue = cacheClient.hgetInteger(CacheKeyConstants.CLIENT_BALANCE + submit.getClientId(), BALANCE);
+        Long balance = balanceValue == null ? 0L : balanceValue.longValue();
 
         //4、判断金额是否满足当前短信费用\
         if(balance >= submit.getFee()){

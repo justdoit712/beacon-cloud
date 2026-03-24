@@ -4,7 +4,7 @@ import com.cz.api.client.BeaconCacheClient;
 import com.cz.api.filter.CheckFilter;
 import com.cz.common.model.StandardSubmit;
 import com.cz.common.constant.ApiConstant;
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +43,7 @@ public class TemplateCheckFilter implements CheckFilter {
 
         text = text.replace(ApiConstant.SIGN_PREFIX + sign + ApiConstant.SIGN_SUFFIX, "");
         // 3、从缓存中获取到签名id绑定的所有模板
-        Set<Map> templates = cacheClient.smember(CacheConstant.CLIENT_TEMPLATE + signId);
+        Set<Map> templates = cacheClient.smember(CacheKeyConstants.CLIENT_TEMPLATE + signId);
         // 4、在tempaltes不为null时，遍历签名绑定的所有模板信息
         if(templates != null && templates.size() > 0) {
             for (Map template : templates) {

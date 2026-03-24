@@ -4,7 +4,7 @@ import com.cz.api.client.BeaconCacheClient;
 import com.cz.api.filter.CheckFilter;
 import com.cz.common.model.StandardSubmit;
 import com.cz.common.constant.ApiConstant;
-import com.cz.common.constant.CacheConstant;
+import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +56,7 @@ public class SignCheckFilter implements CheckFilter {
         }
 
         //3. 从缓存中查询出客户绑定的签名
-        Set<Map> set = cacheClient.smember(CacheConstant.CLIENT_SIGN + submit.getClientId());
+        Set<Map> set = cacheClient.smember(CacheKeyConstants.CLIENT_SIGN + submit.getClientId());
         if(set == null || set.size() == 0){
             log.info("【接口模块-校验签名】   无可用签名 text = {}",text);
             throw new ApiException(ExceptionEnums.ERROR_SIGN);
