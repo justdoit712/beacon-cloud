@@ -33,15 +33,14 @@ public interface CacheKeyConstants {
     String DIRTY_WORD = "dirty_word";
 
     /**
-     * 回调签名
+     * client_business hash 中的回调开关字段
      */
-    String IS_CALLBACK = "is_Callback:";
-
+    String IS_CALLBACK = "isCallback";
 
     /**
-     * 回调地址
+     * client_business hash 中的回调地址字段
      */
-    String CALLBACK_URL = "callback_url";
+    String CALLBACK_URL = "callbackUrl";
 
     /**
      * 黑名单

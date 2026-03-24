@@ -28,22 +28,17 @@
 
 ### P0（必须先做）
 
-1. `apiKey` 已统一，但仍需补契约回归测试防止回退  
-  文件：`beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java`  
-  关联文件：`beacon-common/src/main/java/com/cz/common/model/StandardReport.java`
-
-2. 雪花算法实现存在可读性和健壮性问题  
+1. 雪花算法实现存在可读性和健壮性问题  
   文件：`beacon-common/src/main/java/com/cz/common/util/SnowFlakeUtil.java`
 
-3. 工具类与调用方的异常处理边界仍需统一  
+2. 工具类与调用方的异常处理边界仍需统一  
   文件：`beacon-common/src/main/java/com/cz/common/util/JsonUtil.java`  
   需要统一序列化异常的接收与记录策略。
 
 ### P1（建议紧随其后）
 
-1. 异常类高度重复（`ApiException`/`StrategyException`/`SearchException`）
-2. 常量接口命名与值不统一（如 `IS_CALLBACK = "is_Callback:"`）
-3. 枚举与映射工具类重复职责（`OperatorUtil`、`CMPP2ResultUtil`、`CMPP2DeliverUtil`）
+1. 常量接口命名与值不统一（如历史上的 `IS_CALLBACK = "is_Callback:"`）
+2. 枚举与映射工具类重复职责（`OperatorUtil`、`CMPP2ResultUtil`、`CMPP2DeliverUtil`）
 
 ### P2（中期优化）
 
@@ -54,145 +49,6 @@
 ---
 
 ## 3. 需要重构的代码、原因与改造方式
-
-## 3.1 依赖配置：删除重复依赖，统一版本来源
-
-### 现状代码（需要重构）
-
-文件：`beacon-common/pom.xml`
-
-```xml
-<dependency>
-    <groupId>com.fasterxml.jackson.datatype</groupId>
-    <artifactId>jackson-datatype-jsr310</artifactId>
-</dependency>
-
-<dependency>
-    <groupId>com.fasterxml.jackson.datatype</groupId>
-    <artifactId>jackson-datatype-jsr310</artifactId>
-    <version>2.12.5</version>
-</dependency>
-```
-
-### 原因
-
-1. 重复声明增加维护成本
-2. 同时存在“父 BOM 管理版本”和“子模块显式版本”会造成依赖漂移风险
-
-### 如何重构
-
-1. 保留一份依赖即可
-2. 优先使用父工程 BOM 统一版本（除非必须覆盖）
-
-### 目标代码（建议）
-
-```xml
-<dependency>
-    <groupId>com.fasterxml.jackson.datatype</groupId>
-    <artifactId>jackson-datatype-jsr310</artifactId>
-</dependency>
-```
-
----
-
-## 3.2 模型字段命名：统一风格并补回归测试
-
-### 现状代码（需要重构）
-
-文件：
-
-1. `beacon-common/src/main/java/com/cz/common/model/StandardSubmit.java`
-2. `beacon-common/src/main/java/com/cz/common/model/StandardReport.java`
-
-```java
-// 当前主字段（StandardSubmit）
-private String realIp;
-private Long signId;
-
-// 当前统一后的关键字段（StandardReport）
-private String apiKey;
-```
-
-### 原因
-
-1. `StandardSubmit` 与 `StandardReport` 已统一使用 `apiKey`。
-2. 关键链路仍有 `BeanUtils.copyProperties(...)`，需要回归测试防止字段名再次漂移。
-3. 契约层继续演进时，仍要验证 MQ 消息和回调 JSON 的字段名保持一致。
-
-### 如何重构
-
-当前仓库已经按“一次性统一命名”落地：
-
-1. `StandardSubmit` / `StandardReport` 统一使用 `apiKey`。
-2. 保留 `BeanUtils.copyProperties(...)` 的同名复制能力，减少手工映射代码。
-3. 为关键复制链路和 JSON 契约建立回归测试，防止后续重构把字段改回去。
-
-### 目标代码（建议）
-
-```java
-// 示例：字段名统一后，可直接沿用同名复制
-BeanUtils.copyProperties(submit, report);
-```
-
----
-
-## 3.3 异常体系：提取基类，减少重复代码
-
-### 现状代码（需要重构）
-
-文件：
-
-1. `beacon-common/src/main/java/com/cz/common/exception/ApiException.java`
-2. `beacon-common/src/main/java/com/cz/common/exception/StrategyException.java`
-3. `beacon-common/src/main/java/com/cz/common/exception/SearchException.java`
-
-三者结构几乎一致，仅类名不同。
-
-### 原因
-
-1. 重复代码高
-2. 无法集中扩展（如 traceId、errorType、httpStatus）
-3. 调用方难以形成统一异常处理规范
-
-### 如何重构
-
-1. 新增基类 `BizException`
-2. 三个业务异常继承 `BizException`
-3. 保持原构造方法签名，避免外部调用改动过大
-
-### 目标代码（建议）
-
-```java
-public abstract class BizException extends RuntimeException {
-    private final Integer code;
-
-    protected BizException(String message, Integer code) {
-        super(message);
-        this.code = code;
-    }
-
-    protected BizException(ExceptionEnums enums) {
-        super(enums.getMsg());
-        this.code = enums.getCode();
-    }
-
-    public Integer getCode() {
-        return code;
-    }
-}
-```
-
-```java
-public class ApiException extends BizException {
-    public ApiException(String message, Integer code) {
-        super(message, code);
-    }
-
-    public ApiException(ExceptionEnums enums) {
-        super(enums);
-    }
-}
-```
 
 ---
 
@@ -360,10 +216,9 @@ public enum MobileOperatorEnum {
 
 ## Phase 1（低风险，先做）
 
-1. 清理 `pom.xml` 重复依赖
-2. `JsonUtil` 改造
-3. `SnowFlakeUtil` 参数校验和日志改造
-4. 注释统一 UTF-8，修复乱码
+1. `JsonUtil` 改造
+2. `SnowFlakeUtil` 参数校验和日志改造
+3. 注释统一 UTF-8，修复乱码
 
 ## Phase 2（兼容迁移）
 

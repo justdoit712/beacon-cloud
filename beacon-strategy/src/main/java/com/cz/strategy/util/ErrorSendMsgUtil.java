@@ -34,10 +34,10 @@ public class ErrorSendMsgUtil {
      */
 
     public void sendPushReport(StandardSubmit submit) {
-        Integer isCallback = cacheClient.hgetInteger(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), "isCallback");
+        Integer isCallback = cacheClient.hgetInteger(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), CacheKeyConstants.IS_CALLBACK);
         if(isCallback == 1){
             // 如果需要回调，再查询客户的回调地址
-            String callbackUrl = cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), "callbackUrl");
+            String callbackUrl = cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), CacheKeyConstants.CALLBACK_URL);
             // 如果回调地址不为空
             if(!StringUtils.isEmpty(callbackUrl)){
                 //客户需要状态报告推送，开始封装StandardReport

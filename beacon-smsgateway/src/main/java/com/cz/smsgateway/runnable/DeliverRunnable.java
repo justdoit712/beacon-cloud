@@ -56,10 +56,10 @@ public class DeliverRunnable implements Runnable {
 
         //3、客户状态报告推送，让网关模块查询缓存，当前客户是否需要状态报告推送
         // 查询当前客户的isCallback
-        Integer isCallback = cacheClient.hgetInteger(CacheKeyConstants.CLIENT_BUSINESS + report.getApiKey(), "isCallback");
+        Integer isCallback = cacheClient.hgetInteger(CacheKeyConstants.CLIENT_BUSINESS + report.getApiKey(), CacheKeyConstants.IS_CALLBACK);
         if(isCallback != null && isCallback == 1){
             // 如果需要回调，再查询客户的回调地址
-            String callbackUrl = cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + report.getApiKey(), "callbackUrl");
+            String callbackUrl = cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + report.getApiKey(), CacheKeyConstants.CALLBACK_URL);
             // 如果回调地址不为空。
             if(!StringUtils.isEmpty(callbackUrl)){
                 // 封装客户的报告推送的信息，开始封装StandardReport
