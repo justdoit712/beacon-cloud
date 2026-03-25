@@ -11,10 +11,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 在接口模块-策略模块-短信网关模块需要做校验和封装的POJO类对象
+ * 短信发送主链路中的统一提交对象。
  *
- * @author zjw
- * @description
+ * <p>该对象贯穿 API、策略、网关等核心模块，用于承载一条短信从受理到下发前的公共字段。</p>
+ *
+ * @author cz
  */
 @Data
 @NoArgsConstructor
@@ -31,14 +32,10 @@ public class StandardSubmit implements Serializable {
      */
     private Long clientId;
 
-    /**
-     * 客户端的ip白名单
-     */
+    /** 客户 IP 白名单快照。 */
     private List<String> ip;
 
-    /**
-     * 客户业务内的uid
-     */
+    /** 客户业务侧请求 ID。 */
     private String uid;
 
     /**
@@ -63,9 +60,7 @@ public class StandardSubmit implements Serializable {
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime sendTime;
 
-    /**
-     * 当前短信的费用，单位：厘
-     */
+    /** 当前短信的费用，单位：厘。 */
     private Long fee;
 
     /**
@@ -74,49 +69,31 @@ public class StandardSubmit implements Serializable {
     private Integer operatorId;
 
 
-    /**
-     * 目标手机号的归属地区号  0451  0455
-     */
+    /** 目标手机号的归属地区号。 */
     private Integer areaCode;
 
-    /**
-     * 目标手机号的归属地  哈尔滨，  绥化~
-     */
+    /** 目标手机号的归属地。 */
     private String area;
 
-    /**
-     * 通道下发的源号码  106934985673485645
-     */
+    /** 通道下发时使用的源号码。 */
     private String srcNumber;
 
-    /**
-     * 通道的id信息
-     */
+    /** 选定的通道 ID。 */
     private Long channelId;
 
-    /**
-     * 短信的发送状态， 0-等待ing，1-成功，2-失败
-     */
+    /** 短信发送状态，0-等待，1-成功，2-失败。 */
     private int reportState;
 
-    /**
-     * 短信的发送错误信息
-     */
+    /** 短信发送失败时的错误信息。 */
     private String errorMsg;
 
-    /**
-     * 真实ip
-     */
+    /** 真实请求 IP。 */
     private String realIp;
 
-    /**
-     * 客户端请求携带的apikey
-     */
+    /** 客户端请求携带的 apiKey。 */
     private String apiKey;
 
-    /**
-     * 0-验证码短信 1-通知类短信 2-营销类短信
-     */
+    /** 短信类型，0-验证码，1-通知，2-营销。 */
     private int state;
 
     /**
@@ -124,16 +101,9 @@ public class StandardSubmit implements Serializable {
      */
     private Long signId;
 
-    /**
-     * 是否是转码短信
-     */
+    /** 是否为携号转网场景。 */
     private Boolean isTransfer = false;
 
-    /**
-     * 针对一小时限流规则存储的系统时间毫秒值
-     */
-
+    /** 一小时限流规则使用的时间戳。 */
     private Long oneHourLimitMilli;
-    // 后续再做封装~~~~
-
 }

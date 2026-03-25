@@ -6,8 +6,11 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
+ * 共享 JSON 序列化工具。
+ *
+ * <p>统一注册 Java 8 时间模块，并输出可读的日期时间字符串。</p>
+ *
  * @author cz
- * @description
  */
 public final class JsonUtil {
 

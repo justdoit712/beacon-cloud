@@ -9,8 +9,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
+ * CMPP 提交应答结果码枚举。
+ *
  * @author cz
- * @description
  */
 @Getter
 public enum  CMPP2ResultEnums {

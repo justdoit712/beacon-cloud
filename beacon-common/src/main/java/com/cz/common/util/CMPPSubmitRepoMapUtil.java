@@ -7,9 +7,12 @@ import com.cz.common.model.StandardSubmit;
 import java.time.Duration;
 
 /**
- * 用于CMPP发送短信时，临时存储的位置
+ * 进程内暂存待关联的短信提交上下文。
+ *
+ * <p>网关提交 CMPP 请求后，可在运营商返回 SubmitResp 前按 sequence 取回原始
+ * {@link StandardSubmit}。</p>
+ *
  * @author cz
- * @description
  */
 public final class CMPPSubmitRepoMapUtil {
 

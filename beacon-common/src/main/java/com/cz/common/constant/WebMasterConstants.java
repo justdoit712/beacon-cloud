@@ -1,20 +1,15 @@
 package com.cz.common.constant;
 
 /**
+ * `beacon-webmaster` 模块共享常量。
+ *
  * @author cz
- * @description
  */
 public interface WebMasterConstants {
 
-    /**
-     * 将验证码基于这个key做存储
-     */
+    /** Session 中保存验证码的键。 */
     String KAPTCHA = "kaptcha";
 
-    /**
-     * 管理员角色
-     */
+    /** 管理员角色名。 */
     String ROOT = "管理员";
-
-
 }

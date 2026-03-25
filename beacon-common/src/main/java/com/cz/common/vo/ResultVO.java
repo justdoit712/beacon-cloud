@@ -5,9 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 响应前端数据的基本结构
+ * 通用接口响应对象。
+ *
  * @author cz
- * @description
  */
 @Data
 @NoArgsConstructor

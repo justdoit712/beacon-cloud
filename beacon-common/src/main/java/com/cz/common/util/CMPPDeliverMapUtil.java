@@ -7,9 +7,12 @@ import com.cz.common.model.StandardReport;
 import java.time.Duration;
 
 /**
- * 用于CMPP的状态回到时，获取核心信息的方式
+ * 进程内暂存待关联的短信状态报告上下文。
+ *
+ * <p>在运营商返回最终状态报告前，按 msgId 暂存 {@link StandardReport}，
+ * 供回执处理链路取回。</p>
+ *
  * @author cz
- * @description
  */
 public final class CMPPDeliverMapUtil {
 

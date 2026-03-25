@@ -304,7 +304,34 @@ public final class CacheDomainRegistry {
         return result;
     }
 
+    /**
+     * 注册当前主线缓存域契约。
+     *
+     * <p>这里注册的是当前四层缓存一致性架构的核心域，也就是：</p>
+     * <p>1. 运行时同步优先覆盖的域；</p>
+     * <p>2. `ALL` 手工重建默认会带上的域；</p>
+     * <p>3. 默认启动校准优先考虑的域。</p>
+     *
+     * <p>每一次 `contracts.add(new CacheDomainContract(...))`，
+     * 都是在为一个缓存域声明完整契约，包括：</p>
+     * <p>1. 域编码；</p>
+     * <p>2. 逻辑 key 模式；</p>
+     * <p>3. Redis 结构；</p>
+     * <p>4. 真源；</p>
+     * <p>5. 写入、删除、重建策略；</p>
+     * <p>6. 归属服务；</p>
+     * <p>7. 是否允许启动校准。</p>
+     *
+     * @param contracts 用于承接当前已注册缓存域契约的可变列表
+     */
     private static void registerCurrentMainlineContracts(List<CacheDomainContract> contracts) {
+        // client_business：客户业务配置域。
+        // 特点：
+        // 1. 使用 apiKey 作为逻辑 key 后缀；
+        // 2. Redis 中按 HASH 保存整条客户业务配置；
+        // 3. MySQL 为真源；
+        // 4. 正常写路径采用写穿覆盖；
+        // 5. 允许手工重建，也允许进入默认启动校准。
         contracts.add(new CacheDomainContract(
                 CLIENT_BUSINESS,
                 Collections.singletonList(CacheKeyConstants.CLIENT_BUSINESS + "{apikey}"),
@@ -317,6 +344,12 @@ public final class CacheDomainRegistry {
                 true
         ));
 
+        // client_channel：客户通道路由集合域。
+        // 特点：
+        // 1. 使用 clientId 作为逻辑 key 后缀；
+        // 2. Redis 中按 SET 保存该客户当前全部有效路由成员；
+        // 3. 因为成员可能增删变化，写入策略使用“删后整组重建”；
+        // 4. 允许手工重建，也允许进入默认启动校准。
         contracts.add(new CacheDomainContract(
                 CLIENT_CHANNEL,
                 Collections.singletonList(CacheKeyConstants.CLIENT_CHANNEL + "{clientId}"),
@@ -329,6 +362,13 @@ public final class CacheDomainRegistry {
                 true
         ));
 
+        // channel：通道主数据域。
+        // 特点：
+        // 1. 使用通道 id 作为逻辑 key 后缀；
+        // 2. Redis 中按 HASH 保存通道字段映射；
+        // 3. MySQL 为真源；
+        // 4. 正常写路径采用写穿覆盖；
+        // 5. 允许手工重建，也允许进入默认启动校准。
         contracts.add(new CacheDomainContract(
                 CHANNEL,
                 Collections.singletonList(CacheKeyConstants.CHANNEL + "{id}"),
@@ -341,6 +381,14 @@ public final class CacheDomainRegistry {
                 true
         ));
 
+        // client_balance：客户余额镜像域。
+        // 特点：
+        // 1. 使用 clientId 作为逻辑 key 后缀；
+        // 2. Redis 中按 HASH 保存余额镜像；
+        // 3. MySQL 为余额真源；
+        // 4. 写入策略不是普通写穿，而是“先 MySQL 原子更新，再刷新 Redis 镜像”；
+        // 5. 删除策略为 OVERWRITE_ONLY，避免高风险域出现删 key 空窗；
+        // 6. 当前也允许手工重建和启动校准。
         contracts.add(new CacheDomainContract(
                 CLIENT_BALANCE,
                 Collections.singletonList(CacheKeyConstants.CLIENT_BALANCE + "{clientId}"),
@@ -354,7 +402,22 @@ public final class CacheDomainRegistry {
         ));
     }
 
+    /**
+     * 注册当前兼容保留缓存域契约。
+     *
+     * <p>这里注册的域并不是当前四层架构演进的主线重点对象，
+     * 但系统仍然需要保留对它们的兼容读写能力。</p>
+     *
+     * <p>这些域通常具备以下特征之一：</p>
+     * <p>1. 仍被历史业务逻辑使用；</p>
+     * <p>2. 已有契约和通用写入能力，但不属于当前 manual / boot 默认重点范围；</p>
+     * <p>3. 未来可能继续收敛进主线，也可能长期保持兼容模式。</p>
+     *
+     * @param contracts 用于承接当前已注册缓存域契约的可变列表
+     */
     private static void registerLegacyCompatibleContracts(List<CacheDomainContract> contracts) {
+        // client_sign：客户签名集合域。
+        // 使用 SET 保存某客户绑定的全部签名对象。
         contracts.add(new CacheDomainContract(
                 CLIENT_SIGN,
                 Collections.singletonList(CacheKeyConstants.CLIENT_SIGN + "{clientId}"),
@@ -367,6 +430,8 @@ public final class CacheDomainRegistry {
                 true
         ));
 
+        // client_template：签名模板集合域。
+        // 使用 SET 保存某个签名下的全部模板对象。
         contracts.add(new CacheDomainContract(
                 CLIENT_TEMPLATE,
                 Collections.singletonList(CacheKeyConstants.CLIENT_TEMPLATE + "{signId}"),
@@ -379,6 +444,11 @@ public final class CacheDomainRegistry {
                 true
         ));
 
+        // black：黑名单域。
+        // 这里声明了两个逻辑 key 模式：
+        // 1. black:{mobile}      -> 全局黑名单
+        // 2. black:{clientId}:{mobile} -> 客户级黑名单
+        // Redis 结构使用 STRING，通常只需要保存一个简单标记值。
         contracts.add(new CacheDomainContract(
                 BLACK,
                 Arrays.asList(
@@ -394,6 +464,8 @@ public final class CacheDomainRegistry {
                 true
         ));
 
+        // dirty_word：敏感词集合域。
+        // 使用固定逻辑 key dirty_word，对应一个字符串 SET。
         contracts.add(new CacheDomainContract(
                 DIRTY_WORD,
                 Collections.singletonList(CacheKeyConstants.DIRTY_WORD),
@@ -406,6 +478,9 @@ public final class CacheDomainRegistry {
                 true
         ));
 
+        // transfer：携号转网域。
+        // 使用手机号作为逻辑 key 后缀，对应一个 STRING 值，
+        // 表示该手机号当前映射的运营商或转网结果。
         contracts.add(new CacheDomainContract(
                 TRANSFER,
                 Collections.singletonList(CacheKeyConstants.TRANSFER + "{mobile}"),

@@ -3,9 +3,9 @@ package com.cz.common.exception;
 import com.cz.common.enums.ExceptionEnums;
 
 /**
- * 搜索模块的异常对象
- * @author zjw
- * @description
+ * 搜索模块使用的业务异常。
+ *
+ * @author cz
  */
 public class SearchException extends BizException {
 

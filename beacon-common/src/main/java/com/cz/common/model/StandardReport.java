@@ -12,72 +12,49 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 状态报告推送等操作时的类
+ * 回执更新与客户回调共用的统一报告对象。
+ *
  * @author cz
- * @description
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class StandardReport implements Serializable {
 
-    /**
-     * 为了在网关运营商的二次回调中可以方便查询客户的状态报告的推送信息
-     */
+    /** 客户 apiKey，用于查询回调配置等扩展信息。 */
     private String apiKey;
 
-    /**
-     * 针对当前短信的唯一标识，雪花算法（保留）
-     */
+    /** 短信唯一标识。 */
     private Long sequenceId;
 
-    /**
-     * 客户端ID，基于 apiKey 查询缓存模块得到客户的ID
-     */
+    /** 客户 ID。 */
     private Long clientId;
 
 
-    /**
-     * 客户业务内的uid，客户请求传递的
-     */
+    /** 客户业务侧请求 ID。 */
     private String uid;
 
-    /**
-     * 目标手机号，客户请求传递的
-     */
+    /** 目标手机号。 */
     private String mobile;
 
-    /**
-     * 短信的发送时间，当前系统时间
-     */
+    /** 短信发送时间。 */
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime sendTime;
 
-    /**
-     * 短信的发送状态， 0-等待/发送ing，1-成功，2-失败 ，默认情况就是0
-     */
+    /** 短信发送状态，0-等待，1-成功，2-失败。 */
     private int reportState;
 
-    /**
-     * 短信发送失败的原因是什么，记录在当前属性
-     */
+    /** 短信发送失败时的错误信息。 */
     private String errorMsg;
 
-    /**
-     *  回调的信息
-     */
+    /** 客户回调开关与回调地址。 */
     private Integer isCallback;
     private String callbackUrl;
 
-    /**
-     *  推送报告重试次数
-     */
+    /** 客户回调重试次数。 */
     private Integer resendCount = 0;
 
-    /**
-     * 如果第一次修改操作，这里为false，如果是第二次投递，需要直接记录日志信息
-     */
+    /** 是否为二次更新投递。 */
     private Boolean reUpdate = false;
-
 }
