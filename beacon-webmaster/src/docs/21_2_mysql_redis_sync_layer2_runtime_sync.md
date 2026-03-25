@@ -87,7 +87,138 @@
 
 ---
 
-## 3. 为什么运行时同步通常要等事务提交
+## 3. 从 `channel` 看运行时同步的方法分层
+
+如果直接从 `ChannelServiceImpl` 往下看，经常会有一个困惑：
+
+1. 业务层明明调用的是 `cacheSyncService.syncUpsert(...)`
+2. 但继续追代码时，又会看到 `doUpsert(...)`
+3. 再往下还有 `doCurrentMainlineUpsert(...)`
+
+这几层看起来像“同一件事拆了很多层”，但其实它们的职责是分开的。
+
+以 `channel` 为例，当前完整调用链如下：
+
+```text
+ChannelServiceImpl
+  -> CacheSyncRuntimeExecutor.runAfterCommitOrNow(...)
+  -> CacheSyncServiceImpl.syncUpsert(...)
+  -> buildKey(...)
+  -> doUpsert(...)
+  -> doCurrentMainlineUpsert(...)
+  -> cacheWriteClient.hmset(...)
+  -> beacon-cache
+  -> Redis
+```
+
+### 3.1 `syncUpsert(...)`：统一公开入口
+
+`syncUpsert(...)` 是运行时同步对业务层暴露的统一入口。  
+业务 Service 不需要知道后面还有多少层路由，它只需要表达一句话：
+
+> “这个域发生了新增或更新，请帮我同步到 Redis。”
+
+当前它的职责是：
+
+1. 检查同步总开关和 runtime 开关是否开启
+2. 规范化 `domain`
+3. 读取域契约
+4. 构建逻辑 key
+5. 调用内部真正写入逻辑
+
+因此可以把 `syncUpsert(...)` 理解成：
+
+> 面向调用方的统一门面。
+
+### 3.2 `doUpsert(...)`：内部二次分发入口
+
+`doUpsert(...)` 不是给业务层调用的，而是 `syncUpsert(...)` 内部继续分发用的方法。
+
+它当前解决的问题是：
+
+> “这次 upsert 属于哪一类域？”
+
+它会先判断：
+
+1. 当前域是否属于主线域
+2. 如果不是主线域，是否属于兼容保留域
+
+然后再决定走：
+
+1. `doCurrentMainlineUpsert(...)`
+2. `doLegacyCompatibleUpsert(...)`
+
+因此 `doUpsert(...)` 的职责是：
+
+> 按“主线域 / 兼容域”做分类路由。
+
+### 3.3 `doCurrentMainlineUpsert(...)`：主线域的具体执行层
+
+当 `doUpsert(...)` 判断当前域属于主线域后，就会进入 `doCurrentMainlineUpsert(...)`。
+
+这一步不再关心开关、契约查询这些通用动作，而是直接处理：
+
+> “这个主线域具体该怎么写到 Redis？”
+
+对于 `channel`，当前逻辑是：
+
+1. 判断 `domain == CHANNEL`
+2. 调用 `resolveChannelPayload(...)` 生成最终 Hash payload
+3. 执行：
+   - `cacheWriteClient.hmset(key, payload)`
+
+因此这一层的职责是：
+
+> 主线域内部的具体写法分发。
+
+### 3.4 为什么不把所有逻辑都塞进 `syncUpsert(...)`
+
+如果把所有判断和写法都塞进 `syncUpsert(...)`，短期看似更直接，但会有几个问题：
+
+1. 统一入口会同时承担“开关校验、契约查询、主线/兼容分类、具体域写法”，职责太重
+2. 后续新增域时，所有分支都会继续堆在一个大方法里
+3. 主线域和兼容域的处理边界会越来越混乱
+
+当前拆分后的层次更清楚：
+
+#### `syncUpsert(...)`
+
+面向业务层的统一门面。  
+所有业务层都只依赖这一层。
+
+#### `doUpsert(...)`
+
+内部路由层。  
+负责判断这是主线域还是兼容域。
+
+#### `doCurrentMainlineUpsert(...)`
+
+内部执行层。  
+负责主线域的具体 Redis 写法。
+
+这种拆法的好处是：
+
+1. 业务层永远只依赖 `syncUpsert(...)`
+2. 内部可以继续扩域，而不影响业务侧调用方式
+3. 主线域和兼容域的逻辑能分层维护，不容易搅在一起
+
+### 3.5 用 `channel` 把这三层重新串起来
+
+如果只看 `channel`，你可以把运行时同步理解成下面这 3 句话：
+
+1. `ChannelServiceImpl` 不直接碰 Redis，它只在写库成功后调用 `syncUpsert("channel", payload)`
+2. `syncUpsert(...)` 负责统一入口处理，再交给 `doUpsert(...)`
+3. `doUpsert(...)` 识别 `channel` 属于主线 Hash 域，再由 `doCurrentMainlineUpsert(...)` 最终落成 `hmset("channel:{id}", payload)`
+
+所以对 `channel` 而言，最准确的理解应该是：
+
+1. **业务层入口：** `syncUpsert(...)`
+2. **内部分类路由：** `doUpsert(...)`
+3. **主线域具体执行：** `doCurrentMainlineUpsert(...)`
+
+---
+
+## 4. 为什么运行时同步通常要等事务提交
 
 当前项目的口径是：
 
@@ -112,7 +243,7 @@
 
 ---
 
-## 4. `client_business` 运行时同步端到端详解
+## 5. `client_business` 运行时同步端到端详解
 
 下面用 `client_business` 做完整示例。
 
@@ -227,7 +358,7 @@
 
 ---
 
-## 5. `client_business` 链路里每个类各做什么
+## 6. `client_business` 链路里每个类各做什么
 
 | 类 / 方法 | 当前作用 |
 | --- | --- |
@@ -244,7 +375,7 @@
 
 ---
 
-## 6. 当前第二层如何处理不同类型的缓存
+## 7. 当前第二层如何处理不同类型的缓存
 
 ### 6.1 Hash 型域
 
@@ -292,7 +423,7 @@
 
 ---
 
-## 7. 当前两个最特殊的运行时域
+## 8. 当前两个最特殊的运行时域
 
 ### 7.1 `client_channel`
 
@@ -349,7 +480,7 @@
 
 ---
 
-## 8. 运行时同步失败时当前怎么处理
+## 9. 运行时同步失败时当前怎么处理
 
 当前实现不是“Redis 写失败就回滚 MySQL”，而是：
 
@@ -372,7 +503,7 @@
 
 ---
 
-## 9. 如果运行时同步撞上重建怎么办
+## 10. 如果运行时同步撞上重建怎么办
 
 当前不会直接继续写 Redis。  
 而是由 `CacheSyncRuntimeExecutor.shouldMarkDirtyAndSkip(...)` 处理。
@@ -391,7 +522,7 @@
 
 ---
 
-## 10. 本层小结
+## 11. 本层小结
 
 第二层可以总结成 5 句话：
 
