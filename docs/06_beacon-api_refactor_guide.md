@@ -63,49 +63,6 @@
 
 以下按优先级从高到低给出。
 
-## 3.3 P0：过滤器链上下文缺少空值防御，配置错误会直接 NPE
-
-### 现状代码（需要重构）
-
-文件：`beacon-api/src/main/java/com/cz/api/filter/CheckFilterContext.java`
-
-```java
-for (String filter : filterArray) {
-    CheckFilter checkFilter = checkFiltersMap.get(filter);
-    checkFilter.check(submit);
-}
-```
-
-### 原因
-
-1. 当 `filters` 配置拼写错误或存在空白项时，`checkFilter` 可能为 `null`。
-2. 抛出 NPE 不可观测，问题定位成本高。
-3. 配置与实现不一致时缺少 fail-fast 机制。
-
-### 如何重构
-
-1. 对 `filter` 做 `trim` 和空串过滤。
-2. 找不到过滤器时抛出带上下文信息的业务异常（或配置异常）。
-3. 增加启动时校验：配置的 filter key 必须都能在 IoC 中找到。
-
-### 目标代码（建议）
-
-```java
-for (String raw : filters.split(",")) {
-    String filter = raw == null ? "" : raw.trim();
-    if (filter.isEmpty()) {
-        continue;
-    }
-    CheckFilter checkFilter = checkFiltersMap.get(filter);
-    if (checkFilter == null) {
-        throw new IllegalStateException("unknown filter: " + filter);
-    }
-    checkFilter.check(submit);
-}
-```
-
----
-
 ## 3.4 P0：Feign 客户端弱类型，且同一路径定义多种返回类型
 
 ### 现状代码（需要重构）
@@ -141,54 +98,6 @@ String hgetString(@PathVariable("key") String key, @PathVariable("field") String
 @GetMapping("/v2/cache/hash/{key}/long/{field}")
 Long hgetLong(@PathVariable("key") String key, @PathVariable("field") String field);
 ```
-
----
-
-## 3.5 P0：参数校验与默认值策略冲突（`state`）
-
-### 现状代码（需要重构）
-
-文件：`beacon-api/src/main/java/com/cz/api/form/SingleSendForm.java`
-
-```java
-@NotNull
-private Integer state;
-```
-
-文件：`beacon-api/src/main/java/com/cz/api/form/InternalSingleSendForm.java`
-
-```java
-@NotNull(message = "state can not be null")
-private Integer state;
-```
-
-文件：`beacon-api/src/main/java/com/cz/api/controller/SmsController.java`
-
-```java
-submit.setState(state == null ? 1 : state);
-```
-
-### 原因
-
-1. DTO 层强制非空，控制器层却保留空值兜底，策略重复且不一致。
-2. 代码意图不清晰，后续维护者难判断真实业务规则。
-
-### 如何重构
-
-二选一并全局统一：
-
-1. 严格模式：`state` 必填，删除控制器默认值逻辑。
-2. 兼容模式：`state` 可选，移除 `@NotNull`，由控制器统一默认为 `1`。
-
-建议先走严格模式，避免“静默修正”影响上游。
-
-### 目标代码（建议）
-
-```java
-submit.setState(state);
-```
-
----
 
 ## 3.6 P1：内部发送接口认证能力需升级（防重放、可审计）
 
@@ -356,14 +265,13 @@ return R.ok();
 
 ## 阶段一（P0，先稳住风险）
 
-1. 加固过滤器链：`CheckFilterContext` 空值防御和配置 fail-fast。
-2. 统一 `state` 规则：删除冲突逻辑。
+1. Feign typed 化：联动 `beacon-cache` 发布 V2 typed API。
 
 ## 阶段二（P1，契约与治理）
 
-1. Feign typed 化：联动 `beacon-cache` 发布 V2 typed API。
-2. 强化异常处理：补齐全局异常映射。
-3. 统一响应模型：收敛到 `beacon-common`。
+1. 强化异常处理：补齐全局异常映射。
+2. 统一响应模型：收敛到 `beacon-common`。
+3. 过滤器与缓存调用强类型化，减少业务层分散强转。
 4. 内部接口鉴权升级：签名 + 时间窗 + nonce。
 
 ## 阶段三（P2，可靠性与长期演进）
@@ -378,9 +286,8 @@ return R.ok();
 
 ## 5.1 单元测试
 
-1. `CheckFilterContext`：未知 filter key、空白 filter、正常顺序执行。
-2. `SmsController`：参数非法、内部 token 鉴权失败、正常入队。
-3. `FeeCheckFilter/IPCheckFilter`：缓存返回不同类型时的解析行为。
+1. `SmsController`：参数非法、内部 token 鉴权失败、正常入队。
+2. `FeeCheckFilter/IPCheckFilter`：缓存返回不同类型时的解析行为。
 
 ## 5.2 集成测试
 

@@ -153,35 +153,6 @@ public class CacheSeedRunner implements CommandLineRunner {
 }
 ```
 
----
-
-## 3.3 P0：测试框架混用（JUnit4/JUnit5）需统一
-
-### 现状代码（需要重构）
-
-文件：`beacon-test/src/test/java/com/cz/test/mapper/MobileBlackMapperTest.java:6`、`beacon-test/src/test/java/com/cz/test/mapper/MobileBlackMapperTest.java:17`
-
-```java
-import org.junit.jupiter.api.Test;
-...
-@RunWith(SpringRunner.class)
-```
-
-### 原因
-
-1. JUnit4 Runner 与 JUnit5 注解混用，执行行为不稳定。
-2. 团队协作时容易出现“本地通过/流水线不执行”的隐患。
-
-### 如何重构
-
-1. 统一到 JUnit5（推荐）：
-   - `@ExtendWith(SpringExtension.class)`
-   - `@SpringBootTest`
-2. 移除 JUnit4 依赖与 Runner 用法。
-3. 建立测试风格约束（Checkstyle/ArchUnit/Spotless 规则）。
-
----
-
 ## 3.4 P1：SQL 与数据过滤规则需要收敛
 
 ### 现状代码（需要重构）
@@ -347,9 +318,8 @@ System.out.println("【排查】从数据库查出的条数：" + list.size());
 
 ## 阶段 3：测试体系重建（1 周）
 
-1. 统一 JUnit5。
-2. 单元测试覆盖转换器与 key 规则。
-3. 集成测试只在专用环境执行，加入 smoke 标签。
+1. 单元测试覆盖转换器与 key 规则。
+2. 集成测试只在专用环境执行，加入 smoke 标签。
 
 ## 阶段 4：运维化与可观测（0.5~1 周）
 

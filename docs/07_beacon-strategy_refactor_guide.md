@@ -474,60 +474,29 @@ rabbitTemplate.setReturnCallback(...);
 1. 补充 `rabbitTemplate.setMandatory(true)`。
 2. 升级到新式 `ReturnsCallback`/`ConfirmCallback` 用法并加集成测试。
 
----
-
-## 3.12 P2：工程规范与可维护性问题
-
-### 现状代码（需要重构）
-
-文件：`beacon-strategy/pom.xml:12`
-
-```xml
-<groupId>org.example</groupId>
-```
-
-文件：`beacon-strategy/src/main/java/com/cz/strategy/StrategyStarterApp.java:21`
-
-```java
-System.out.println("StrategyStarterApp  mission complete");
-```
-
-文件：`beacon-strategy/src/main/java/com/cz/strategy/util/SpringUtil.java:10`
-
-```java
-import static com.google.common.collect.ConcurrentHashMultiset.create;
-```
-
-### 原因
-
-1. `groupId` 与项目其他模块风格不一致（`com.cz`）。
-2. `System.out.println` 不利于生产日志治理。
-3. 无用 import 增加噪音。
-
-### 如何重构
-
-1. 统一 Maven 坐标命名规范。
-2. 全量替换为结构化日志。
-3. 清理无用 import 与历史残留代码。
-
----
-
 ## 3.13 P2：测试体系缺失
 
 ### 现状
 
-`beacon-strategy/src/test` 当前为空。
+`beacon-strategy/src/test` 已新增一批聚焦测试，当前已覆盖：
+
+1. `StrategyFilterContext`
+2. `RouteStrategyFilter`
+3. `PreSendListener`
+4. `ErrorSendMsgUtil`
+
+但整体测试覆盖仍然偏薄，尤其是扣费、限流、敏感词策略和契约一致性场景还缺少自动化保护。
 
 ### 风险
 
-1. 策略行为高度依赖配置和缓存结构，缺少测试容易引发回归事故。
-2. 路由、限流、扣费、失败回传均属关键链路，必须具备自动化回归。
+1. 策略行为高度依赖配置和缓存结构，仅覆盖部分主链路仍容易引发回归事故。
+2. 路由之外的限流、扣费、敏感词与契约链路仍缺少自动化回归。
 
 ### 如何重构
 
-1. 单元测试：每个过滤器最少覆盖成功/失败两条路径。
-2. 集成测试：MQ 消费、cache mock、失败回传。
-3. 合同测试：strategy 与 cache 的 Feign 契约一致性。
+1. 继续补齐关键过滤器的成功/失败路径，优先覆盖 `FeeStrategyFilter`、`LimitOneHourStrategyFilter`、`DirtyWord*StrategyFilter`。
+2. 在现有 listener 测试基础上，继续补足 MQ 异常分支与失败回传校验。
+3. 增加 strategy 与 cache 的 Feign 契约一致性测试。
 
 ---
 
@@ -550,9 +519,8 @@ import static com.google.common.collect.ConcurrentHashMultiset.create;
 
 ## 阶段三（P2，做工程化）
 
-1. 清理工程规范问题（坐标、日志、无用代码）。
-2. 完整补齐测试体系。
-3. 逐步移除旧兼容实现。
+1. 完整补齐测试体系。
+2. 逐步移除旧兼容实现。
 
 ---
 
@@ -560,17 +528,14 @@ import static com.google.common.collect.ConcurrentHashMultiset.create;
 
 ## 5.1 单元测试
 
-1. `StrategyFilterContext`：空 filters、未知 filter、黑名单兼容 key（`black`）路径。
-2. `RouteStrategyFilter`：权重相同、多通道、通道不可用、运营商不匹配路径。
-3. `FeeStrategyFilter`：扣费成功、阈值不足回滚、缓存异常路径。
-4. `LimitOneHourStrategyFilter`：分钟/小时/天限流命中路径。
-5. `DirtyWord*StrategyFilter`：命中敏感词后统一异常行为。
+1. `FeeStrategyFilter`：扣费成功、阈值不足回滚、缓存异常路径。
+2. `LimitOneHourStrategyFilter`：分钟/小时/天限流命中路径。
+3. `DirtyWord*StrategyFilter`：命中敏感词后统一异常行为。
 
 ## 5.2 集成测试
 
-1. `PreSendListener` 消费成功与失败的 ack/nack 行为。
-2. 失败场景是否发送 `SMS_WRITE_LOG` 与 `SMS_PUSH_REPORT`。
-3. 路由成功后是否投递 `SMS_GATEWAY_{channelId}`。
+1. 失败场景是否发送 `SMS_WRITE_LOG` 与 `SMS_PUSH_REPORT`。
+2. 路由成功后是否投递 `SMS_GATEWAY_{channelId}`。
 
 ## 5.3 回归验证
 

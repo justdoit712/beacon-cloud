@@ -241,32 +241,6 @@ redisClient.delete(key);
 2. 用 Lua 脚本或事务确保“写临时集 -> 交集 -> 删除临时集”原子执行
 3. 增加超时删除保护（TTL）
 
----
-
-## 3.6 控制层直接承载业务与 Redis 细节，分层不清
-
-### 现状代码（需要重构）
-
-文件：`beacon-cache/src/main/java/com/cz/cache/controller/CacheController.java`
-
-控制器中存在大量 Redis 操作细节与日志拼接。
-
-### 原因
-
-1. Controller 层过重，不利于测试
-2. 业务场景（限流、扣费、签名等）没有服务层语义
-3. 难以做统一权限、审计、限流策略
-
-### 如何重构
-
-建议新增分层：
-
-1. `cache.application`：用例服务（如 `ClientBalanceService`）
-2. `cache.infrastructure.redis`：Redis 存取实现
-3. `cache.interfaces.http`：仅做参数映射与响应
-
----
-
 ## 3.7 访问控制还需要密钥治理与接口分级
 
 ### 当前代码
@@ -310,41 +284,15 @@ public class TestController { ... }
 2. 对写接口、扫描接口增加更细粒度的审计与告警。
 3. 后续在 `/v2/cache/**` 上按读/写/扫描做更清晰的接口分层。
 
----
-
-## 3.8 启动类与日志细节
-
-### 现状代码（需要重构）
-
-文件：`beacon-cache/src/main/java/com/cz/cache/CacheStarterApp.java`
-
-```java
-System.out.println("CacheStarterApp  mission complete");
-```
-
-### 原因
-
-1. 标准服务日志应使用 slf4j
-2. 与全局日志策略不一致
-
-### 如何重构
-
-1. 替换为 `log.info`
-2. 增加启动参数和版本信息输出
-
----
-
 ## 4. 推荐重构顺序（beacon-cache 内部）
 
 1. **第一阶段（低风险）**
-- 清理日志与注释编码
 - 固化 `cache.security` 的密钥、权限与白名单配置
 - 增加基础测试和接口契约文档
 
 2. **第二阶段（兼容改造）**
 - 引入 `/v2/cache/**` typed API
 - 原 `V1` 接口保留，标记 `@Deprecated`
-- 新增 facade/service 分层
 
 3. **第三阶段（稳定性）**
 - `sinterstr` 原子化
