@@ -430,10 +430,12 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      */
     private void doUpsert(String domain, String key, Object entityOrId) {
         if (CacheDomainRegistry.isCurrentMainlineDomain(domain)) {
+            //当前域是主线域
             doCurrentMainlineUpsert(domain, key, entityOrId);
             return;
         }
         if (CacheDomainRegistry.isCurrentLegacyCompatibleDomain(domain)) {
+            //当前域是兼容域
             doLegacyCompatibleUpsert(domain, key, entityOrId);
             return;
         }
