@@ -128,47 +128,6 @@ channel.basicAck(tag, false);
 
 ---
 
-## 3.3 P0：应答处理缺少空值防御，存在 NPE 中断风险
-
-### 现状代码（需要重构）
-
-文件：`beacon-smsgateway/src/main/java/com/cz/smsgateway/runnable/SubmitRepoRunnable.java:36`
-
-```java
-StandardSubmit submit = CMPPSubmitRepoMapUtil.remove(submitResp.getSequenceId());
-submit.setReportState(...);
-```
-
-文件：`beacon-smsgateway/src/main/java/com/cz/smsgateway/runnable/DeliverRunnable.java:38`
-
-```java
-StandardReport report = CMPPDeliverMapUtil.remove(msgId + "");
-report.setReportState(...);
-Integer isCallback = cacheClient.hgetInteger(... + report.getApiKey(), "isCallback");
-```
-
-### 原因
-
-1. 当运营商回执超时、重复、乱序或缓存丢失时，`remove(...)` 可能返回 `null`。
-2. 当前代码直接解引用，线程池任务会抛 NPE，导致后续逻辑中断。
-
-### 如何重构
-
-1. `submit/report` 判空后走“异常兜底日志 + 补偿队列”。
-2. 为回执处理加入统一错误捕获与计数监控。
-3. 记录关联键（`sequence`、`msgId`、`sid`）便于排障。
-
-### 目标代码（建议）
-
-```java
-if (submit == null) {
-    log.warn("submit not found, sequence={}", submitResp.getSequenceId());
-    return;
-}
-```
-
----
-
 ## 3.4 P0：本地关联缓存仍存在一致性上限
 
 ### 现状代码（需要重构）
@@ -450,9 +409,8 @@ ThreadPoolBuilder.builder()
 
 1. 去除硬编码连接参数，改为配置中心密文。
 2. 修复 MQ ack 时机与 Netty 提交失败处理。
-3. 补齐 `SubmitRepoRunnable`/`DeliverRunnable` 的判空防御。
-4. 重构 Netty 重连机制（非阻塞 + 统一 eventLoop 生命周期）。
-5. 修正 `CmppConnect` 版本字节一致性。
+3. 重构 Netty 重连机制（非阻塞 + 统一 eventLoop 生命周期）。
+4. 修正 `CmppConnect` 版本字节一致性。
 
 ## 阶段二（P1，提升契约与可维护性）
 

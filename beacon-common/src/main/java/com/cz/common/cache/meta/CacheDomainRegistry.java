@@ -79,10 +79,16 @@ public final class CacheDomainRegistry {
      * <p>若发现重复注册同一个域编码，会在类初始化阶段直接失败，避免系统带着歧义配置启动。</p>
      */
     static {
+        // 先把当前代码中已经正式注册的缓存域契约全部装配出来。
+        // 这里分两批注册：
+        // 1. 当前架构演进的主线域；
+        // 2. 仍需兼容、但不属于当前主线重点的保留域。
         List<CacheDomainContract> contracts = new ArrayList<>();
         registerCurrentMainlineContracts(contracts);
         registerLegacyCompatibleContracts(contracts);
 
+        // 基于 domainCode 构建只读索引。
+        // 若同一个域被重复注册，直接在类初始化阶段失败，避免后续范围判断和契约查询出现歧义。
         Map<String, CacheDomainContract> index = new LinkedHashMap<>();
         for (CacheDomainContract contract : contracts) {
             CacheDomainContract previous = index.put(contract.getDomainCode(), contract);
@@ -93,12 +99,20 @@ public final class CacheDomainRegistry {
 
         CONTRACTS = Collections.unmodifiableList(contracts);
         CONTRACT_MAP = Collections.unmodifiableMap(index);
+
+        // 当前主线域集合。
+        // 这组域表示“当前缓存一致性架构演进的主战场”，
+        // 后续运行时同步、手工重建、启动校准等设计优先围绕这几个域展开。
         CURRENT_MAINLINE_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
                 CLIENT_BUSINESS,
                 CLIENT_CHANNEL,
                 CHANNEL,
                 CLIENT_BALANCE
         )));
+
+        // 当前兼容保留域集合。
+        // 这组域说明代码和缓存能力仍要兼容它们，
+        // 但它们不是当前四层架构演进里的主线重点对象。
         CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
                 CLIENT_SIGN,
                 CLIENT_TEMPLATE,
@@ -106,12 +120,21 @@ public final class CacheDomainRegistry {
                 DIRTY_WORD,
                 TRANSFER
         )));
+
+        // 当前允许由手工重建入口 `ALL` 自动展开的域集合。
+        // 也就是说，当外部请求手工重建 `ALL` 时，默认只会展开到这几个域，
+        // 而不会把所有已注册域都无差别纳入。
         CURRENT_MANUAL_REBUILD_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
                 CLIENT_BUSINESS,
                 CLIENT_CHANNEL,
                 CHANNEL,
                 CLIENT_BALANCE
         )));
+
+        // 当前默认启动校准范围。
+        // 该集合不是手工写死另一份列表，而是基于“允许 ALL 展开的手工重建域”
+        // 再叠加“域契约允许 boot rebuild”规则推导出来，
+        // 从而保证 boot 与 manual 在默认边界上保持一致。
         CURRENT_BOOT_RECONCILE_DOMAIN_CODES = Collections.unmodifiableSet(
                 buildCurrentBootReconcileDomainCodes(CONTRACT_MAP, CURRENT_MANUAL_REBUILD_DOMAIN_CODES)
         );
@@ -253,10 +276,26 @@ public final class CacheDomainRegistry {
         return CURRENT_BOOT_RECONCILE_DOMAIN_CODES.contains(domainCode);
     }
 
+    /**
+     * 基于“默认手工重建域集合”推导当前默认启动校准域集合。
+     *
+     * <p>这里的设计目标不是再手工维护一份 boot 域列表，
+     * 而是复用 manual 的默认边界，再额外叠加“域契约允许 boot rebuild”这一层过滤。</p>
+     *
+     * <p>因此最终结果可以理解为：</p>
+     * <p>1. 先从当前允许由 {@code ALL} 展开的手工重建域开始；</p>
+     * <p>2. 再逐个检查这些域在契约上是否显式允许进入启动校准；</p>
+     * <p>3. 只有同时满足这两个条件的域，才会进入默认 boot 范围。</p>
+     *
+     * @param contractMap 域编码到契约的索引
+     * @param manualDomains 当前允许由 {@code ALL} 展开的默认手工重建域集合
+     * @return 当前默认启动校准域集合
+     */
     private static Set<String> buildCurrentBootReconcileDomainCodes(Map<String, CacheDomainContract> contractMap,
                                                                     Set<String> manualDomains) {
         Set<String> result = new LinkedHashSet<>();
         for (String domainCode : manualDomains) {
+            // 先从默认 manual 域中取候选项，再检查该域契约是否允许 boot rebuild。
             CacheDomainContract contract = contractMap.get(domainCode);
             if (contract != null && contract.isBootRebuildEnabled()) {
                 result.add(domainCode);

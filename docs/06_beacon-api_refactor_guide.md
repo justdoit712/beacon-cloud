@@ -356,10 +356,8 @@ return R.ok();
 
 ## 阶段一（P0，先稳住风险）
 
-1. 清理依赖：去掉重复 OpenFeign、评估移除 MySQL 驱动。
-2. 下线测试入口：移除 `TestController` 与 `System.out.println`。
-3. 加固过滤器链：`CheckFilterContext` 空值防御和配置 fail-fast。
-4. 统一 `state` 规则：删除冲突逻辑。
+1. 加固过滤器链：`CheckFilterContext` 空值防御和配置 fail-fast。
+2. 统一 `state` 规则：删除冲突逻辑。
 
 ## 阶段二（P1，契约与治理）
 
