@@ -25,9 +25,18 @@ public class ApiStarterApp {
     public static void main(String[] args) {
         ConfigurableApplicationContext context = SpringApplication.run(ApiStarterApp.class, args);
         Environment environment = context.getEnvironment();
-        log.info("beacon-api started, appName={}, port={}, profiles={}",
+        log.info("beacon-api started, appName={}, port={}, profiles={}, version={}",
                 environment.getProperty("spring.application.name", "beacon-api"),
                 environment.getProperty("server.port", "8080"),
-                Arrays.toString(environment.getActiveProfiles()));
+                Arrays.toString(environment.getActiveProfiles()),
+                resolveVersion());
+    }
+
+    private static String resolveVersion() {
+        Package starterPackage = ApiStarterApp.class.getPackage();
+        if (starterPackage == null || starterPackage.getImplementationVersion() == null) {
+            return "dev";
+        }
+        return starterPackage.getImplementationVersion();
     }
 }
