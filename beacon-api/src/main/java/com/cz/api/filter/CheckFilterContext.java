@@ -6,7 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,16 +30,43 @@ public class CheckFilterContext {
     @Value("${filters:apikey,ip,sign,template}")
     private String filters;
 
+    @PostConstruct
+    public void validateFilters() {
+        for (String filterName : resolveFilterNames()) {
+            if (!checkFiltersMap.containsKey(filterName)) {
+                throw new IllegalStateException("unknown check filter: " + filterName);
+            }
+        }
+    }
+
     /**
      * 当前check方法用于管理校验链的顺序
      */
     public void check(StandardSubmit submit) {
-        //1. 将获取到filters基于,做切分
-        String[] filterArray = filters.split(",");
-        //2. 遍历数组
-        for (String filter : filterArray) {
-            CheckFilter checkFilter = checkFiltersMap.get(filter);
+        for (String filterName : resolveFilterNames()) {
+            CheckFilter checkFilter = checkFiltersMap.get(filterName);
+            if (checkFilter == null) {
+                throw new IllegalStateException("unknown check filter: " + filterName);
+            }
             checkFilter.check(submit);
         }
+    }
+
+    private List<String> resolveFilterNames() {
+        List<String> result = new ArrayList<>();
+        if (!StringUtils.hasText(filters)) {
+            return result;
+        }
+        String[] filterArray = filters.split(",");
+        for (String filter : filterArray) {
+            if (!StringUtils.hasText(filter)) {
+                continue;
+            }
+            String filterName = filter.trim();
+            if (!filterName.isEmpty()) {
+                result.add(filterName);
+            }
+        }
+        return result;
     }
 }
