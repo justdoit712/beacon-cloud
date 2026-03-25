@@ -7,8 +7,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
-import static com.google.common.collect.ConcurrentHashMultiset.create;
-
 @Component
 public class SpringUtil implements ApplicationContextAware {
 
