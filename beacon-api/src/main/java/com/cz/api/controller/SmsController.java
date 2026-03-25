@@ -119,12 +119,15 @@ public class SmsController {
                                        Integer state,
                                        String uid,
                                        String realIp) {
+        if (state == null) {
+            throw new IllegalArgumentException("state must not be null");
+        }
         StandardSubmit submit = new StandardSubmit();
         submit.setApiKey(apiKey);
         submit.setClientId(clientId);
         submit.setMobile(mobile);
         submit.setText(text);
-        submit.setState(state == null ? 1 : state);
+        submit.setState(state);
         submit.setUid(uid);
         submit.setRealIp(realIp);
         return submit;
