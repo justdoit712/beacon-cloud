@@ -20,7 +20,7 @@ import java.util.Map;
 @RequestMapping("/sys")
 public class SysLegacyCrudController {
 
-    private static final String FAMILY_PATTERN = "activity|apimapping|grayrelease|publicparams|black|notify|searchparams|message|apigatewayfilter|stragetyfilter|limit|smstemp";
+    private static final String FAMILY_PATTERN = "activity|apimapping|grayrelease|publicparams|black|notify|searchparams|message|clientsign|clienttemplate|apigatewayfilter|stragetyfilter|limit|smstemp";
 
     private final LegacyCrudService legacyCrudService;
 

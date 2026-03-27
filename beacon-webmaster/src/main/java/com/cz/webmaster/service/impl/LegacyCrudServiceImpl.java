@@ -20,6 +20,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -37,6 +38,8 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
     private static final String NOTIFY = "notify";
     private static final String SEARCH_PARAMS = "searchparams";
     private static final String MESSAGE = "message";
+    private static final String CLIENT_SIGN = "clientsign";
+    private static final String CLIENT_TEMPLATE = "clienttemplate";
     private static final String API_GATEWAY_FILTER = "apigatewayfilter";
     private static final String STRAGETY_FILTER = "stragetyfilter";
     private static final String LIMIT = "limit";
@@ -52,6 +55,8 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
                     NOTIFY,
                     SEARCH_PARAMS,
                     MESSAGE,
+                    CLIENT_SIGN,
+                    CLIENT_TEMPLATE,
                     API_GATEWAY_FILTER,
                     STRAGETY_FILTER,
                     LIMIT,
@@ -72,6 +77,8 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
         detailKeys.put(NOTIFY, "notify");
         detailKeys.put(SEARCH_PARAMS, "searchparams");
         detailKeys.put(MESSAGE, "message");
+        detailKeys.put(CLIENT_SIGN, "clientsign");
+        detailKeys.put(CLIENT_TEMPLATE, "clienttemplate");
         detailKeys.put(API_GATEWAY_FILTER, "filter");
         detailKeys.put(STRAGETY_FILTER, "filter");
         detailKeys.put(LIMIT, "limit");
@@ -117,6 +124,26 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
         }
         if (body == null) {
             return "request body is required";
+        }
+        if (CLIENT_SIGN.equals(family)) {
+            Long clientId = resolvePositiveLong(body, "clientId", "client_id");
+            if (clientId == null) {
+                return "clientId is required";
+            }
+            if (!StringUtils.hasText(resolveText(body, "signInfo", "sign_info"))) {
+                return "signInfo is required";
+            }
+            return null;
+        }
+        if (CLIENT_TEMPLATE.equals(family)) {
+            Long signId = resolvePositiveLong(body, "signId", "sign_id");
+            if (signId == null) {
+                return "signId is required";
+            }
+            if (!StringUtils.hasText(resolveText(body, "templateText", "template_text"))) {
+                return "templateText is required";
+            }
+            return null;
         }
         List<String> requiredFields = REQUIRED_FIELDS.get(family);
         if (requiredFields == null || requiredFields.isEmpty()) {
@@ -256,6 +283,14 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
             syncDirtyWordRebuild(toLong(after == null ? null : after.get("id")));
             return;
         }
+        if (CLIENT_SIGN.equals(family)) {
+            syncClientSignSaveOrUpdate(before, after);
+            return;
+        }
+        if (CLIENT_TEMPLATE.equals(family)) {
+            syncClientTemplateSaveOrUpdate(before, after);
+            return;
+        }
         if (SEARCH_PARAMS.equals(family)) {
             syncTransferSaveOrUpdate(before, after);
             return;
@@ -272,6 +307,18 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
         }
         if (MESSAGE.equals(family)) {
             syncDirtyWordRebuild(null);
+            return;
+        }
+        if (CLIENT_SIGN.equals(family)) {
+            for (Map<String, Object> row : removedRows) {
+                syncClientSignDelete(row);
+            }
+            return;
+        }
+        if (CLIENT_TEMPLATE.equals(family)) {
+            for (Map<String, Object> row : removedRows) {
+                syncClientTemplateDelete(row);
+            }
             return;
         }
         if (SEARCH_PARAMS.equals(family)) {
@@ -322,6 +369,66 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
                 () -> cacheSyncService.syncUpsert(CacheDomainRegistry.DIRTY_WORD, payload));
     }
 
+    private void syncClientSignSaveOrUpdate(Map<String, Object> before, Map<String, Object> after) {
+        Long beforeClientId = resolvePositiveLong(before, "clientId", "client_id");
+        Long afterClientId = resolvePositiveLong(after, "clientId", "client_id");
+        Long entityId = toLong(after == null ? null : after.get("id"));
+
+        if (beforeClientId != null && !Objects.equals(beforeClientId, afterClientId)) {
+            Map<String, Object> beforePayload = buildClientSignSnapshotPayload(beforeClientId);
+            scheduleSync(CacheDomainRegistry.CLIENT_SIGN, "upsert", safeEntityId(entityId),
+                    () -> cacheSyncService.syncUpsert(CacheDomainRegistry.CLIENT_SIGN, beforePayload));
+        }
+        if (afterClientId != null) {
+            Map<String, Object> afterPayload = buildClientSignSnapshotPayload(afterClientId);
+            scheduleSync(CacheDomainRegistry.CLIENT_SIGN, "upsert", safeEntityId(entityId),
+                    () -> cacheSyncService.syncUpsert(CacheDomainRegistry.CLIENT_SIGN, afterPayload));
+        } else {
+            log.debug("runtime sync skip clientsign because payload is invalid, row={}", after);
+        }
+    }
+
+    private void syncClientSignDelete(Map<String, Object> row) {
+        Long clientId = resolvePositiveLong(row, "clientId", "client_id");
+        if (clientId == null) {
+            return;
+        }
+        Long entityId = toLong(row == null ? null : row.get("id"));
+        Map<String, Object> payload = buildClientSignSnapshotPayload(clientId);
+        scheduleSync(CacheDomainRegistry.CLIENT_SIGN, "upsert", safeEntityId(entityId),
+                () -> cacheSyncService.syncUpsert(CacheDomainRegistry.CLIENT_SIGN, payload));
+    }
+
+    private void syncClientTemplateSaveOrUpdate(Map<String, Object> before, Map<String, Object> after) {
+        Long beforeSignId = resolvePositiveLong(before, "signId", "sign_id");
+        Long afterSignId = resolvePositiveLong(after, "signId", "sign_id");
+        Long entityId = toLong(after == null ? null : after.get("id"));
+
+        if (beforeSignId != null && !Objects.equals(beforeSignId, afterSignId)) {
+            Map<String, Object> beforePayload = buildClientTemplateSnapshotPayload(beforeSignId);
+            scheduleSync(CacheDomainRegistry.CLIENT_TEMPLATE, "upsert", safeEntityId(entityId),
+                    () -> cacheSyncService.syncUpsert(CacheDomainRegistry.CLIENT_TEMPLATE, beforePayload));
+        }
+        if (afterSignId != null) {
+            Map<String, Object> afterPayload = buildClientTemplateSnapshotPayload(afterSignId);
+            scheduleSync(CacheDomainRegistry.CLIENT_TEMPLATE, "upsert", safeEntityId(entityId),
+                    () -> cacheSyncService.syncUpsert(CacheDomainRegistry.CLIENT_TEMPLATE, afterPayload));
+        } else {
+            log.debug("runtime sync skip clienttemplate because payload is invalid, row={}", after);
+        }
+    }
+
+    private void syncClientTemplateDelete(Map<String, Object> row) {
+        Long signId = resolvePositiveLong(row, "signId", "sign_id");
+        if (signId == null) {
+            return;
+        }
+        Long entityId = toLong(row == null ? null : row.get("id"));
+        Map<String, Object> payload = buildClientTemplateSnapshotPayload(signId);
+        scheduleSync(CacheDomainRegistry.CLIENT_TEMPLATE, "upsert", safeEntityId(entityId),
+                () -> cacheSyncService.syncUpsert(CacheDomainRegistry.CLIENT_TEMPLATE, payload));
+    }
+
     private void syncTransferSaveOrUpdate(Map<String, Object> before, Map<String, Object> after) {
         Map<String, Object> beforePayload = resolveTransferPayload(before);
         Map<String, Object> afterPayload = resolveTransferPayload(after);
@@ -362,6 +469,58 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
             }
         }
         return new ArrayList<>(words);
+    }
+
+    private Map<String, Object> buildClientSignSnapshotPayload(Long clientId) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("clientId", clientId);
+        payload.put("members", collectClientSignMembers(clientId));
+        return payload;
+    }
+
+    private List<Map<String, Object>> collectClientSignMembers(Long clientId) {
+        if (clientId == null) {
+            return new ArrayList<>();
+        }
+        List<Map<String, Object>> members = new ArrayList<>();
+        for (Map<String, Object> row : familyStore(CLIENT_SIGN).values()) {
+            Long rowClientId = resolvePositiveLong(row, "clientId", "client_id");
+            if (!Objects.equals(clientId, rowClientId)) {
+                continue;
+            }
+            Map<String, Object> member = copy(row);
+            member.remove("clientId");
+            member.remove("client_id");
+            members.add(member);
+        }
+        members.sort(Comparator.comparingLong(this::idOf));
+        return members;
+    }
+
+    private Map<String, Object> buildClientTemplateSnapshotPayload(Long signId) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("signId", signId);
+        payload.put("members", collectClientTemplateMembers(signId));
+        return payload;
+    }
+
+    private List<Map<String, Object>> collectClientTemplateMembers(Long signId) {
+        if (signId == null) {
+            return new ArrayList<>();
+        }
+        List<Map<String, Object>> members = new ArrayList<>();
+        for (Map<String, Object> row : familyStore(CLIENT_TEMPLATE).values()) {
+            Long rowSignId = resolvePositiveLong(row, "signId", "sign_id");
+            if (!Objects.equals(signId, rowSignId)) {
+                continue;
+            }
+            Map<String, Object> member = copy(row);
+            member.remove("signId");
+            member.remove("sign_id");
+            members.add(member);
+        }
+        members.sort(Comparator.comparingLong(this::idOf));
+        return members;
     }
 
     private Map<String, Object> resolveBlackPayload(Map<String, Object> row) {
