@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cz.webmaster.mapper.MobileTransferMapper">
+
+    <resultMap id="BaseResultMap" type="com.cz.webmaster.entity.MobileTransfer">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="transferNumber" jdbcType="VARCHAR" property="transferNumber"/>
+        <result column="areaCode" jdbcType="VARCHAR" property="areaCode"/>
+        <result column="initIsp" jdbcType="INTEGER" property="initIsp"/>
+        <result column="nowIsp" jdbcType="INTEGER" property="nowIsp"/>
+        <result column="isTransfer" jdbcType="TINYINT" property="isTransfer"/>
+        <result column="created" jdbcType="TIMESTAMP" property="created"/>
+        <result column="createId" jdbcType="BIGINT" property="createId"/>
+        <result column="updated" jdbcType="TIMESTAMP" property="updated"/>
+        <result column="updateId" jdbcType="BIGINT" property="updateId"/>
+        <result column="isDelete" jdbcType="TINYINT" property="isDelete"/>
+        <result column="extend1" jdbcType="VARCHAR" property="extend1"/>
+        <result column="extend2" jdbcType="VARCHAR" property="extend2"/>
+        <result column="extend3" jdbcType="VARCHAR" property="extend3"/>
+        <result column="extend4" jdbcType="VARCHAR" property="extend4"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,
+        transfer_number as transferNumber,
+        area_code as areaCode,
+        init_isp as initIsp,
+        now_isp as nowIsp,
+        is_transfer as isTransfer,
+        created,
+        create_id as createId,
+        updated,
+        update_id as updateId,
+        is_delete as isDelete,
+        extend1,
+        extend2,
+        extend3,
+        extend4
+    </sql>
+
+    <sql id="Search_Condition">
+        <if test="keyword != null and keyword != ''">
+            and (
+                transfer_number like concat('%', #{keyword}, '%')
+                or area_code like concat('%', #{keyword}, '%')
+            )
+        </if>
+    </sql>
+
+    <select id="findListByPage" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from mobile_transfer
+        where is_delete = 0
+        <include refid="Search_Condition"/>
+        order by id desc
+        limit #{offset}, #{limit}
+    </select>
+
+    <select id="countByKeyword" resultType="java.lang.Long">
+        select count(1)
+        from mobile_transfer
+        where is_delete = 0
+        <include refid="Search_Condition"/>
+    </select>
+
+    <select id="findById" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from mobile_transfer
+        where id = #{id}
+        and is_delete = 0
+    </select>
+
+    <select id="findByIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from mobile_transfer
+        where is_delete = 0
+        and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findAllActive" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from mobile_transfer
+        where is_delete = 0
+        order by id desc
+    </select>
+
+    <insert id="insertSelective" parameterType="com.cz.webmaster.entity.MobileTransfer">
+        insert into mobile_transfer
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="transferNumber != null">transfer_number,</if>
+            <if test="areaCode != null">area_code,</if>
+            <if test="initIsp != null">init_isp,</if>
+            <if test="nowIsp != null">now_isp,</if>
+            <if test="isTransfer != null">is_transfer,</if>
+            <if test="created != null">created,</if>
+            <if test="createId != null">create_id,</if>
+            <if test="updated != null">updated,</if>
+            <if test="updateId != null">update_id,</if>
+            <if test="isDelete != null">is_delete,</if>
+            <if test="extend1 != null">extend1,</if>
+            <if test="extend2 != null">extend2,</if>
+            <if test="extend3 != null">extend3,</if>
+            <if test="extend4 != null">extend4,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="transferNumber != null">#{transferNumber},</if>
+            <if test="areaCode != null">#{areaCode},</if>
+            <if test="initIsp != null">#{initIsp},</if>
+            <if test="nowIsp != null">#{nowIsp},</if>
+            <if test="isTransfer != null">#{isTransfer},</if>
+            <if test="created != null">#{created},</if>
+            <if test="createId != null">#{createId},</if>
+            <if test="updated != null">#{updated},</if>
+            <if test="updateId != null">#{updateId},</if>
+            <if test="isDelete != null">#{isDelete},</if>
+            <if test="extend1 != null">#{extend1},</if>
+            <if test="extend2 != null">#{extend2},</if>
+            <if test="extend3 != null">#{extend3},</if>
+            <if test="extend4 != null">#{extend4},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.cz.webmaster.entity.MobileTransfer">
+        update mobile_transfer
+        <set>
+            <if test="transferNumber != null">transfer_number = #{transferNumber},</if>
+            <if test="areaCode != null">area_code = #{areaCode},</if>
+            <if test="initIsp != null">init_isp = #{initIsp},</if>
+            <if test="nowIsp != null">now_isp = #{nowIsp},</if>
+            <if test="isTransfer != null">is_transfer = #{isTransfer},</if>
+            <if test="updated != null">updated = #{updated},</if>
+            <if test="updateId != null">update_id = #{updateId},</if>
+            <if test="extend1 != null">extend1 = #{extend1},</if>
+            <if test="extend2 != null">extend2 = #{extend2},</if>
+            <if test="extend3 != null">extend3 = #{extend3},</if>
+            <if test="extend4 != null">extend4 = #{extend4},</if>
+        </set>
+        where id = #{id}
+        and is_delete = 0
+    </update>
+
+    <update id="deleteBatch">
+        update mobile_transfer
+        set is_delete = 1,
+            updated = #{updated},
+            update_id = #{updateId}
+        where is_delete = 0
+        and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

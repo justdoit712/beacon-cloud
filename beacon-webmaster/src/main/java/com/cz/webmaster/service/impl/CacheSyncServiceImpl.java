@@ -467,6 +467,10 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             rebuildSetDomain(key, entityOrId, true);
             return;
         }
+        if (CacheDomainRegistry.TRANSFER.equals(domain)) {
+            cacheWriteClient.set(key, resolveStringValue(domain, entityOrId));
+            return;
+        }
         throw new ApiException("unsupported current mainline upsert domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
     }
 
@@ -482,7 +486,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             rebuildSetDomain(key, entityOrId, isLegacyObjectSetDomain(domain));
             return;
         }
-        if (CacheDomainRegistry.BLACK.equals(domain) || CacheDomainRegistry.TRANSFER.equals(domain)) {
+        if (CacheDomainRegistry.BLACK.equals(domain)) {
             cacheWriteClient.set(key, resolveStringValue(domain, entityOrId));
             return;
         }
@@ -571,6 +575,9 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         if (CacheDomainRegistry.CHANNEL.equals(domain)) {
             return cacheKeyBuilder.channelById(readLong(entityOrId, "id", "channelId"));
         }
+        if (CacheDomainRegistry.TRANSFER.equals(domain)) {
+            return cacheKeyBuilder.transfer(readText(entityOrId, "mobile"));
+        }
         throw new ApiException("unsupported current mainline key domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
     }
 
@@ -595,9 +602,6 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         }
         if (CacheDomainRegistry.DIRTY_WORD.equals(domain)) {
             return cacheKeyBuilder.dirtyWord();
-        }
-        if (CacheDomainRegistry.TRANSFER.equals(domain)) {
-            return cacheKeyBuilder.transfer(readText(entityOrId, "mobile"));
         }
         throw new ApiException("unsupported legacy compatible key domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
     }

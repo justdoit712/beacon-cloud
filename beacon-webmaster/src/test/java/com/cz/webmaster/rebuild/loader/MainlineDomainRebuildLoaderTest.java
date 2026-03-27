@@ -3,10 +3,12 @@ package com.cz.webmaster.rebuild.loader;
 import com.cz.webmaster.entity.Channel;
 import com.cz.webmaster.entity.ClientBalance;
 import com.cz.webmaster.entity.ClientBusiness;
+import com.cz.webmaster.entity.MobileTransfer;
 import com.cz.webmaster.mapper.ChannelMapper;
 import com.cz.webmaster.mapper.ClientBalanceMapper;
 import com.cz.webmaster.mapper.ClientBusinessMapper;
 import com.cz.webmaster.mapper.ClientChannelMapper;
+import com.cz.webmaster.mapper.MobileTransferMapper;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -162,5 +164,35 @@ public class MainlineDomainRebuildLoaderTest {
         Assert.assertTrue(snapshot.isEmpty());
         verify(mapper, times(1)).findActiveClientIds();
         verify(mapper, times(0)).findRouteMembersByClientIds(Mockito.anyList());
+    }
+
+    @Test
+    public void shouldLoadTransferSnapshotAsMobileValuePayload() {
+        MobileTransferMapper mapper = Mockito.mock(MobileTransferMapper.class);
+        TransferDomainRebuildLoader loader = new TransferDomainRebuildLoader(mapper);
+
+        MobileTransfer valid = new MobileTransfer();
+        valid.setId(9001L);
+        valid.setTransferNumber(" 13800000000 ");
+        valid.setNowIsp(2);
+
+        MobileTransfer missingMobile = new MobileTransfer();
+        missingMobile.setId(9002L);
+        missingMobile.setNowIsp(3);
+
+        MobileTransfer missingValue = new MobileTransfer();
+        missingValue.setId(9003L);
+        missingValue.setTransferNumber("13900000000");
+
+        when(mapper.findAllActive()).thenReturn(Arrays.asList(valid, missingMobile, missingValue));
+
+        List<Object> snapshot = loader.loadSnapshot();
+
+        Assert.assertEquals(1, snapshot.size());
+        Assert.assertTrue(snapshot.get(0) instanceof Map);
+        Map<String, Object> payload = (Map<String, Object>) snapshot.get(0);
+        Assert.assertEquals("13800000000", payload.get("mobile"));
+        Assert.assertEquals("2", payload.get("value"));
+        verify(mapper, times(1)).findAllActive();
     }
 }

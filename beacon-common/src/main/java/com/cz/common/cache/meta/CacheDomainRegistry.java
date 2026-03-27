@@ -107,7 +107,8 @@ public final class CacheDomainRegistry {
                 CLIENT_BUSINESS,
                 CLIENT_CHANNEL,
                 CHANNEL,
-                CLIENT_BALANCE
+                CLIENT_BALANCE,
+                TRANSFER
         )));
 
         // 当前兼容保留域集合。
@@ -117,8 +118,7 @@ public final class CacheDomainRegistry {
                 CLIENT_SIGN,
                 CLIENT_TEMPLATE,
                 BLACK,
-                DIRTY_WORD,
-                TRANSFER
+                DIRTY_WORD
         )));
 
         // 当前允许由手工重建入口 `ALL` 自动展开的域集合。
@@ -128,7 +128,8 @@ public final class CacheDomainRegistry {
                 CLIENT_BUSINESS,
                 CLIENT_CHANNEL,
                 CHANNEL,
-                CLIENT_BALANCE
+                CLIENT_BALANCE,
+                TRANSFER
         )));
 
         // 当前默认启动校准范围。
@@ -400,6 +401,21 @@ public final class CacheDomainRegistry {
                 "beacon-webmaster",
                 true
         ));
+
+        // transfer：携号转网域。
+        // 使用手机号作为逻辑 key 后缀，对应一个 STRING 值，
+        // 表示该手机号当前映射的运营商或转网结果。
+        contracts.add(new CacheDomainContract(
+                TRANSFER,
+                Collections.singletonList(CacheKeyConstants.TRANSFER + "{mobile}"),
+                CacheRedisType.STRING,
+                CacheSourceOfTruth.MYSQL,
+                CacheWritePolicy.WRITE_THROUGH,
+                CacheDeletePolicy.DELETE_KEY,
+                CacheRebuildPolicy.FULL_REBUILD,
+                "beacon-webmaster",
+                true
+        ));
     }
 
     /**
@@ -478,19 +494,5 @@ public final class CacheDomainRegistry {
                 true
         ));
 
-        // transfer：携号转网域。
-        // 使用手机号作为逻辑 key 后缀，对应一个 STRING 值，
-        // 表示该手机号当前映射的运营商或转网结果。
-        contracts.add(new CacheDomainContract(
-                TRANSFER,
-                Collections.singletonList(CacheKeyConstants.TRANSFER + "{mobile}"),
-                CacheRedisType.STRING,
-                CacheSourceOfTruth.MYSQL,
-                CacheWritePolicy.WRITE_THROUGH,
-                CacheDeletePolicy.DELETE_KEY,
-                CacheRebuildPolicy.FULL_REBUILD,
-                "beacon-webmaster",
-                true
-        ));
     }
 }

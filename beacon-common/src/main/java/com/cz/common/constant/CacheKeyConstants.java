@@ -36,6 +36,11 @@ public interface CacheKeyConstants {
     /** 携号转网结果。 */
     String TRANSFER = "transfer:";
 
+
+
+
+
+
     /** 分钟级限流规则。 */
     String LIMIT_MINUTES = "limit:minutes:";
 

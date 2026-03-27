@@ -67,7 +67,8 @@ public class CacheSyncServiceImplMainlineTest {
                         stubLoader("client_business"),
                         stubLoader("client_channel"),
                         stubLoader("channel"),
-                        stubLoader("client_balance")
+                        stubLoader("client_balance"),
+                        stubLoader("transfer")
                 )),
                 cacheRebuildCoordinationSupport
         );
@@ -161,6 +162,17 @@ public class CacheSyncServiceImplMainlineTest {
     }
 
     @Test
+    public void shouldRouteTransferUpsertToSet() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("mobile", "13800000000");
+        payload.put("value", "2");
+
+        cacheSyncService.syncUpsert("transfer", payload);
+
+        verify(cacheWriteClient, times(1)).set("transfer:13800000000", "2");
+    }
+
+    @Test
     public void shouldSkipDeleteForClientBalanceBecauseOverwriteOnly() {
         Map<String, Object> payload = new HashMap<>();
         payload.put("clientId", 1001L);
@@ -178,11 +190,12 @@ public class CacheSyncServiceImplMainlineTest {
         Assert.assertEquals("ALL", report.getDomain());
         Assert.assertEquals("MANUAL", report.getTrigger());
         Assert.assertEquals("SUCCESS", report.getStatus());
-        Assert.assertEquals(4, report.getReports().size());
+        Assert.assertEquals(5, report.getReports().size());
         Assert.assertEquals("client_business", report.getReports().get(0).getDomain());
         Assert.assertEquals("client_channel", report.getReports().get(1).getDomain());
         Assert.assertEquals("channel", report.getReports().get(2).getDomain());
         Assert.assertEquals("client_balance", report.getReports().get(3).getDomain());
+        Assert.assertEquals("transfer", report.getReports().get(4).getDomain());
     }
 
     @Test
