@@ -3,6 +3,7 @@ package com.cz.webmaster.controller;
 import com.cz.common.constant.WebMasterConstants;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.util.Result;
+import com.cz.common.vo.PageResultVO;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.client.SearchClient;
 import com.cz.webmaster.controller.support.ControllerValueUtils;
@@ -47,11 +48,11 @@ public class SearchController {
     }
 
     @GetMapping("/list")
-    public ResultVO list(@RequestParam Map<String, Object> params) {
+    public PageResultVO<?> list(@RequestParam Map<String, Object> params) {
         SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if (smsUser == null) {
             log.info("【搜索短信信息】用户未登录");
-            return Result.error(ExceptionEnums.NOT_LOGIN);
+            return Result.errorPage(ExceptionEnums.NOT_LOGIN);
         }
 
         Map<String, Object> queryParams = params == null ? new HashMap<String, Object>() : new HashMap<>(params);
@@ -60,7 +61,7 @@ public class SearchController {
         if (StringUtils.hasText(clientIdStr)) {
             clientId = ControllerValueUtils.parseLong(clientIdStr);
             if (clientId == null) {
-                return Result.error("clientID must be numeric");
+                return Result.errorPage("clientID must be numeric");
             }
         }
 
@@ -83,7 +84,7 @@ public class SearchController {
                 }
                 if (!allowed) {
                     log.info("【搜索短信信息】用户权限不足, userId={}, clientId={}", smsUser.getId(), clientId);
-                    return Result.error(ExceptionEnums.SMS_NO_AUTHOR);
+                    return Result.errorPage(ExceptionEnums.SMS_NO_AUTHOR);
                 }
             }
         }
@@ -114,4 +115,5 @@ public class SearchController {
         return Result.ok(total, rows);
     }
 }
+
 

@@ -1,6 +1,7 @@
 package com.cz.webmaster.controller;
 
 import com.cz.common.util.Result;
+import com.cz.common.vo.PageResultVO;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.entity.ClientChannel;
 import com.cz.webmaster.entity.SmsUser;
@@ -36,7 +37,7 @@ public class SysClientChannelController {
     }
 
     @GetMapping("/list")
-    public ResultVO list(@RequestParam(defaultValue = "0") int offset,
+    public PageResultVO<?> list(@RequestParam(defaultValue = "0") int offset,
                          @RequestParam(defaultValue = "10") int limit,
                          @RequestParam(value = "search", required = false) String keyword) {
 
@@ -119,4 +120,5 @@ public class SysClientChannelController {
         return result ? Result.ok("删除成功") : Result.error("删除失败");
     }
 }
+
 

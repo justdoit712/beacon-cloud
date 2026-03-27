@@ -1,6 +1,7 @@
 package com.cz.webmaster.controller;
 
 import com.cz.common.util.Result;
+import com.cz.common.vo.PageResultVO;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.entity.ScheduleJob;
 import com.cz.webmaster.service.ScheduleJobService;
@@ -27,7 +28,7 @@ public class ScheduleJobController {
     }
 
     @GetMapping("/list")
-    public ResultVO list(@RequestParam(defaultValue = "0") int offset,
+    public PageResultVO<?> list(@RequestParam(defaultValue = "0") int offset,
                          @RequestParam(defaultValue = "10") int limit,
                          @RequestParam(value = "search", required = false) String keyword) {
         long total = scheduleJobService.count(keyword);
@@ -102,4 +103,5 @@ public class ScheduleJobController {
         }
     }
 }
+
 

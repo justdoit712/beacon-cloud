@@ -11,20 +11,14 @@ import lombok.NoArgsConstructor;
  */
 @Data
 @NoArgsConstructor
-public class ResultVO {
+public class ResultVO<T> {
 
     private Integer code;
 
     private String msg;
 
     @JsonInclude(value = JsonInclude.Include.NON_EMPTY)
-    private Object data;
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private Long total;
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private Object rows;
+    private T data;
 
 
     public ResultVO(Integer code, String msg) {

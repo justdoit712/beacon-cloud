@@ -1,6 +1,7 @@
 package com.cz.webmaster.controller;
 
 import com.cz.common.util.Result;
+import com.cz.common.vo.PageResultVO;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.converter.SysClientConverter;
 import com.cz.webmaster.dto.SysClientForm;
@@ -36,7 +37,7 @@ public class SysClientController {
     }
 
     @GetMapping("/list")
-    public ResultVO list(@RequestParam(value = "offset", defaultValue = "0") Integer offset,
+    public PageResultVO<?> list(@RequestParam(value = "offset", defaultValue = "0") Integer offset,
                          @RequestParam(value = "limit", defaultValue = "10") Integer limit,
                          @RequestParam(value = "search", required = false) String keyword) {
         int safeOffset = offset == null || offset < 0 ? 0 : offset;
@@ -104,4 +105,5 @@ public class SysClientController {
         return success ? Result.ok("删除成功") : Result.error("删除失败");
     }
 }
+
 

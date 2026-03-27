@@ -1,6 +1,7 @@
 package com.cz.webmaster.controller;
 
 import com.cz.common.util.Result;
+import com.cz.common.vo.PageResultVO;
 import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.controller.support.OperatorContextUtils;
 import com.cz.webmaster.service.PhaseService;
@@ -27,7 +28,7 @@ public class SysPhaseController {
     }
 
     @GetMapping("/phase/list")
-    public ResultVO list(@RequestParam(defaultValue = "0") int offset,
+    public PageResultVO<?> list(@RequestParam(defaultValue = "0") int offset,
                          @RequestParam(defaultValue = "10") int limit,
                          @RequestParam(value = "search", required = false) String keyword) {
         PhaseService.PageResult result = phaseService.list(keyword, offset, limit);
@@ -92,4 +93,5 @@ public class SysPhaseController {
         return result;
     }
 }
+
 
