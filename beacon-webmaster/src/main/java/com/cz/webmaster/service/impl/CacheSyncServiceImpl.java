@@ -463,12 +463,17 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             return;
         }
         if (CacheDomainRegistry.CLIENT_CHANNEL.equals(domain)) {
-            requireSnapshotPayload(entityOrId);
+            requireSnapshotPayload(entityOrId, "clientId", "client_id");
             rebuildSetDomain(key, entityOrId, true);
             return;
         }
         if (CacheDomainRegistry.CLIENT_SIGN.equals(domain)) {
-            requireSnapshotPayload(entityOrId);
+            requireSnapshotPayload(entityOrId, "clientId", "client_id", "id");
+            rebuildSetDomain(key, entityOrId, true);
+            return;
+        }
+        if (CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)) {
+            requireSnapshotPayload(entityOrId, "signId", "sign_id", "id");
             rebuildSetDomain(key, entityOrId, true);
             return;
         }
@@ -488,7 +493,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      */
     private void doLegacyCompatibleUpsert(String domain, String key, Object entityOrId) {
         if (isLegacySetDomain(domain)) {
-            rebuildSetDomain(key, entityOrId, isLegacyObjectSetDomain(domain));
+            rebuildSetDomain(key, entityOrId, false);
             return;
         }
         if (CacheDomainRegistry.BLACK.equals(domain)) {
@@ -505,18 +510,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      * @return true 表示属于兼容 Set 域
      */
     private boolean isLegacySetDomain(String domain) {
-        return CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)
-                || CacheDomainRegistry.DIRTY_WORD.equals(domain);
-    }
-
-    /**
-     * 判断兼容 Set 型缓存域是否使用对象成员。
-     *
-     * @param domain 缓存域编码
-     * @return true 表示使用对象成员，false 表示使用字符串成员
-     */
-    private boolean isLegacyObjectSetDomain(String domain) {
-        return CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain);
+        return CacheDomainRegistry.DIRTY_WORD.equals(domain);
     }
 
     /**
@@ -578,6 +572,9 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         if (CacheDomainRegistry.CLIENT_SIGN.equals(domain)) {
             return cacheKeyBuilder.clientSignByClientId(readLong(entityOrId, "clientId", "id"));
         }
+        if (CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)) {
+            return cacheKeyBuilder.clientTemplateBySignId(readLong(entityOrId, "signId", "sign_id", "id"));
+        }
         if (CacheDomainRegistry.CHANNEL.equals(domain)) {
             return cacheKeyBuilder.channelById(readLong(entityOrId, "id", "channelId"));
         }
@@ -595,9 +592,6 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      * @return 兼容域逻辑 key
      */
     private String buildLegacyCompatibleKey(String domain, Object entityOrId) {
-        if (CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)) {
-            return cacheKeyBuilder.clientTemplateBySignId(readLong(entityOrId, "signId", "id"));
-        }
         if (CacheDomainRegistry.BLACK.equals(domain)) {
             Long clientId = tryReadLong(entityOrId, "clientId", "id");
             String mobile = readText(entityOrId, "mobile");
@@ -777,12 +771,19 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      * @param entityOrId 业务实体对象或主键标识
      * @return 原始成员集合对象
      */
-    private Object requireSnapshotPayload(Object entityOrId) {
+    private Object requireSnapshotPayload(Object entityOrId, String... groupIdAliases) {
+        String[] effectiveAliases = (groupIdAliases == null || groupIdAliases.length == 0)
+                ? new String[]{"id"}
+                : groupIdAliases;
+        String idHint = String.join("/", effectiveAliases);
         Map<String, Object> map = toMap(entityOrId);
         if (map.isEmpty()) {
-            throw new ApiException("snapshot payload must contain clientId and members", ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+            throw new ApiException(
+                    "snapshot payload must contain " + idHint + " and members/values",
+                    ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode()
+            );
         }
-        readLong(entityOrId, "clientId");
+        readLong(entityOrId, effectiveAliases);
         if (map.containsKey("members")) {
             return map.get("members");
         }

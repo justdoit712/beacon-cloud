@@ -80,19 +80,6 @@ public class CacheSyncServiceImplLegacyCompatibleTest {
     }
 
     @Test
-    public void shouldDeleteOnlyWhenClientTemplateMembersEmpty() {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("signId", 2002L);
-        payload.put("members", Arrays.asList());
-
-        cacheSyncService.syncUpsert("client_template", payload);
-
-        verify(cacheWriteClient, times(1)).delete("client_template:2002");
-        verify(cacheWriteClient, never()).sadd(eq("client_template:2002"), org.mockito.ArgumentMatchers.<Map<String, Object>[]>any());
-        verify(cacheWriteClient, never()).saddStr(eq("client_template:2002"), org.mockito.ArgumentMatchers.<String[]>any());
-    }
-
-    @Test
     public void shouldFallbackToStringSetWhenClientSignMembersAreStrings() {
         Map<String, Object> payload = new HashMap<>();
         payload.put("clientId", 1001L);

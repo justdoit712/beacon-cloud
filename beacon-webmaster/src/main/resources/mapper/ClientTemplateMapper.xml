@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cz.webmaster.mapper.ClientTemplateMapper">
+
+    <select id="findAllActive" resultType="java.util.LinkedHashMap">
+        select
+        id,
+        sign_id as signId,
+        template_text as templateText,
+        template_type as templateType,
+        template_state as templateState,
+        use_id as useId,
+        use_web as useWeb,
+        created,
+        create_id as createId,
+        updated,
+        update_id as updateId,
+        is_delete as isDelete,
+        extend1,
+        extend2,
+        extend3,
+        extend4
+        from client_template
+        where is_delete = 0
+        order by sign_id asc, id asc
+    </select>
+
+</mapper>

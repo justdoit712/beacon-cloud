@@ -27,6 +27,7 @@ public class CacheDomainRegistryTest {
     public void shouldContainFocusedDomains() {
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.CLIENT_BUSINESS));
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.CLIENT_SIGN));
+        Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.CLIENT_TEMPLATE));
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.CLIENT_CHANNEL));
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.CHANNEL));
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.CLIENT_BALANCE));
@@ -38,6 +39,7 @@ public class CacheDomainRegistryTest {
         Set<String> expected = new LinkedHashSet<>(Arrays.asList(
                 CacheDomainRegistry.CLIENT_BUSINESS,
                 CacheDomainRegistry.CLIENT_SIGN,
+                CacheDomainRegistry.CLIENT_TEMPLATE,
                 CacheDomainRegistry.CLIENT_CHANNEL,
                 CacheDomainRegistry.CHANNEL,
                 CacheDomainRegistry.CLIENT_BALANCE,
@@ -62,6 +64,8 @@ public class CacheDomainRegistryTest {
         Assert.assertEquals(CacheRedisType.SET,
                 CacheDomainRegistry.require(CacheDomainRegistry.CLIENT_SIGN).getRedisType());
         Assert.assertEquals(CacheRedisType.SET,
+                CacheDomainRegistry.require(CacheDomainRegistry.CLIENT_TEMPLATE).getRedisType());
+        Assert.assertEquals(CacheRedisType.SET,
                 CacheDomainRegistry.require(CacheDomainRegistry.CLIENT_CHANNEL).getRedisType());
         Assert.assertEquals(CacheRedisType.HASH,
                 CacheDomainRegistry.require(CacheDomainRegistry.CHANNEL).getRedisType());
@@ -74,6 +78,7 @@ public class CacheDomainRegistryTest {
         Set<String> expected = new LinkedHashSet<>(Arrays.asList(
                 CacheDomainRegistry.CLIENT_BUSINESS,
                 CacheDomainRegistry.CLIENT_SIGN,
+                CacheDomainRegistry.CLIENT_TEMPLATE,
                 CacheDomainRegistry.CLIENT_CHANNEL,
                 CacheDomainRegistry.CHANNEL,
                 CacheDomainRegistry.CLIENT_BALANCE,
@@ -94,6 +99,7 @@ public class CacheDomainRegistryTest {
         Set<String> expected = new LinkedHashSet<>(Arrays.asList(
                 CacheDomainRegistry.CLIENT_BUSINESS,
                 CacheDomainRegistry.CLIENT_SIGN,
+                CacheDomainRegistry.CLIENT_TEMPLATE,
                 CacheDomainRegistry.CLIENT_CHANNEL,
                 CacheDomainRegistry.CHANNEL,
                 CacheDomainRegistry.CLIENT_BALANCE,
@@ -103,9 +109,9 @@ public class CacheDomainRegistryTest {
         Assert.assertEquals(expected, CacheDomainRegistry.currentBootReconcileDomainCodes());
         Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_BUSINESS));
         Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_SIGN));
+        Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_TEMPLATE));
         Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_BALANCE));
         Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.TRANSFER));
-        Assert.assertFalse(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_TEMPLATE));
     }
 
     @Test
@@ -124,6 +130,21 @@ public class CacheDomainRegistryTest {
         Assert.assertEquals(CacheRedisType.SET, contract.getRedisType());
         Assert.assertEquals(
                 Arrays.asList(CacheKeyConstants.CLIENT_SIGN + "{clientId}"),
+                contract.getLogicalKeyPatterns()
+        );
+        Assert.assertEquals(CacheWritePolicy.DELETE_AND_REBUILD, contract.getWritePolicy());
+        Assert.assertEquals(CacheDeletePolicy.DELETE_KEY, contract.getDeletePolicy());
+        Assert.assertEquals(CacheRebuildPolicy.FULL_REBUILD, contract.getRebuildPolicy());
+        Assert.assertTrue(contract.isBootRebuildEnabled());
+    }
+
+    @Test
+    public void clientTemplateShouldUseMainlineSetContract() {
+        CacheDomainContract contract = CacheDomainRegistry.require(CacheDomainRegistry.CLIENT_TEMPLATE);
+        Assert.assertEquals(CacheSourceOfTruth.MYSQL, contract.getSourceOfTruth());
+        Assert.assertEquals(CacheRedisType.SET, contract.getRedisType());
+        Assert.assertEquals(
+                Arrays.asList(CacheKeyConstants.CLIENT_TEMPLATE + "{signId}"),
                 contract.getLogicalKeyPatterns()
         );
         Assert.assertEquals(CacheWritePolicy.DELETE_AND_REBUILD, contract.getWritePolicy());

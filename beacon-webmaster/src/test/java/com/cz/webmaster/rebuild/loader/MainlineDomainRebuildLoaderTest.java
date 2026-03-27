@@ -8,6 +8,7 @@ import com.cz.webmaster.mapper.ChannelMapper;
 import com.cz.webmaster.mapper.ClientBalanceMapper;
 import com.cz.webmaster.mapper.ClientBusinessMapper;
 import com.cz.webmaster.mapper.ClientChannelMapper;
+import com.cz.webmaster.mapper.ClientTemplateMapper;
 import com.cz.webmaster.mapper.MobileTransferMapper;
 import org.junit.Assert;
 import org.junit.Test;
@@ -164,6 +165,49 @@ public class MainlineDomainRebuildLoaderTest {
         Assert.assertTrue(snapshot.isEmpty());
         verify(mapper, times(1)).findActiveClientIds();
         verify(mapper, times(0)).findRouteMembersByClientIds(Mockito.anyList());
+    }
+
+    @Test
+    public void shouldGroupClientTemplateSnapshotBySignId() {
+        ClientTemplateMapper mapper = Mockito.mock(ClientTemplateMapper.class);
+        ClientTemplateDomainRebuildLoader loader = new ClientTemplateDomainRebuildLoader(mapper);
+
+        Map<String, Object> row1 = new LinkedHashMap<>();
+        row1.put("id", 7001L);
+        row1.put("signId", 6001L);
+        row1.put("templateText", "验证码#code#");
+        row1.put("templateType", 0);
+
+        Map<String, Object> row2 = new LinkedHashMap<>();
+        row2.put("id", 7002L);
+        row2.put("signId", 6001L);
+        row2.put("templateText", "通知模板");
+        row2.put("templateType", 1);
+
+        Map<String, Object> row3 = new LinkedHashMap<>();
+        row3.put("id", 8001L);
+        row3.put("signId", 6002L);
+        row3.put("templateText", "营销模板");
+        row3.put("templateType", 2);
+
+        when(mapper.findAllActive()).thenReturn(Arrays.asList(row1, row2, row3));
+
+        List<Object> snapshot = loader.loadSnapshot();
+
+        Assert.assertEquals(2, snapshot.size());
+        Map<String, Object> firstPayload = (Map<String, Object>) snapshot.get(0);
+        Map<String, Object> secondPayload = (Map<String, Object>) snapshot.get(1);
+        Assert.assertEquals(6001L, firstPayload.get("signId"));
+        Assert.assertEquals(6002L, secondPayload.get("signId"));
+
+        List<Map<String, Object>> firstMembers = (List<Map<String, Object>>) firstPayload.get("members");
+        List<Map<String, Object>> secondMembers = (List<Map<String, Object>>) secondPayload.get("members");
+        Assert.assertEquals(2, firstMembers.size());
+        Assert.assertEquals(1, secondMembers.size());
+        Assert.assertFalse(firstMembers.get(0).containsKey("signId"));
+        Assert.assertEquals(7001L, firstMembers.get(0).get("id"));
+        Assert.assertEquals("营销模板", secondMembers.get(0).get("templateText"));
+        verify(mapper, times(1)).findAllActive();
     }
 
     @Test

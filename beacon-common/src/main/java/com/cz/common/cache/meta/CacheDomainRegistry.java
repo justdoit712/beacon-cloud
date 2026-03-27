@@ -76,6 +76,7 @@ public final class CacheDomainRegistry {
         CURRENT_MAINLINE_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
                 CLIENT_BUSINESS,
                 CLIENT_SIGN,
+                CLIENT_TEMPLATE,
                 CLIENT_CHANNEL,
                 CHANNEL,
                 CLIENT_BALANCE,
@@ -83,7 +84,6 @@ public final class CacheDomainRegistry {
         )));
 
         CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
-                CLIENT_TEMPLATE,
                 BLACK,
                 DIRTY_WORD
         )));
@@ -91,6 +91,7 @@ public final class CacheDomainRegistry {
         CURRENT_MANUAL_REBUILD_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
                 CLIENT_BUSINESS,
                 CLIENT_SIGN,
+                CLIENT_TEMPLATE,
                 CLIENT_CHANNEL,
                 CHANNEL,
                 CLIENT_BALANCE,
@@ -289,6 +290,18 @@ public final class CacheDomainRegistry {
         ));
 
         contracts.add(new CacheDomainContract(
+                CLIENT_TEMPLATE,
+                Collections.singletonList(CacheKeyConstants.CLIENT_TEMPLATE + "{signId}"),
+                CacheRedisType.SET,
+                CacheSourceOfTruth.MYSQL,
+                CacheWritePolicy.DELETE_AND_REBUILD,
+                CacheDeletePolicy.DELETE_KEY,
+                CacheRebuildPolicy.FULL_REBUILD,
+                "beacon-webmaster",
+                true
+        ));
+
+        contracts.add(new CacheDomainContract(
                 CLIENT_CHANNEL,
                 Collections.singletonList(CacheKeyConstants.CLIENT_CHANNEL + "{clientId}"),
                 CacheRedisType.SET,
@@ -343,18 +356,6 @@ public final class CacheDomainRegistry {
      * @param contracts 契约可变列表
      */
     private static void registerLegacyCompatibleContracts(List<CacheDomainContract> contracts) {
-        contracts.add(new CacheDomainContract(
-                CLIENT_TEMPLATE,
-                Collections.singletonList(CacheKeyConstants.CLIENT_TEMPLATE + "{signId}"),
-                CacheRedisType.SET,
-                CacheSourceOfTruth.MYSQL,
-                CacheWritePolicy.DELETE_AND_REBUILD,
-                CacheDeletePolicy.DELETE_KEY,
-                CacheRebuildPolicy.FULL_REBUILD,
-                "beacon-webmaster",
-                true
-        ));
-
         contracts.add(new CacheDomainContract(
                 BLACK,
                 Arrays.asList(

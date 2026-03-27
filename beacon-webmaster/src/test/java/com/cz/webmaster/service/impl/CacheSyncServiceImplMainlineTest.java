@@ -32,8 +32,7 @@ import static org.mockito.Mockito.verify;
 /**
  * 主线域测试。
  *
- * <p>该测试类只覆盖当前主线 4 个域：
- * client_business、client_channel、channel、client_balance。</p>
+ * <p>该测试类覆盖当前主线缓存域核心路由。</p>
  */
 public class CacheSyncServiceImplMainlineTest {
 
@@ -66,6 +65,7 @@ public class CacheSyncServiceImplMainlineTest {
                 new DomainRebuildLoaderRegistry(Arrays.asList(
                         stubLoader("client_business"),
                         stubLoader("client_sign"),
+                        stubLoader("client_template"),
                         stubLoader("client_channel"),
                         stubLoader("channel"),
                         stubLoader("client_balance"),
@@ -144,6 +144,40 @@ public class CacheSyncServiceImplMainlineTest {
     }
 
     @Test
+    public void shouldRouteClientTemplateUpsertToDeleteThenSaddMap() {
+        Map<String, Object> templateMember = new HashMap<>();
+        templateMember.put("id", 7001L);
+        templateMember.put("templateText", "【签名】验证码#code#");
+        templateMember.put("templateType", 0);
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("sign_id", 2002L);
+        payload.put("members", Arrays.asList(templateMember));
+
+        cacheSyncService.syncUpsert("client_template", payload);
+
+        verify(cacheWriteClient, times(1)).delete("client_template:2002");
+        ArgumentCaptor<Map[]> memberCaptor = ArgumentCaptor.forClass(Map[].class);
+        verify(cacheWriteClient, times(1)).sadd(eq("client_template:2002"), memberCaptor.capture());
+        Assert.assertEquals(1, memberCaptor.getValue().length);
+        Assert.assertEquals(7001L, memberCaptor.getValue()[0].get("id"));
+        Assert.assertEquals("【签名】验证码#code#", memberCaptor.getValue()[0].get("templateText"));
+    }
+
+    @Test
+    public void shouldDeleteOnlyWhenClientTemplateMembersEmpty() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("signId", 2002L);
+        payload.put("members", Arrays.asList());
+
+        cacheSyncService.syncUpsert("client_template", payload);
+
+        verify(cacheWriteClient, times(1)).delete("client_template:2002");
+        verify(cacheWriteClient, never()).sadd(eq("client_template:2002"), org.mockito.ArgumentMatchers.<Map<String, Object>[]>any());
+        verify(cacheWriteClient, never()).saddStr(eq("client_template:2002"), org.mockito.ArgumentMatchers.<String[]>any());
+    }
+
+    @Test
     public void shouldRejectClientBalanceUpsertWhenBalanceMissing() {
         Map<String, Object> payload = new HashMap<>();
         payload.put("clientId", 1001L);
@@ -211,13 +245,14 @@ public class CacheSyncServiceImplMainlineTest {
         Assert.assertEquals("ALL", report.getDomain());
         Assert.assertEquals("MANUAL", report.getTrigger());
         Assert.assertEquals("SUCCESS", report.getStatus());
-        Assert.assertEquals(6, report.getReports().size());
+        Assert.assertEquals(7, report.getReports().size());
         Assert.assertEquals("client_business", report.getReports().get(0).getDomain());
         Assert.assertEquals("client_sign", report.getReports().get(1).getDomain());
-        Assert.assertEquals("client_channel", report.getReports().get(2).getDomain());
-        Assert.assertEquals("channel", report.getReports().get(3).getDomain());
-        Assert.assertEquals("client_balance", report.getReports().get(4).getDomain());
-        Assert.assertEquals("transfer", report.getReports().get(5).getDomain());
+        Assert.assertEquals("client_template", report.getReports().get(2).getDomain());
+        Assert.assertEquals("client_channel", report.getReports().get(3).getDomain());
+        Assert.assertEquals("channel", report.getReports().get(4).getDomain());
+        Assert.assertEquals("client_balance", report.getReports().get(5).getDomain());
+        Assert.assertEquals("transfer", report.getReports().get(6).getDomain());
     }
 
     @Test
