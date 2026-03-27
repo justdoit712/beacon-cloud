@@ -65,6 +65,7 @@ public class CacheSyncServiceImplMainlineTest {
                 new ObjectMapper(),
                 new DomainRebuildLoaderRegistry(Arrays.asList(
                         stubLoader("client_business"),
+                        stubLoader("client_sign"),
                         stubLoader("client_channel"),
                         stubLoader("channel"),
                         stubLoader("client_balance"),
@@ -120,6 +121,26 @@ public class CacheSyncServiceImplMainlineTest {
         verify(cacheWriteClient, times(1)).sadd(eq("client_channel:1001"), memberCaptor.capture());
         Assert.assertEquals(1, memberCaptor.getValue().length);
         Assert.assertEquals(2001L, memberCaptor.getValue()[0].get("channelId"));
+    }
+
+    @Test
+    public void shouldRouteClientSignUpsertToDeleteThenSaddMap() {
+        Map<String, Object> signMember = new HashMap<>();
+        signMember.put("id", 5001L);
+        signMember.put("signInfo", "sign_test");
+        signMember.put("signState", 2);
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("clientId", 1001L);
+        payload.put("members", Arrays.asList(signMember));
+
+        cacheSyncService.syncUpsert("client_sign", payload);
+
+        verify(cacheWriteClient, times(1)).delete("client_sign:1001");
+        ArgumentCaptor<Map[]> memberCaptor = ArgumentCaptor.forClass(Map[].class);
+        verify(cacheWriteClient, times(1)).sadd(eq("client_sign:1001"), memberCaptor.capture());
+        Assert.assertEquals(1, memberCaptor.getValue().length);
+        Assert.assertEquals(5001L, memberCaptor.getValue()[0].get("id"));
     }
 
     @Test
@@ -190,12 +211,13 @@ public class CacheSyncServiceImplMainlineTest {
         Assert.assertEquals("ALL", report.getDomain());
         Assert.assertEquals("MANUAL", report.getTrigger());
         Assert.assertEquals("SUCCESS", report.getStatus());
-        Assert.assertEquals(5, report.getReports().size());
+        Assert.assertEquals(6, report.getReports().size());
         Assert.assertEquals("client_business", report.getReports().get(0).getDomain());
-        Assert.assertEquals("client_channel", report.getReports().get(1).getDomain());
-        Assert.assertEquals("channel", report.getReports().get(2).getDomain());
-        Assert.assertEquals("client_balance", report.getReports().get(3).getDomain());
-        Assert.assertEquals("transfer", report.getReports().get(4).getDomain());
+        Assert.assertEquals("client_sign", report.getReports().get(1).getDomain());
+        Assert.assertEquals("client_channel", report.getReports().get(2).getDomain());
+        Assert.assertEquals("channel", report.getReports().get(3).getDomain());
+        Assert.assertEquals("client_balance", report.getReports().get(4).getDomain());
+        Assert.assertEquals("transfer", report.getReports().get(5).getDomain());
     }
 
     @Test

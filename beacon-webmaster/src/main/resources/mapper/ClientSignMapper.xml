@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cz.webmaster.mapper.ClientSignMapper">
+
+    <select id="findAllActive" resultType="java.util.LinkedHashMap">
+        select
+        id,
+        client_id as clientId,
+        sign_info as signInfo,
+        sign_state as signState,
+        sign_type as signType,
+        business_web as businessWeb,
+        prove_descr as proveDescr,
+        prove_file as proveFile,
+        created,
+        create_id as createId,
+        updated,
+        update_id as updateId,
+        is_delete as isDelete,
+        extend1,
+        extend2,
+        extend3,
+        extend4
+        from client_sign
+        where is_delete = 0
+        order by client_id asc, id asc
+    </select>
+
+</mapper>

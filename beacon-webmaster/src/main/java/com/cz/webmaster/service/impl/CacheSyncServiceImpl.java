@@ -467,6 +467,11 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             rebuildSetDomain(key, entityOrId, true);
             return;
         }
+        if (CacheDomainRegistry.CLIENT_SIGN.equals(domain)) {
+            requireSnapshotPayload(entityOrId);
+            rebuildSetDomain(key, entityOrId, true);
+            return;
+        }
         if (CacheDomainRegistry.TRANSFER.equals(domain)) {
             cacheWriteClient.set(key, resolveStringValue(domain, entityOrId));
             return;
@@ -500,8 +505,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      * @return true 表示属于兼容 Set 域
      */
     private boolean isLegacySetDomain(String domain) {
-        return CacheDomainRegistry.CLIENT_SIGN.equals(domain)
-                || CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)
+        return CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)
                 || CacheDomainRegistry.DIRTY_WORD.equals(domain);
     }
 
@@ -512,8 +516,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      * @return true 表示使用对象成员，false 表示使用字符串成员
      */
     private boolean isLegacyObjectSetDomain(String domain) {
-        return CacheDomainRegistry.CLIENT_SIGN.equals(domain)
-                || CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain);
+        return CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain);
     }
 
     /**
@@ -572,6 +575,9 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         if (CacheDomainRegistry.CLIENT_CHANNEL.equals(domain)) {
             return cacheKeyBuilder.clientChannelByClientId(readLong(entityOrId, "clientId"));
         }
+        if (CacheDomainRegistry.CLIENT_SIGN.equals(domain)) {
+            return cacheKeyBuilder.clientSignByClientId(readLong(entityOrId, "clientId", "id"));
+        }
         if (CacheDomainRegistry.CHANNEL.equals(domain)) {
             return cacheKeyBuilder.channelById(readLong(entityOrId, "id", "channelId"));
         }
@@ -589,9 +595,6 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      * @return 兼容域逻辑 key
      */
     private String buildLegacyCompatibleKey(String domain, Object entityOrId) {
-        if (CacheDomainRegistry.CLIENT_SIGN.equals(domain)) {
-            return cacheKeyBuilder.clientSignByClientId(readLong(entityOrId, "clientId", "id"));
-        }
         if (CacheDomainRegistry.CLIENT_TEMPLATE.equals(domain)) {
             return cacheKeyBuilder.clientTemplateBySignId(readLong(entityOrId, "signId", "id"));
         }

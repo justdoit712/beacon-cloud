@@ -84,7 +84,8 @@ public class CacheBootReconcileRunnerTest {
 
         Assert.assertEquals(Arrays.asList(
                 CacheDomainRegistry.CHANNEL,
-                CacheDomainRegistry.CLIENT_BALANCE
+                CacheDomainRegistry.CLIENT_BALANCE,
+                CacheDomainRegistry.CLIENT_SIGN
         ), runner.getCapturedDomains());
     }
 
