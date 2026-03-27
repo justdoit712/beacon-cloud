@@ -32,6 +32,7 @@ public class CacheDomainRegistryTest {
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.CHANNEL));
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.CLIENT_BALANCE));
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.TRANSFER));
+        Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.BLACK));
     }
 
     @Test
@@ -43,7 +44,8 @@ public class CacheDomainRegistryTest {
                 CacheDomainRegistry.CLIENT_CHANNEL,
                 CacheDomainRegistry.CHANNEL,
                 CacheDomainRegistry.CLIENT_BALANCE,
-                CacheDomainRegistry.TRANSFER
+                CacheDomainRegistry.TRANSFER,
+                CacheDomainRegistry.BLACK
         ));
 
         Assert.assertEquals(expected, CacheDomainRegistry.currentMainlineDomainCodes());
@@ -71,6 +73,8 @@ public class CacheDomainRegistryTest {
                 CacheDomainRegistry.require(CacheDomainRegistry.CHANNEL).getRedisType());
         Assert.assertEquals(CacheRedisType.HASH,
                 CacheDomainRegistry.require(CacheDomainRegistry.CLIENT_BALANCE).getRedisType());
+        Assert.assertEquals(CacheRedisType.STRING,
+                CacheDomainRegistry.require(CacheDomainRegistry.BLACK).getRedisType());
     }
 
     @Test
@@ -82,7 +86,8 @@ public class CacheDomainRegistryTest {
                 CacheDomainRegistry.CLIENT_CHANNEL,
                 CacheDomainRegistry.CHANNEL,
                 CacheDomainRegistry.CLIENT_BALANCE,
-                CacheDomainRegistry.TRANSFER
+                CacheDomainRegistry.TRANSFER,
+                CacheDomainRegistry.BLACK
         ));
 
         Assert.assertEquals(expected, CacheDomainRegistry.currentManualRebuildDomainCodes());
@@ -103,7 +108,8 @@ public class CacheDomainRegistryTest {
                 CacheDomainRegistry.CLIENT_CHANNEL,
                 CacheDomainRegistry.CHANNEL,
                 CacheDomainRegistry.CLIENT_BALANCE,
-                CacheDomainRegistry.TRANSFER
+                CacheDomainRegistry.TRANSFER,
+                CacheDomainRegistry.BLACK
         ));
 
         Assert.assertEquals(expected, CacheDomainRegistry.currentBootReconcileDomainCodes());
@@ -112,6 +118,7 @@ public class CacheDomainRegistryTest {
         Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_TEMPLATE));
         Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_BALANCE));
         Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.TRANSFER));
+        Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.BLACK));
     }
 
     @Test
@@ -160,6 +167,24 @@ public class CacheDomainRegistryTest {
         Assert.assertEquals(CacheRedisType.STRING, contract.getRedisType());
         Assert.assertEquals(
                 Arrays.asList(CacheKeyConstants.TRANSFER + "{mobile}"),
+                contract.getLogicalKeyPatterns()
+        );
+        Assert.assertEquals(CacheWritePolicy.WRITE_THROUGH, contract.getWritePolicy());
+        Assert.assertEquals(CacheDeletePolicy.DELETE_KEY, contract.getDeletePolicy());
+        Assert.assertEquals(CacheRebuildPolicy.FULL_REBUILD, contract.getRebuildPolicy());
+        Assert.assertTrue(contract.isBootRebuildEnabled());
+    }
+
+    @Test
+    public void blackShouldUseMainlineStringContract() {
+        CacheDomainContract contract = CacheDomainRegistry.require(CacheDomainRegistry.BLACK);
+        Assert.assertEquals(CacheSourceOfTruth.MYSQL, contract.getSourceOfTruth());
+        Assert.assertEquals(CacheRedisType.STRING, contract.getRedisType());
+        Assert.assertEquals(
+                Arrays.asList(
+                        CacheKeyConstants.BLACK + "{mobile}",
+                        CacheKeyConstants.BLACK + "{clientId}" + CacheKeyConstants.SEPARATE + "{mobile}"
+                ),
                 contract.getLogicalKeyPatterns()
         );
         Assert.assertEquals(CacheWritePolicy.WRITE_THROUGH, contract.getWritePolicy());

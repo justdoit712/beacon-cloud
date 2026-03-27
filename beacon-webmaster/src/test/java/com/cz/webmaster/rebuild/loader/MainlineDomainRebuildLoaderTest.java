@@ -3,12 +3,14 @@ package com.cz.webmaster.rebuild.loader;
 import com.cz.webmaster.entity.Channel;
 import com.cz.webmaster.entity.ClientBalance;
 import com.cz.webmaster.entity.ClientBusiness;
+import com.cz.webmaster.entity.MobileBlack;
 import com.cz.webmaster.entity.MobileTransfer;
 import com.cz.webmaster.mapper.ChannelMapper;
 import com.cz.webmaster.mapper.ClientBalanceMapper;
 import com.cz.webmaster.mapper.ClientBusinessMapper;
 import com.cz.webmaster.mapper.ClientChannelMapper;
 import com.cz.webmaster.mapper.ClientTemplateMapper;
+import com.cz.webmaster.mapper.MobileBlackMapper;
 import com.cz.webmaster.mapper.MobileTransferMapper;
 import org.junit.Assert;
 import org.junit.Test;
@@ -207,6 +209,39 @@ public class MainlineDomainRebuildLoaderTest {
         Assert.assertFalse(firstMembers.get(0).containsKey("signId"));
         Assert.assertEquals(7001L, firstMembers.get(0).get("id"));
         Assert.assertEquals("营销模板", secondMembers.get(0).get("templateText"));
+        verify(mapper, times(1)).findAllActive();
+    }
+
+    @Test
+    public void shouldLoadBlackSnapshotAsMobilePayload() {
+        MobileBlackMapper mapper = Mockito.mock(MobileBlackMapper.class);
+        BlackDomainRebuildLoader loader = new BlackDomainRebuildLoader(mapper);
+
+        MobileBlack global = new MobileBlack();
+        global.setBlackNumber("13800000000");
+        global.setClientId(0);
+
+        MobileBlack clientScoped = new MobileBlack();
+        clientScoped.setBlackNumber("13800000001");
+        clientScoped.setClientId(1001);
+
+        MobileBlack invalid = new MobileBlack();
+        invalid.setClientId(2001);
+
+        when(mapper.findAllActive()).thenReturn(Arrays.asList(global, clientScoped, invalid));
+
+        List<Object> snapshot = loader.loadSnapshot();
+
+        Assert.assertEquals(2, snapshot.size());
+        Assert.assertTrue(snapshot.get(0) instanceof Map);
+        Assert.assertTrue(snapshot.get(1) instanceof Map);
+
+        Map<String, Object> first = (Map<String, Object>) snapshot.get(0);
+        Map<String, Object> second = (Map<String, Object>) snapshot.get(1);
+        Assert.assertEquals("13800000000", first.get("mobile"));
+        Assert.assertFalse(first.containsKey("clientId"));
+        Assert.assertEquals("13800000001", second.get("mobile"));
+        Assert.assertEquals(1001, second.get("clientId"));
         verify(mapper, times(1)).findAllActive();
     }
 

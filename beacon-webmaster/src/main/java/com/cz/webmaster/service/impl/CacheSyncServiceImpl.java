@@ -477,6 +477,10 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             rebuildSetDomain(key, entityOrId, true);
             return;
         }
+        if (CacheDomainRegistry.BLACK.equals(domain)) {
+            cacheWriteClient.set(key, resolveStringValue(domain, entityOrId));
+            return;
+        }
         if (CacheDomainRegistry.TRANSFER.equals(domain)) {
             cacheWriteClient.set(key, resolveStringValue(domain, entityOrId));
             return;
@@ -494,10 +498,6 @@ public class CacheSyncServiceImpl implements CacheSyncService {
     private void doLegacyCompatibleUpsert(String domain, String key, Object entityOrId) {
         if (isLegacySetDomain(domain)) {
             rebuildSetDomain(key, entityOrId, false);
-            return;
-        }
-        if (CacheDomainRegistry.BLACK.equals(domain)) {
-            cacheWriteClient.set(key, resolveStringValue(domain, entityOrId));
             return;
         }
         throw new ApiException("unsupported legacy compatible upsert domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
@@ -578,6 +578,11 @@ public class CacheSyncServiceImpl implements CacheSyncService {
         if (CacheDomainRegistry.CHANNEL.equals(domain)) {
             return cacheKeyBuilder.channelById(readLong(entityOrId, "id", "channelId"));
         }
+        if (CacheDomainRegistry.BLACK.equals(domain)) {
+            Long clientId = tryReadLong(entityOrId, "clientId", "client_id", "owntypeid", "ownerId");
+            String mobile = readText(entityOrId, "mobile", "blackNumber", "black_number", "number");
+            return clientId == null ? cacheKeyBuilder.blackGlobal(mobile) : cacheKeyBuilder.blackClient(clientId, mobile);
+        }
         if (CacheDomainRegistry.TRANSFER.equals(domain)) {
             return cacheKeyBuilder.transfer(readText(entityOrId, "mobile"));
         }
@@ -592,11 +597,6 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      * @return 兼容域逻辑 key
      */
     private String buildLegacyCompatibleKey(String domain, Object entityOrId) {
-        if (CacheDomainRegistry.BLACK.equals(domain)) {
-            Long clientId = tryReadLong(entityOrId, "clientId", "id");
-            String mobile = readText(entityOrId, "mobile");
-            return clientId == null ? cacheKeyBuilder.blackGlobal(mobile) : cacheKeyBuilder.blackClient(clientId, mobile);
-        }
         if (CacheDomainRegistry.DIRTY_WORD.equals(domain)) {
             return cacheKeyBuilder.dirtyWord();
         }

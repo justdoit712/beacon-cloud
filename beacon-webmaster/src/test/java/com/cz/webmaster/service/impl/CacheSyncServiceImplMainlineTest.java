@@ -69,7 +69,8 @@ public class CacheSyncServiceImplMainlineTest {
                         stubLoader("client_channel"),
                         stubLoader("channel"),
                         stubLoader("client_balance"),
-                        stubLoader("transfer")
+                        stubLoader("transfer"),
+                        stubLoader("black")
                 )),
                 cacheRebuildCoordinationSupport
         );
@@ -228,6 +229,38 @@ public class CacheSyncServiceImplMainlineTest {
     }
 
     @Test
+    public void shouldRouteBlackUpsertToSetWithGlobalKey() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("mobile", "13800000000");
+
+        cacheSyncService.syncUpsert("black", payload);
+
+        verify(cacheWriteClient, times(1)).set("black:13800000000", "1");
+    }
+
+    @Test
+    public void shouldRouteBlackUpsertToSetWithClientScopeKey() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("client_id", 1001L);
+        payload.put("black_number", "13800000000");
+
+        cacheSyncService.syncUpsert("black", payload);
+
+        verify(cacheWriteClient, times(1)).set("black:1001:13800000000", "1");
+    }
+
+    @Test
+    public void shouldRouteBlackDeleteToDeleteApiWithClientScopeKey() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("clientId", 1001L);
+        payload.put("mobile", "13800000000");
+
+        cacheSyncService.syncDelete("black", payload);
+
+        verify(cacheWriteClient, times(1)).delete("black:1001:13800000000");
+    }
+
+    @Test
     public void shouldSkipDeleteForClientBalanceBecauseOverwriteOnly() {
         Map<String, Object> payload = new HashMap<>();
         payload.put("clientId", 1001L);
@@ -245,7 +278,7 @@ public class CacheSyncServiceImplMainlineTest {
         Assert.assertEquals("ALL", report.getDomain());
         Assert.assertEquals("MANUAL", report.getTrigger());
         Assert.assertEquals("SUCCESS", report.getStatus());
-        Assert.assertEquals(7, report.getReports().size());
+        Assert.assertEquals(8, report.getReports().size());
         Assert.assertEquals("client_business", report.getReports().get(0).getDomain());
         Assert.assertEquals("client_sign", report.getReports().get(1).getDomain());
         Assert.assertEquals("client_template", report.getReports().get(2).getDomain());
@@ -253,6 +286,7 @@ public class CacheSyncServiceImplMainlineTest {
         Assert.assertEquals("channel", report.getReports().get(4).getDomain());
         Assert.assertEquals("client_balance", report.getReports().get(5).getDomain());
         Assert.assertEquals("transfer", report.getReports().get(6).getDomain());
+        Assert.assertEquals("black", report.getReports().get(7).getDomain());
     }
 
     @Test

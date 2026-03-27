@@ -93,17 +93,6 @@ public class CacheSyncServiceImplLegacyCompatibleTest {
     }
 
     @Test
-    public void shouldRouteBlackDeleteToDeleteApiWithClientScopeKey() {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("clientId", 1001L);
-        payload.put("mobile", "13800000000");
-
-        cacheSyncService.syncDelete("black", payload);
-
-        verify(cacheWriteClient, times(1)).delete("black:1001:13800000000");
-    }
-
-    @Test
     public void shouldDeleteSetKeyWhenSyncDeleteDirtyWord() {
         cacheSyncService.syncDelete("dirty_word", new HashMap<String, Object>());
         verify(cacheWriteClient, times(1)).delete("dirty_word");
