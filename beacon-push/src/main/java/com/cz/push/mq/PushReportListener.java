@@ -59,15 +59,7 @@ public class PushReportListener {
             channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
             return;
         }
-
-        //2、发送状态报告
-        boolean flag = pushReport(report);
-
-        //3、如果发送失败，重试
-        isResend(report, flag);
-
-        //4、直接手动ack
-        channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
+        process(report, channel, message);
     }
 
 
@@ -80,14 +72,18 @@ public class PushReportListener {
      */
     @RabbitListener(queues = RabbitMQConfig.DELAYED_QUEUE)
     public void delayedConsume(StandardReport report, Channel channel,Message message) throws IOException {
+        process(report, channel, message);
+    }
+
+    private void process(StandardReport report, Channel channel, Message message) throws IOException {
         // 1、发送状态报告
         boolean flag = pushReport(report);
 
         // 2、判断状态报告发送情况
         isResend(report, flag);
 
-        // 手动ack
-        channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
+        // 3、手动ack
+        channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
     }
 
 
