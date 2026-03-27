@@ -35,7 +35,6 @@
 | `beacon-search` | `elasticsearch-rest-high-level-client` / `elasticsearch` | `7.6.2` |
 | `beacon-smsgateway` | `netty-all` / `hippo4j-spring-boot-starter` | `4.1.69.Final` / `1.5.0` |
 | `beacon-strategy` | `ikanalyzer` / `hutool-dfa` | `2012_u6` / `5.8.12` |
-| `beacon-test` | `mybatis-spring-boot-starter` / `mysql-connector-java` | `2.2.2` / `5.1.49` |
 | `beacon-webmaster` | `shiro-spring-boot-web-starter` / `druid-spring-boot-starter` / `mybatis-spring-boot-starter` | `1.4.0` / `1.1.10` / `2.2.2` |
 
 > 依赖治理说明（2026-03-24）
@@ -57,7 +56,6 @@
 - `beacon-monitor`: 监控告警服务（xxl-job），检查队列积压和客户余额并邮件通知。
 - `beacon-webmaster`: 运营后台（Shiro + MyBatis + 静态前端），管理客户、通道、策略等数据。
 - `beacon-common`: 公共模块，提供常量、模型、异常、工具类和安全签名能力。
-- `beacon-test`: 测试/数据初始化辅助模块（含 Mapper 与缓存写入相关能力）。
 
 ## 3. 核心链路
 
@@ -96,8 +94,7 @@
 
 说明：
 
-- `beacon-webmaster` 与 `beacon-test` 在仓库中使用 `application.yml`，同时仍接入 Nacos。
-- 端口等运行参数主要应在 Nacos 配置中统一管理（`beacon-test` 本地示例端口为 `20000`）。
+- `beacon-webmaster` 在仓库中使用 `application.yml`，同时仍接入 Nacos。
 
 ## 5. 运行前准备
 
@@ -177,7 +174,6 @@ mvn clean package -DskipTests
 7. `beacon-api`
 8. `beacon-webmaster`
 9. `beacon-monitor`
-10. `beacon-test`（按需）
 
 可在 IDE 直接运行各模块启动类：
 
@@ -189,7 +185,6 @@ mvn clean package -DskipTests
 - `com.cz.api.ApiStarterApp`
 - `com.cz.webmaster.WebMasterStarterApp`
 - `com.cz.monitor.MonitorStarterApp`
-- `com.cz.test.TestStarter`
 
 ## 7. 关键接口示例
 

@@ -19,7 +19,6 @@
         <module>beacon-api</module>
         <module>beacon-common</module>
         <module>beacon-cache</module>
-        <module>beacon-test</module>
         <module>beacon-strategy</module>
         <module>beacon-search</module>
         <module>beacon-push</module>
