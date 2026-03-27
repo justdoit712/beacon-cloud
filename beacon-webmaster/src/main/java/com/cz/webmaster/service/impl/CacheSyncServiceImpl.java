@@ -145,7 +145,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             CacheDomainContract contract = requireDomainContract(normalizedDomain);
             key = buildKey(contract.getDomainCode(), entityOrId);
 
-            doUpsert(contract.getDomainCode(), key, entityOrId);
+            doCurrentMainlineUpsert(contract.getDomainCode(), key, entityOrId);
             CacheSyncLogHelper.info(log, contract.getDomainCode(), entityId, key, operation, costMs(startAt));
         } catch (ApiException ex) {
             CacheSyncLogHelper.error(
@@ -422,27 +422,6 @@ public class CacheSyncServiceImpl implements CacheSyncService {
     }
 
     /**
-     * 根据缓存域路由到对应的写入实现。
-     *
-     * @param domain 缓存域编码
-     * @param key 逻辑 key
-     * @param entityOrId 业务实体对象或主键标识
-     */
-    private void doUpsert(String domain, String key, Object entityOrId) {
-        if (CacheDomainRegistry.isCurrentMainlineDomain(domain)) {
-            //当前域是主线域
-            doCurrentMainlineUpsert(domain, key, entityOrId);
-            return;
-        }
-        if (CacheDomainRegistry.isCurrentLegacyCompatibleDomain(domain)) {
-            //当前域是兼容域
-            doLegacyCompatibleUpsert(domain, key, entityOrId);
-            return;
-        }
-        throw new ApiException("unsupported upsert domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
-    }
-
-    /**
      * 执行当前主线域的写入逻辑。
      *
      * @param domain 缓存域编码
@@ -493,31 +472,6 @@ public class CacheSyncServiceImpl implements CacheSyncService {
     }
 
     /**
-     * 执行兼容保留域的写入逻辑。
-     *
-     * @param domain 缓存域编码
-     * @param key 逻辑 key
-     * @param entityOrId 业务实体对象或主键标识
-     */
-    private void doLegacyCompatibleUpsert(String domain, String key, Object entityOrId) {
-        if (isLegacySetDomain(domain)) {
-            rebuildSetDomain(key, entityOrId, false);
-            return;
-        }
-        throw new ApiException("unsupported legacy compatible upsert domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
-    }
-
-    /**
-     * 判断指定域是否属于兼容保留的 Set 型缓存域。
-     *
-     * @param domain 缓存域编码
-     * @return true 表示属于兼容 Set 域
-     */
-    private boolean isLegacySetDomain(String domain) {
-        return false;
-    }
-
-    /**
      * 按“先删后重建”的方式重建 Set 型缓存。
      *
      * @param key 逻辑 key
@@ -547,13 +501,10 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      * @return 逻辑 key
      */
     private String buildKey(String domain, Object entityOrId) {
-        if (CacheDomainRegistry.isCurrentMainlineDomain(domain)) {
-            return buildCurrentMainlineKey(domain, entityOrId);
+        if (!CacheDomainRegistry.isCurrentMainlineDomain(domain)) {
+            throw new ApiException("unsupported cache domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
         }
-        if (CacheDomainRegistry.isCurrentLegacyCompatibleDomain(domain)) {
-            return buildLegacyCompatibleKey(domain, entityOrId);
-        }
-        throw new ApiException("unsupported cache domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
+        return buildCurrentMainlineKey(domain, entityOrId);
     }
 
     /**
@@ -594,17 +545,6 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             return cacheKeyBuilder.transfer(readText(entityOrId, "mobile"));
         }
         throw new ApiException("unsupported current mainline key domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
-    }
-
-    /**
-     * 构建兼容保留域的逻辑 key。
-     *
-     * @param domain 缓存域编码
-     * @param entityOrId 业务实体对象或主键标识
-     * @return 兼容域逻辑 key
-     */
-    private String buildLegacyCompatibleKey(String domain, Object entityOrId) {
-        throw new ApiException("unsupported legacy compatible key domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
     }
 
     /**
@@ -1255,7 +1195,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             report.setAttemptedKeys(report.getAttemptedKeys() + 1);
             try {
                 key = buildKey(contract.getDomainCode(), payload);
-                doUpsert(contract.getDomainCode(), key, payload);
+                doCurrentMainlineUpsert(contract.getDomainCode(), key, payload);
                 report.setSuccessCount(report.getSuccessCount() + 1);
                 CacheSyncLogHelper.info(log, contract.getDomainCode(), resolveEntityId(payload), key,
                         "rebuildDomain." + phase + ".item", costMs(itemStartAt));

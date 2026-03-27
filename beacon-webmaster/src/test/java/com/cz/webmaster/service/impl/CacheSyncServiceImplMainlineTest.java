@@ -146,6 +146,19 @@ public class CacheSyncServiceImplMainlineTest {
     }
 
     @Test
+    public void shouldFallbackToStringSetWhenClientSignMembersAreStrings() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("clientId", 1001L);
+        payload.put("members", Arrays.asList("sign_a", "sign_b"));
+
+        cacheSyncService.syncUpsert("client_sign", payload);
+
+        verify(cacheWriteClient, times(1)).delete("client_sign:1001");
+        verify(cacheWriteClient, times(1)).saddStr(eq("client_sign:1001"), org.mockito.ArgumentMatchers.<String[]>any());
+        verify(cacheWriteClient, never()).sadd(eq("client_sign:1001"), org.mockito.ArgumentMatchers.<Map<String, Object>[]>any());
+    }
+
+    @Test
     public void shouldRouteClientTemplateUpsertToDeleteThenSaddMap() {
         Map<String, Object> templateMember = new HashMap<>();
         templateMember.put("id", 7001L);
@@ -549,6 +562,16 @@ public class CacheSyncServiceImplMainlineTest {
     public void shouldRejectUnsupportedDomain() {
         try {
             cacheSyncService.syncUpsert("unknown_domain", new HashMap<String, Object>());
+            Assert.fail("expected ApiException");
+        } catch (ApiException ex) {
+            Assert.assertNotNull(ex.getCode());
+        }
+    }
+
+    @Test
+    public void shouldRejectManualRebuildForUnknownDomain() {
+        try {
+            cacheSyncService.rebuildDomain("unknown_domain");
             Assert.fail("expected ApiException");
         } catch (ApiException ex) {
             Assert.assertNotNull(ex.getCode());

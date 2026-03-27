@@ -50,8 +50,6 @@ public final class CacheDomainRegistry {
     private static final Map<String, CacheDomainContract> CONTRACT_MAP;
     /** 当前主线域集合。 */
     private static final Set<String> CURRENT_MAINLINE_DOMAIN_CODES;
-    /** 当前兼容保留域集合。 */
-    private static final Set<String> CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES;
     /** 当前允许 `ALL` 展开的手工重建域集合。 */
     private static final Set<String> CURRENT_MANUAL_REBUILD_DOMAIN_CODES;
     /** 当前默认启动校准域集合。 */
@@ -60,7 +58,6 @@ public final class CacheDomainRegistry {
     static {
         List<CacheDomainContract> contracts = new ArrayList<>();
         registerCurrentMainlineContracts(contracts);
-        registerLegacyCompatibleContracts(contracts);
 
         Map<String, CacheDomainContract> index = new LinkedHashMap<>();
         for (CacheDomainContract contract : contracts) {
@@ -84,8 +81,6 @@ public final class CacheDomainRegistry {
                 BLACK,
                 DIRTY_WORD
         )));
-
-        CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>());
 
         CURRENT_MANUAL_REBUILD_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
                 CLIENT_BUSINESS,
@@ -177,25 +172,6 @@ public final class CacheDomainRegistry {
      */
     public static boolean isCurrentMainlineDomain(String domainCode) {
         return CURRENT_MAINLINE_DOMAIN_CODES.contains(domainCode);
-    }
-
-    /**
-     * 当前兼容保留域集合。
-     *
-     * @return 兼容保留域集合
-     */
-    public static Set<String> currentLegacyCompatibleDomainCodes() {
-        return CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES;
-    }
-
-    /**
-     * 判断域是否属于当前兼容保留范围。
-     *
-     * @param domainCode 域编码
-     * @return true 表示属于兼容保留域
-     */
-    public static boolean isCurrentLegacyCompatibleDomain(String domainCode) {
-        return CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES.contains(domainCode);
     }
 
     /**
@@ -376,14 +352,5 @@ public final class CacheDomainRegistry {
                 "beacon-webmaster",
                 true
         ));
-    }
-
-    /**
-     * 注册当前兼容保留缓存域契约。
-     *
-     * @param contracts 契约可变列表
-     */
-    private static void registerLegacyCompatibleContracts(List<CacheDomainContract> contracts) {
-        // no legacy compatible domain currently
     }
 }
