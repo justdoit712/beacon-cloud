@@ -7,7 +7,6 @@ import com.cz.common.util.JsonUtil;
 import com.cz.push.config.RabbitMQConfig;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -18,6 +17,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -54,11 +54,12 @@ public class PushReportListener {
     public void consume(StandardReport report, Channel channel, Message message) throws IOException {
         //1、获取客户的回调地址
         String callbackUrl = report.getCallbackUrl();
-        if(StringUtils.isEmpty(callbackUrl)){
+        if(!StringUtils.hasText(callbackUrl)){
             log.info("【推送模块-推送状态报告】 客户方没有设置回调的地址信息！callbackUrl = {} ",callbackUrl);
             channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
             return;
         }
+        report.setCallbackUrl(callbackUrl.trim());
         process(report, channel, message);
     }
 
