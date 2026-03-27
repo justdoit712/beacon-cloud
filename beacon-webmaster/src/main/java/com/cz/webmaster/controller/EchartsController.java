@@ -1,5 +1,7 @@
 package com.cz.webmaster.controller;
 
+import com.cz.common.util.Result;
+import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.service.EchartsQueryService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,7 +28,7 @@ public class EchartsController {
     }
 
     @GetMapping("/pie")
-    public Map<String, Object> pie(@RequestParam Map<String, Object> params) {
+    public ResultVO<?> pie(@RequestParam Map<String, Object> params) {
         Map<String, Integer> stateCount = echartsQueryService.queryStateCountWithPermission(params);
         int waiting = stateCount.getOrDefault("waiting", 0);
         int success = stateCount.getOrDefault("success", 0);
@@ -56,11 +58,11 @@ public class EchartsController {
         Map<String, Object> result = new HashMap<>();
         result.put("legendData", legendData);
         result.put("seriesData", seriesData);
-        return result;
+        return Result.ok(result);
     }
 
     @GetMapping("/line")
-    public Map<String, Object> line(@RequestParam Map<String, Object> params) {
+    public ResultVO<?> line(@RequestParam Map<String, Object> params) {
         Map<String, Integer> stateCount = echartsQueryService.queryStateCountWithPermission(params);
 
         List<String> xAxis = new ArrayList<>();
@@ -76,11 +78,11 @@ public class EchartsController {
         Map<String, Object> result = new HashMap<>();
         result.put("xAxis", xAxis);
         result.put("seriesData", seriesData);
-        return result;
+        return Result.ok(result);
     }
 
     @GetMapping("/bar")
-    public Map<String, Object> bar(@RequestParam Map<String, Object> params) {
+    public ResultVO<?> bar(@RequestParam Map<String, Object> params) {
         return line(params);
     }
 }

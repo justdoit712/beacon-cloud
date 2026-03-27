@@ -1,4 +1,4 @@
-$(function () {
+﻿$(function () {
     var option = {
         url: '../sys/channel/list',
         pagination: true,	//显示分页条
@@ -134,7 +134,7 @@ var vm = new Vue({
             $.get("../sys/channel/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.channel = r.channel;
+                vm.channel = (r && r.data) ? r.data.channel : {};
                 if (vm.channel.isavailable === null || vm.channel.isavailable === undefined || vm.channel.isavailable === '') {
                     vm.channel.isavailable = 0;
                 }

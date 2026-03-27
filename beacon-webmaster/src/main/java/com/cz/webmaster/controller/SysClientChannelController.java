@@ -55,7 +55,7 @@ public class SysClientChannelController {
     }
 
     @GetMapping("/info/{id}")
-    public Map<String, Object> info(@PathVariable("id") Long id) {
+    public ResultVO<?> info(@PathVariable("id") Long id) {
         ClientChannel entity = clientChannelService.findById(id);
 
         ClientChannelVO vo = new ClientChannelVO();
@@ -65,7 +65,7 @@ public class SysClientChannelController {
 
         Map<String, Object> result = new HashMap<>();
         result.put("clientchannel", vo);
-        return result;
+        return Result.ok(result);
     }
 
     @PostMapping("/save")

@@ -1,23 +1,22 @@
-$(function () {
+﻿$(function () {
     var option = {
         url: '../sys/role/list',
-        pagination: true,	//显示分页条
-        sidePagination: 'server',//服务器端分页
+        pagination: true,
+        sidePagination: 'server',
         toolbar: '#toolbar',
         queryParams: function (params) {
-            var temp = {   //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
-                limit: params.limit,   //页面大小
-                offset: params.offset,  //页码
+            return {
+                limit: params.limit,
+                offset: params.offset,
                 name: $("#role-name").val(),
                 status: $("#role-status").val()
             };
-            return temp;
         },
-        striped: true,     //设置为true会有隔行变色效果
+        striped: true,
         columns: [
             {checkbox: true},
             {
-                field: 'id',//field： json的key对应
+                field: 'id',
                 title: '序号',
                 width: 40,
                 formatter: function (value, row, index) {
@@ -30,14 +29,17 @@ $(function () {
             {field: 'name', title: '名称'},
             {field: 'remark', title: '备注'},
             {
-                title: '状态', field: 'status', formatter: function (value, row, index) {
-                    return value === 1 ? '<span class="label label-success">有效</span>' : '<span class="label label-danger">无效</span>'
+                title: '状态', field: 'status', formatter: function (value) {
+                    return value === 1
+                        ? '<span class="label label-success">有效</span>'
+                        : '<span class="label label-danger">无效</span>';
                 }
             }
         ]
     };
     $('#table').bootstrapTable(option);
 });
+
 var ztree;
 
 var vm = new Vue({
@@ -56,29 +58,18 @@ var vm = new Vue({
             return selectedRow.id;
         },
         del: function () {
-
-            //var rows = getSelectedRows();
-            /**
-             * getSelections
-             参数： undefined
-             详情：
-             返回选定的行，如果未选择任何记录，则返回一个空数组。
-             */
-            var rows = $("#table").bootstrapTable("getSelections")
-            //[]
+            var rows = $("#table").bootstrapTable("getSelections");
             if (rows == null || rows.length == 0) {
                 alert('请选择您要删除的行');
                 return;
             }
-            var id = 'id';
-            //提示确认框  layer huozhe sweetalert
+
             layer.confirm('您确定要删除所选数据吗？', {
-                btn: ['确定', '取消'] //可以无限个按钮
-            }, function (index, layero) {
-                var ids = new Array();
-                //遍历所有选择的行数据，取每条数据对应的ID
+                btn: ['确定', '取消']
+            }, function () {
+                var ids = [];
                 $.each(rows, function (i, row) {
-                    ids.push(row[id]);
+                    ids.push(row.id);
                 });
 
                 $.ajax({
@@ -86,11 +77,11 @@ var vm = new Vue({
                     url: "../sys/role/del",
                     data: JSON.stringify(ids),
                     success: function (r) {
-                        if (r.status) {
+                        if (r.code === 0) {
                             layer.alert('删除成功');
                             $('#table').bootstrapTable('refresh');
                         } else {
-                            layer.alert(r.message);
+                            layer.alert(r.msg);
                         }
                     },
                     error: function () {
@@ -104,37 +95,36 @@ var vm = new Vue({
             vm.title = "新增";
             vm.role = {};
         },
-        update: function (event) {
+        update: function () {
             var roleId = vm.getSelectedRoleId();
             if (roleId == null) {
                 return;
             }
-            //sys/menu/info/1
             $.get("../sys/role/info/" + roleId, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.role = r.role;
+                vm.role = (r && r.data) ? r.data.role : {};
             });
         },
-        saveOrUpdate: function (event) {
+        saveOrUpdate: function () {
             var url = vm.role.id == null ? "../sys/role/save" : "../sys/role/update";
             $.ajax({
                 type: "POST",
                 url: url,
                 data: JSON.stringify(vm.role),
                 success: function (r) {
-                    if (r.status) {
+                    if (r.code === 0) {
                         layer.alert(r.msg, function (index) {
                             layer.close(index);
                             vm.reload();
                         });
                     } else {
-                        layer.alert(r.message);
+                        layer.alert(r.msg);
                     }
                 }
             });
         },
-        reload: function (event) {
+        reload: function () {
             vm.showList = true;
             $("#table").bootstrapTable('refresh');
         },
@@ -156,20 +146,20 @@ var vm = new Vue({
                 btn: ['确定', '取消'],
                 btn1: function (index) {
                     var treeData = ztree.getCheckedNodes(true);
-                    var menuIds = ""
+                    var menuIds = "";
                     for (var i = 0; i < treeData.length; i++) {
-                        menuIds += "&menuIds=" + treeData[i].id
+                        menuIds += "&menuIds=" + treeData[i].id;
                     }
                     $.ajax({
                         method: "post",
                         url: "../sys/role/menu/assign",
                         data: "roleId=" + roleId + menuIds,
                         success: function (r) {
-                            if (r.status) {
+                            if (r.code === 0) {
                                 layer.alert('分配成功');
                                 layer.close(index);
                             } else {
-                                layer.alert(r.message);
+                                layer.alert(r.msg);
                             }
                         },
                         error: function () {
@@ -197,31 +187,32 @@ var vm = new Vue({
                     key: {
                         url: "nourl"
                     }
-                }, check: {
+                },
+                check: {
                     enable: true,
-                    chkStyle: "checkbox",    //复选框
+                    chkStyle: "checkbox",
                     chkboxType: {
                         "Y": "ps",
                         "N": "ps"
                     }
                 }
             };
-            $.get("../sys/role/menu/" + roleId, function (roleMenu) {
-                $.get("../sys/role/menu/tree",
-                    function (r) {
-                        //设置ztree的数据
-                        ztree = $.fn.zTree.init($("#menuTree"), setting, r.menuList);
-                        ztree.expandAll(true);
-                        for (var i = 0; i < roleMenu.length; i++) {
-                            var node = ztree.getNodeByParam("id", roleMenu[i]);
-                            if (node) {
-                                node.checked = true;
-                                ztree.updateNode(node);
-                            }
+            $.get("../sys/role/menu/" + roleId, function (roleMenuResp) {
+                var roleMenu = (roleMenuResp && roleMenuResp.code === 0 && $.isArray(roleMenuResp.data))
+                    ? roleMenuResp.data : [];
+                $.get("../sys/role/menu/tree", function (r) {
+                    var menuList = (r && r.data && $.isArray(r.data.menuList)) ? r.data.menuList : [];
+                    ztree = $.fn.zTree.init($("#menuTree"), setting, menuList);
+                    ztree.expandAll(true);
+                    for (var i = 0; i < roleMenu.length; i++) {
+                        var node = ztree.getNodeByParam("id", roleMenu[i]);
+                        if (node) {
+                            node.checked = true;
+                            ztree.updateNode(node);
                         }
-                    });
-            })
-
+                    }
+                });
+            });
         }
     }
 });

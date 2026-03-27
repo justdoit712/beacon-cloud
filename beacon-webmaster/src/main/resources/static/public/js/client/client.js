@@ -1,4 +1,4 @@
-$(function () {
+﻿$(function () {
     var option = {
         url: '../sys/client/list',
         pagination: true,	//显示分页条
@@ -127,7 +127,7 @@ var vm = new Vue({
             $.get("../sys/client/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.client = r.client;
+                vm.client = (r && r.data) ? r.data.client : {};
                 vm.saving = false;
                 vm.clearValidation();
             });
@@ -170,3 +170,4 @@ var vm = new Vue({
         }
     }
 });
+

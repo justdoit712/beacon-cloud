@@ -1,4 +1,4 @@
-$(function () {
+﻿$(function () {
     vm.init();
 });
 
@@ -39,7 +39,7 @@ var vm = new Vue({
                     layer.alert(r && r.msg ? r.msg : '加载客户列表失败');
                     return;
                 }
-                vm.sites = r.sites || r.data || [];
+                vm.sites = r.data || [];
                 if (!vm.sms.clientId && vm.sites.length > 0) {
                     vm.sms.clientId = vm.sites[0].id;
                 }
@@ -143,3 +143,4 @@ var vm = new Vue({
         }
     }
 });
+

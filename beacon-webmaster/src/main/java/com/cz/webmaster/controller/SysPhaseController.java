@@ -36,10 +36,10 @@ public class SysPhaseController {
     }
 
     @GetMapping("/phase/info/{id}")
-    public Map<String, Object> info(@PathVariable("id") Long id) {
+    public ResultVO<?> info(@PathVariable("id") Long id) {
         Map<String, Object> result = new HashMap<>();
         result.put("phase", phaseService.info(id));
-        return result;
+        return Result.ok(result);
     }
 
     @PostMapping("/phase/save")
@@ -72,25 +72,15 @@ public class SysPhaseController {
     }
 
     @GetMapping("/provs/all")
-    public Map<String, Object> allProvs() {
+    public ResultVO<?> allProvs() {
         List<Map<String, Object>> sites = phaseService.allProvinces();
-        Map<String, Object> result = new HashMap<>();
-        result.put("code", 0);
-        result.put("msg", "");
-        result.put("sites", sites);
-        result.put("data", sites);
-        return result;
+        return Result.ok(sites);
     }
 
     @GetMapping("/citys/all/{provId}")
-    public Map<String, Object> allCitys(@PathVariable("provId") Long provId) {
+    public ResultVO<?> allCitys(@PathVariable("provId") Long provId) {
         List<Map<String, Object>> citys = phaseService.allCities(provId);
-        Map<String, Object> result = new HashMap<>();
-        result.put("code", 0);
-        result.put("msg", "");
-        result.put("citys", citys);
-        result.put("data", citys);
-        return result;
+        return Result.ok(citys);
     }
 }
 

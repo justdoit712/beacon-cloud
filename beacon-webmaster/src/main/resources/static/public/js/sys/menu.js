@@ -1,4 +1,4 @@
-$(function () {
+﻿$(function () {
     var option = {
         url: '../sys/menu/list',
         pagination: true,	//显示分页条
@@ -120,7 +120,7 @@ var vm = new Vue({
             $.get("../sys/menu/info/" + menuId, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.menu = r.menu;
+                vm.menu = (r && r.data) ? r.data.menu : {};
 
                 vm.getMenu();
             });
@@ -187,7 +187,7 @@ var vm = new Vue({
             //加载菜单树
             $.get("../sys/menu/select", function (r) {
                 //设置ztree的数据
-                ztree = $.fn.zTree.init($("#menuTree"), setting, r.menuList);
+                ztree = $.fn.zTree.init($("#menuTree"), setting, (r.data ? r.data.menuList : []));
 
                 //编辑（update）时，打开tree，自动高亮选择的条目menuId
                 var node = ztree.getNodeByParam("id", vm.menu.parentId);

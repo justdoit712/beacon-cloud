@@ -1,4 +1,4 @@
-$(function () {
+﻿$(function () {
     var option = {
         url: '../schedule/job/list',
         pagination: true,	//显示分页条
@@ -77,7 +77,7 @@ var vm = new Vue({
             $.get("../schedule/job/info/" + jobId, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.scheduleJob = r.scheduleJob;
+                vm.scheduleJob = (r && r.data) ? r.data.scheduleJob : {};
             });
         },
         saveOrUpdate: function () {

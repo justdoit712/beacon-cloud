@@ -1,4 +1,4 @@
-$(function () {
+﻿$(function () {
     var option = {
         url: '../sys/phase/list',
         pagination: true,	//显示分页条
@@ -77,7 +77,7 @@ var vm = new Vue({
             vm.title = "新增";
             vm.phase = {parentName: null, parentId: 0, type: 1, orderNum: 0};
             $.get("../sys/provs/all", function (r) {
-                vm.sites = r.sites;
+                vm.sites = r.data;
             });
         },
         update: function (event) {
@@ -90,11 +90,11 @@ var vm = new Vue({
             $.get("../sys/phase/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.phase = r.phase;
+                vm.phase = (r && r.data) ? r.data.phase : {};
                 $.get("../sys/provs/all", function (r1) {
-                    vm.sites = r1.sites;
-                    $.get("../sys/citys/all/"+r.phase.provId, function (r2) {
-                        vm.citys = r2.citys;
+                    vm.sites = r1.data;
+                    $.get("../sys/citys/all/" + vm.phase.provId, function (r2) {
+                        vm.citys = r2.data;
                     });
                 });
             });
@@ -122,7 +122,7 @@ var vm = new Vue({
         getCitys: function (event) {
             var provId = event.target.value;
             $.get("../sys/citys/all/"+provId, function (r) {
-                vm.citys = r.citys;
+                vm.citys = r.data;
             });
         },
         reload: function (event) {

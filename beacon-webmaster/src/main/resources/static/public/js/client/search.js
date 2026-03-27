@@ -1,4 +1,4 @@
-$(function () {
+﻿$(function () {
     var option = {
         url: '../sys/search/list',
         pagination: true,
@@ -94,7 +94,8 @@ var vm = new Vue({
     },
     created: function () {
         $.get("../sys/clientbusiness/all", function (r) {
-            vm.sites = (r && (r.sites || r.data)) ? (r.sites || r.data) : [];
+            vm.sites = (r && r.data) ? r.data : [];
         });
     }
 });
+

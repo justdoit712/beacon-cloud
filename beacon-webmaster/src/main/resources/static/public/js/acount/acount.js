@@ -1,4 +1,4 @@
-$(function () {
+﻿$(function () {
     var option = {
         url: '../sys/acount/list',
         pagination: true,	//显示分页条
@@ -121,7 +121,7 @@ var vm = new Vue({
             vm.title = "新增";
             vm.acount = {};
             $.get("../sys/clientbusiness/all", function (r) {
-                vm.sites = r.sites;
+                vm.sites = r.data;
             });
         },
         update: function (event) {
@@ -134,11 +134,11 @@ var vm = new Vue({
             $.get("../sys/acount/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.acount = r.acount;
+                vm.acount = (r && r.data) ? r.data.acount : {};
             });
 
             $.get("../sys/clientbusiness/all", function (r) {
-                vm.sites = r.sites;
+                vm.sites = r.data;
             });
 
         },
@@ -166,3 +166,4 @@ var vm = new Vue({
         }
     }
 });
+

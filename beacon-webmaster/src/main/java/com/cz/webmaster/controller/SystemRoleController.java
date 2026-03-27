@@ -1,6 +1,8 @@
 package com.cz.webmaster.controller;
 
-import com.cz.webmaster.controller.support.StatusResultUtils;
+import com.cz.common.util.Result;
+import com.cz.common.vo.PageResultVO;
+import com.cz.common.vo.ResultVO;
 import com.cz.webmaster.converter.SysRoleConverter;
 import com.cz.webmaster.dto.SysRoleForm;
 import com.cz.webmaster.entity.SmsMenu;
@@ -18,14 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 角色管理接口
- */
 @RestController
 @RequestMapping("/sys/role")
 public class SystemRoleController {
@@ -39,10 +37,10 @@ public class SystemRoleController {
     }
 
     @GetMapping("/list")
-    public Map<String, Object> list(@RequestParam(value = "offset", defaultValue = "0") Integer offset,
-                                    @RequestParam(value = "limit", defaultValue = "10") Integer limit,
-                                    @RequestParam(value = "name", required = false) String name,
-                                    @RequestParam(value = "status", required = false) String status) {
+    public PageResultVO<?> list(@RequestParam(value = "offset", defaultValue = "0") Integer offset,
+                                @RequestParam(value = "limit", defaultValue = "10") Integer limit,
+                                @RequestParam(value = "name", required = false) String name,
+                                @RequestParam(value = "status", required = false) String status) {
         int safeOffset = offset == null || offset < 0 ? 0 : offset;
         int safeLimit = limit == null || limit <= 0 ? 10 : limit;
 
@@ -56,58 +54,54 @@ public class SystemRoleController {
         for (SmsRole role : roles.subList(fromIndex, toIndex)) {
             rows.add(SysRoleConverter.toView(role));
         }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("total", total);
-        result.put("rows", rows);
-        return result;
+        return Result.ok(total, rows);
     }
 
     @GetMapping("/info/{id}")
-    public Map<String, Object> info(@PathVariable("id") Integer id) {
+    public ResultVO<?> info(@PathVariable("id") Integer id) {
         SmsRole role = roleService.findById(id);
-        return Collections.singletonMap("role", SysRoleConverter.toView(role));
+        return Result.ok(Collections.singletonMap("role", SysRoleConverter.toView(role)));
     }
 
     @PostMapping("/save")
-    public Map<String, Object> save(@RequestBody SysRoleForm form) {
+    public ResultVO<?> save(@RequestBody SysRoleForm form) {
         if (form == null || !StringUtils.hasText(form.getName())) {
-            return StatusResultUtils.fail("角色名称不能为空");
+            return Result.error("role name is required");
         }
         if (roleService.existsByName(form.getName(), null)) {
-            return StatusResultUtils.fail("角色名称已存在");
+            return Result.error("role name already exists");
         }
 
         SmsRole role = SysRoleConverter.toEntity(form);
         boolean success = roleService.save(role);
-        return success ? StatusResultUtils.ok("新增成功") : StatusResultUtils.fail("新增失败");
+        return success ? Result.ok("save success") : Result.error("save failed");
     }
 
     @PostMapping("/update")
-    public Map<String, Object> update(@RequestBody SysRoleForm form) {
+    public ResultVO<?> update(@RequestBody SysRoleForm form) {
         if (form == null || form.getId() == null) {
-            return StatusResultUtils.fail("角色id不能为空");
+            return Result.error("role id is required");
         }
         if (StringUtils.hasText(form.getName()) && roleService.existsByName(form.getName(), form.getId())) {
-            return StatusResultUtils.fail("角色名称已存在");
+            return Result.error("role name already exists");
         }
 
         SmsRole role = SysRoleConverter.toEntity(form);
         boolean success = roleService.update(role);
-        return success ? StatusResultUtils.ok("修改成功") : StatusResultUtils.fail("修改失败");
+        return success ? Result.ok("update success") : Result.error("update failed");
     }
 
     @PostMapping("/del")
-    public Map<String, Object> delete(@RequestBody List<Integer> ids) {
+    public ResultVO<?> delete(@RequestBody List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
-            return StatusResultUtils.fail("请选择要删除的数据");
+            return Result.error("ids are required");
         }
         boolean success = roleService.deleteBatch(ids);
-        return success ? StatusResultUtils.ok("删除成功") : StatusResultUtils.fail("删除失败");
+        return success ? Result.ok("delete success") : Result.error("delete failed");
     }
 
     @GetMapping("/menu/tree")
-    public Map<String, Object> menuTree() {
+    public ResultVO<?> menuTree() {
         List<SmsMenu> menus = menuService.findAll();
         List<Map<String, Object>> menuList = new ArrayList<>();
 
@@ -125,18 +119,18 @@ public class SystemRoleController {
             menuList.add(node);
         }
 
-        return Collections.singletonMap("menuList", menuList);
+        return Result.ok(Collections.singletonMap("menuList", menuList));
     }
 
     @GetMapping("/menu/{roleId}")
-    public List<Integer> roleMenu(@PathVariable("roleId") Integer roleId) {
-        return roleService.findMenuIdsByRoleId(roleId);
+    public ResultVO<?> roleMenu(@PathVariable("roleId") Integer roleId) {
+        return Result.ok(roleService.findMenuIdsByRoleId(roleId));
     }
 
     @PostMapping("/menu/assign")
-    public Map<String, Object> assignMenu(@RequestParam("roleId") Integer roleId,
-                                          @RequestParam(value = "menuIds", required = false) List<Integer> menuIds) {
+    public ResultVO<?> assignMenu(@RequestParam("roleId") Integer roleId,
+                                  @RequestParam(value = "menuIds", required = false) List<Integer> menuIds) {
         boolean success = roleService.assignMenu(roleId, menuIds);
-        return success ? StatusResultUtils.ok("分配成功") : StatusResultUtils.fail("分配失败");
+        return success ? Result.ok("assign success") : Result.error("assign failed");
     }
 }

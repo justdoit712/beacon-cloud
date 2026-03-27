@@ -57,9 +57,9 @@ public class SysClientController {
     }
 
     @GetMapping("/info/{id}")
-    public Map<String, Object> info(@PathVariable("id") Long id) {
+    public ResultVO<?> info(@PathVariable("id") Long id) {
         ClientBusiness cb = clientBusinessService.findById(id);
-        return Collections.singletonMap("client", SysClientConverter.toView(cb));
+        return Result.ok(Collections.singletonMap("client", SysClientConverter.toView(cb)));
     }
 
     @PostMapping("/save")

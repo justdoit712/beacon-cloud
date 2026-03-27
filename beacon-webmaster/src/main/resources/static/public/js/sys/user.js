@@ -1,4 +1,4 @@
-$(function () {
+﻿$(function () {
 
     $("#table").bootstrapTable({
         url: "/sys/user/list",
@@ -137,7 +137,7 @@ var vm = new Vue({
             vm.saving = false;
             vm.clearValidation();
             $.get("../sys/clientbusiness/all", function (r) {
-                vm.sites = r.sites;
+                vm.sites = r.data;
             });
         },
         update: function (event) {
@@ -149,12 +149,12 @@ var vm = new Vue({
             $.get("../sys/user/info/" + userId, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.user = r.user;
+                vm.user = (r && r.data) ? r.data.user : {};
                 vm.saving = false;
                 vm.clearValidation();
             });
             $.get("../sys/clientbusiness/all", function (r) {
-                vm.sites = r.sites;
+                vm.sites = r.data;
             });
         },
         saveOrUpdate: function (event) {
@@ -196,3 +196,4 @@ var vm = new Vue({
         }
     }
 });
+

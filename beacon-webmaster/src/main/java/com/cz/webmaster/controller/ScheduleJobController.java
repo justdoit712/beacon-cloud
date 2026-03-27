@@ -13,9 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping({"/schedule/job", "/sys/job"})
@@ -37,10 +36,8 @@ public class ScheduleJobController {
     }
 
     @GetMapping("/info/{jobId}")
-    public Map<String, Object> info(@PathVariable("jobId") Long jobId) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("scheduleJob", scheduleJobService.findById(jobId));
-        return result;
+    public ResultVO<?> info(@PathVariable("jobId") Long jobId) {
+        return Result.ok(Collections.singletonMap("scheduleJob", scheduleJobService.findById(jobId)));
     }
 
     @PostMapping("/save")

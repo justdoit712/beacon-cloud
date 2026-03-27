@@ -39,12 +39,12 @@ public class SysLegacyCrudController {
     }
 
     @GetMapping("/{family:" + FAMILY_PATTERN + "}/info/{id}")
-    public Map<String, Object> info(@PathVariable("family") String family, @PathVariable("id") Long id) {
+    public ResultVO<?> info(@PathVariable("family") String family, @PathVariable("id") Long id) {
         Map<String, Object> result = new HashMap<>();
         String detailKey = legacyCrudService.getDetailKey(family);
         Map<String, Object> detail = legacyCrudService.info(family, id);
         result.put(detailKey, detail);
-        return result;
+        return Result.ok(result);
     }
 
     @PostMapping("/{family:" + FAMILY_PATTERN + "}/save")

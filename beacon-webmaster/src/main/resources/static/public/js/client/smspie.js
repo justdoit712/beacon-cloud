@@ -1,4 +1,4 @@
-var vm = new Vue({
+﻿var vm = new Vue({
     el: '#dtapp',
     data: {
         sites: [],
@@ -42,8 +42,15 @@ var vm = new Vue({
                 data: temp,
                 dataType: 'json',
                 success: function (r) {
-                    var legendData = Array.isArray(r && r.legendData) ? r.legendData : [];
-                    var seriesData = Array.isArray(r && r.seriesData) ? r.seriesData : [];
+                    if (!r || r.code !== 0) {
+                        vm.chartMessage = (r && r.msg) ? r.msg : '统计请求失败，请稍后重试。';
+                        vm.stats = { waiting: 0, success: 0, failed: 0, total: 0 };
+                        layer.alert(vm.chartMessage);
+                        return;
+                    }
+                    var payload = r.data || {};
+                    var legendData = Array.isArray(payload.legendData) ? payload.legendData : [];
+                    var seriesData = Array.isArray(payload.seriesData) ? payload.seriesData : [];
                     var waiting = vm.findSeriesValue(seriesData, '等待');
                     var success = vm.findSeriesValue(seriesData, '成功');
                     var failed = vm.findSeriesValue(seriesData, '失败');
@@ -122,7 +129,7 @@ var vm = new Vue({
     },
     created: function () {
         $.get("../sys/clientbusiness/all", function (r) {
-            vm.sites = r && (r.sites || r.data) ? (r.sites || r.data) : [];
+            vm.sites = (r && r.data) ? r.data : [];
         });
     },
     mounted: function () {
@@ -134,3 +141,4 @@ var vm = new Vue({
         window.removeEventListener('resize', this.handleResize);
     }
 });
+

@@ -49,7 +49,7 @@ public class SysMobileTransferController {
     }
 
     @GetMapping("/info/{id}")
-    public Map<String, Object> info(@PathVariable("id") Long id) {
+    public ResultVO<?> info(@PathVariable("id") Long id) {
         MobileTransfer entity = mobileTransferService.findById(id);
         MobileTransferVO vo = new MobileTransferVO();
         if (entity != null) {
@@ -57,7 +57,7 @@ public class SysMobileTransferController {
         }
         Map<String, Object> result = new HashMap<>();
         result.put("mobiletransfer", vo);
-        return result;
+        return Result.ok(result);
     }
 
     @PostMapping("/save")

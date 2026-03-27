@@ -1,4 +1,4 @@
-$(function () {
+﻿$(function () {
     var option = {
         url: '../sys/clientchannel/list',
         pagination: true,	//显示分页条
@@ -41,8 +41,8 @@ var vm = new Vue({
     methods: {
         loadSites: function () {
             $.get("../sys/clientbusiness/all", function (r) {
-                if (r && r.code === 0 && $.isArray(r.sites)) {
-                    vm.sites = r.sites;
+                if (r && r.code === 0 && $.isArray(r.data)) {
+                    vm.sites = r.data;
                     if (vm.sites.length === 0) {
                         layer.alert("未查询到可用客户数据，请先维护客户信息");
                     }
@@ -57,8 +57,8 @@ var vm = new Vue({
         },
         loadChannelSites: function () {
             $.get("../sys/channel/all", function (r) {
-                if (r && r.code === 0 && $.isArray(r.channelsites)) {
-                    vm.channelsites = r.channelsites;
+                if (r && r.code === 0 && $.isArray(r.data)) {
+                    vm.channelsites = r.data;
                     if (vm.channelsites.length === 0) {
                         layer.alert("未查询到可用通道数据，请先维护通道信息");
                     }
@@ -122,7 +122,7 @@ var vm = new Vue({
             $.get("../sys/clientchannel/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.clientchannel = r.clientchannel;
+                vm.clientchannel = (r && r.data) ? r.data.clientchannel : {};
             });
 
             vm.loadSites();

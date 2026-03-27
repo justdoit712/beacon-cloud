@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -50,7 +50,7 @@ public class SysChannelController {
     }
 
     @GetMapping("/all")
-    public Map<String, Object> all() {
+    public ResultVO<?> all() {
         List<Channel> list = channelService.findAllActive();
         List<ChannelVO> voList = new ArrayList<>();
         for (Channel entity : list) {
@@ -58,26 +58,17 @@ public class SysChannelController {
             BeanUtils.copyProperties(entity, vo);
             voList.add(vo);
         }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("code", 0);
-        result.put("msg", "");
-        result.put("channelsites", voList);
-        result.put("data", voList);
-        return result;
+        return Result.ok(voList);
     }
 
     @GetMapping("/info/{id}")
-    public Map<String, Object> info(@PathVariable("id") Long id) {
+    public ResultVO<?> info(@PathVariable("id") Long id) {
         Channel entity = channelService.findById(id);
         ChannelVO vo = new ChannelVO();
         if (entity != null) {
             BeanUtils.copyProperties(entity, vo);
         }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("channel", vo);
-        return result;
+        return Result.ok(Collections.singletonMap("channel", vo));
     }
 
     @PostMapping("/save")

@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 客户业务信息 Controller。
+ * Client business controller.
  */
 @RestController
 @Slf4j
@@ -56,8 +56,8 @@ public class ClientBusinessController {
 
     @GetMapping("/list")
     public PageResultVO<?> list(@RequestParam(value = "offset", defaultValue = "0") Integer offset,
-                         @RequestParam(value = "limit", defaultValue = "10") Integer limit,
-                         @RequestParam(value = "search", required = false) String keyword) {
+                                @RequestParam(value = "limit", defaultValue = "10") Integer limit,
+                                @RequestParam(value = "search", required = false) String keyword) {
         int safeOffset = offset == null || offset < 0 ? 0 : offset;
         int safeLimit = limit == null || limit <= 0 ? 10 : limit;
 
@@ -75,15 +75,15 @@ public class ClientBusinessController {
     }
 
     @GetMapping("/info/{id}")
-    public Map<String, Object> info(@PathVariable("id") Long id) {
+    public ResultVO<?> info(@PathVariable("id") Long id) {
         ClientBusiness cb = clientBusinessService.findById(id);
-        return Collections.singletonMap("clientbusiness", ClientBusinessConverter.toDetailVO(cb));
+        return Result.ok(Collections.singletonMap("clientbusiness", ClientBusinessConverter.toDetailVO(cb)));
     }
 
     @PostMapping("/save")
     public ResultVO save(@RequestBody ClientBusinessForm form) {
         if (form == null || !StringUtils.hasText(form.getCorpname())) {
-            return Result.error("鍏徃鍚嶇О涓嶈兘涓虹┖");
+            return Result.error("公司名称不能为空");
         }
         ClientBusiness cb = ClientBusinessConverter.toEntity(form);
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
@@ -92,13 +92,13 @@ public class ClientBusinessController {
             cb.setUpdateId(currentUser.getId().longValue());
         }
         boolean success = clientBusinessService.save(cb);
-        return success ? Result.ok("鏂板鎴愬姛") : Result.error("鏂板澶辫触");
+        return success ? Result.ok("新增成功") : Result.error("新增失败");
     }
 
     @PostMapping("/update")
     public ResultVO update(@RequestBody ClientBusinessForm form) {
         if (form == null || form.getId() == null) {
-            return Result.error("瀹㈡埛id涓嶈兘涓虹┖");
+            return Result.error("客户id不能为空");
         }
         ClientBusiness cb = ClientBusinessConverter.toEntity(form);
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
@@ -106,27 +106,24 @@ public class ClientBusinessController {
             cb.setUpdateId(currentUser.getId().longValue());
         }
         boolean success = clientBusinessService.update(cb);
-        return success ? Result.ok("淇敼鎴愬姛") : Result.error("淇敼澶辫触");
+        return success ? Result.ok("修改成功") : Result.error("修改失败");
     }
 
     @PostMapping("/del")
     public ResultVO delete(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            return Result.error("璇烽€夋嫨瑕佸垹闄ょ殑鏁版嵁");
+            return Result.error("请选择要删除的数据");
         }
         boolean success = clientBusinessService.deleteBatch(ids);
-        return success ? Result.ok("鍒犻櫎鎴愬姛") : Result.error("鍒犻櫎澶辫触");
+        return success ? Result.ok("删除成功") : Result.error("删除失败");
     }
 
     @GetMapping("/all")
-    public Map<String, Object> all() {
+    public ResultVO<?> all() {
         SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if (smsUser == null) {
-            log.info("銆愯幏鍙栧鎴蜂俊鎭€戠敤鎴锋湭鐧诲綍");
-            Map<String, Object> result = new HashMap<>();
-            result.put("code", ExceptionEnums.NOT_LOGIN.getCode());
-            result.put("msg", ExceptionEnums.NOT_LOGIN.getMsg());
-            return result;
+            log.info("clientbusiness all denied: not login");
+            return Result.error(ExceptionEnums.NOT_LOGIN);
         }
 
         Integer userId = smsUser.getId();
@@ -146,19 +143,11 @@ public class ClientBusinessController {
             }
         }
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("code", 0);
-        result.put("msg", "");
-        result.put("data", data);
-        result.put("sites", data);
-        return result;
+        return Result.ok(data);
     }
 
     /**
-     * 客户充值入口。
-     *
-     * <p>当前实现统一委托给余额命令服务完成充值，
-     * 不再通过“先读旧余额、再计算新余额、最后调用通用 update”的方式修改余额。</p>
+     * Client recharge endpoint.
      */
     @GetMapping("/pay")
     public ResultVO pay(@RequestParam("jine") Long amount,
@@ -229,4 +218,3 @@ public class ClientBusinessController {
         }
     }
 }
-

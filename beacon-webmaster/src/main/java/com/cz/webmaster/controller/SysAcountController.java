@@ -36,8 +36,8 @@ public class SysAcountController {
     }
 
     @GetMapping("/info/{id}")
-    public Map<String, Object> info(@PathVariable("id") Long id) {
-        return Collections.singletonMap("acount", acountService.info(id));
+    public ResultVO<?> info(@PathVariable("id") Long id) {
+        return Result.ok(Collections.singletonMap("acount", acountService.info(id)));
     }
 
     @PostMapping("/save")

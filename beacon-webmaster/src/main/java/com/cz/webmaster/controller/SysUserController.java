@@ -56,9 +56,9 @@ public class SysUserController {
     }
 
     @GetMapping("/info/{id}")
-    public Map<String, Object> info(@PathVariable("id") Integer id) {
+    public ResultVO<?> info(@PathVariable("id") Integer id) {
         SmsUser user = userService.findById(id);
-        return Collections.singletonMap("user", SysUserConverter.toView(user, true));
+        return Result.ok(Collections.singletonMap("user", SysUserConverter.toView(user, true)));
     }
 
     @PostMapping("/save")

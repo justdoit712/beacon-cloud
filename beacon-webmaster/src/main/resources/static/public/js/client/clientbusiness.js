@@ -1,4 +1,4 @@
-$(function () {
+﻿$(function () {
     var option = {
         url: '../sys/clientbusiness/list',
         pagination: true,	//显示分页条
@@ -114,7 +114,7 @@ var vm = new Vue({
             vm.title = "新增";
             vm.clientbusiness = {};
             $.get("../sys/clientbusiness/all", function (r) {
-                vm.sites = r.sites;
+                vm.sites = r.data;
             });
         },
         update: function (event) {
@@ -127,11 +127,11 @@ var vm = new Vue({
             $.get("../sys/clientbusiness/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.clientbusiness = r.clientbusiness;
+                vm.clientbusiness = (r && r.data) ? r.data.clientbusiness : {};
             });
 
             $.get("../sys/clientbusiness/all", function(r){
-                vm.sites = r.sites;
+                vm.sites = r.data;
             });
 
 

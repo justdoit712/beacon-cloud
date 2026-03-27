@@ -56,21 +56,21 @@ public class SysMenuController {
     }
 
     @GetMapping("/info/{id}")
-    public Map<String, Object> info(@PathVariable("id") Integer id) {
+    public ResultVO<?> info(@PathVariable("id") Integer id) {
         SmsMenu menu = menuService.findById(id);
         Map<Integer, String> nameMap = SysMenuConverter.buildNameMap(menuService.findAll());
-        return Collections.singletonMap("menu", SysMenuConverter.toView(menu, nameMap));
+        return Result.ok(Collections.singletonMap("menu", SysMenuConverter.toView(menu, nameMap)));
     }
 
     @GetMapping("/select")
-    public Map<String, Object> select() {
+    public ResultVO<?> select() {
         List<SmsMenu> menus = menuService.findAll();
         List<Map<String, Object>> menuList = new ArrayList<>();
         menuList.add(SysMenuConverter.rootNode());
         for (SmsMenu menu : menus) {
             menuList.add(SysMenuConverter.toTreeNode(menu));
         }
-        return Collections.singletonMap("menuList", menuList);
+        return Result.ok(Collections.singletonMap("menuList", menuList));
     }
 
     @PostMapping("/save")
