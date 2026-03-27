@@ -6,21 +6,23 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * 心跳Handler
  */
+@Slf4j
 public class HeartHandler extends ChannelInboundHandlerAdapter {
 
-    private NettyClient client;
+    private final NettyClient client;
     public HeartHandler(NettyClient client){
         this.client=client;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("初始化创建连接。。。");
+        log.info("cmpp channel active, channelId={}", ctx.channel().id().asShortText());
         super.channelActive(ctx);
     }
     @Override
@@ -30,7 +32,8 @@ public class HeartHandler extends ChannelInboundHandlerAdapter {
             IdleState state = event.state();
             if (state == IdleState.WRITER_IDLE || state == IdleState.ALL_IDLE) {
                 client.submit(new CmppActiveTest());
-                System.out.println("心跳启动!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                log.debug("cmpp heartbeat sent, channelId={}, state={}",
+                        ctx.channel().id().asShortText(), state);
             }
         } else {
             super.userEventTriggered(ctx, evt);
@@ -40,6 +43,7 @@ public class HeartHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
+        log.warn("cmpp channel inactive, channelId={}, reconnecting...", ctx.channel().id().asShortText());
         client.reConnect(10);
     }
 }

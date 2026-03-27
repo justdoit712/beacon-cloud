@@ -4,6 +4,7 @@ import com.cz.smsgateway.netty4.utils.Command;
 import com.cz.smsgateway.netty4.utils.MsgUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.UnsupportedEncodingException;
 
@@ -13,6 +14,7 @@ import java.io.UnsupportedEncodingException;
 /**
  * CMPP请求信息
  */
+@Slf4j
 public class CmppSubmit extends CmppMessageHeader {
 
     int msgId = 0;
@@ -109,7 +111,8 @@ public class CmppSubmit extends CmppMessageHeader {
         try {
             msgContent = content.getBytes("UTF-16BE");
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            msgContent = new byte[0];
+            log.error("cmpp submit encode content failed, sequenceId={}, mobile={}", SequenceId, mobile, e);
         }
         this.msgId = SequenceId;
         this.sequenceId = this.msgId;

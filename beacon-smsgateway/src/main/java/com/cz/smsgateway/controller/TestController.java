@@ -1,5 +1,6 @@
 package com.cz.smsgateway.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -10,6 +11,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @author zjw
  * @description
  */
+@Slf4j
 @RestController
 public class TestController {
 
@@ -19,7 +21,7 @@ public class TestController {
     @GetMapping("/test")
     public String test(){
         cmppSubmitPool.execute(() -> {
-            System.out.println(Thread.currentThread().getName());
+            log.info("test endpoint task running, thread={}", Thread.currentThread().getName());
         });
         return "ok!";
     }

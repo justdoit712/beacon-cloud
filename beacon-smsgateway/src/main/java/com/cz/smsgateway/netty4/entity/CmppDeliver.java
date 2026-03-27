@@ -1,6 +1,7 @@
 package com.cz.smsgateway.netty4.entity;
 
 import com.cz.smsgateway.netty4.utils.MsgUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -8,6 +9,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 
+@Slf4j
 public class CmppDeliver {
 
     private byte[] Msg_Id = new byte[8];
@@ -97,9 +99,13 @@ public class CmppDeliver {
                 this.result = 1;
             }
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            this.result = 1;
+            log.error("cmpp deliver decode failed due to unsupported encoding, dataLength={}",
+                    data == null ? 0 : data.length, e);
         } catch (IOException e) {
-            e.printStackTrace();
+            this.result = 1;
+            log.error("cmpp deliver decode failed due to io exception, dataLength={}",
+                    data == null ? 0 : data.length, e);
         } finally {
             try {
                 if (null != dis)
@@ -107,7 +113,7 @@ public class CmppDeliver {
                 if (null != bais)
                     bais.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.warn("cmpp deliver stream close failed", e);
             }
         }
 

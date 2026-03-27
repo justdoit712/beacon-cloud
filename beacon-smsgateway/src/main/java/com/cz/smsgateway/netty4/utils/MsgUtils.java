@@ -1,5 +1,7 @@
 package com.cz.smsgateway.netty4.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -12,6 +14,7 @@ import java.util.Date;
 /**
  * 解析工具
  */
+@Slf4j
 public class MsgUtils {
 
     //序列编号起始值(起始为随机数即可)
@@ -52,7 +55,7 @@ public class MsgUtils {
             byte[] data = (spId + "\0\0\0\0\0\0\0\0\0" + secret + MsgUtils.getTimestamp()).getBytes();
             return md5.digest(data);
         } catch (NoSuchAlgorithmException e) {
-            System.out.println("SP链接到ISMG拼接AuthenticatorSource失败" + e.getMessage());
+            log.error("build AuthenticatorSource failed, spId={}", spId, e);
             return null;
         }
     }
@@ -69,7 +72,7 @@ public class MsgUtils {
         try {
             byte[] data = s.getBytes("gb2312");
             if (data.length > len) {
-                System.out.println("向流中写入的字符串超长！要写" + len + " 字符串是:" + s);
+                log.warn("writeString truncated input, expectedLen={}, actualLen={}", len, data.length);
             }
             int srcLen = data.length;
             dous.write(data);
@@ -78,7 +81,7 @@ public class MsgUtils {
                 srcLen++;
             }
         } catch (IOException e) {
-            System.out.println("向流中写入指定字节长度的字符串失败：" + e.getMessage());
+            log.error("writeString failed, expectedLen={}", len, e);
         }
     }
 

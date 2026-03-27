@@ -8,11 +8,13 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * 封装的netty客户端
  */
+@Slf4j
 public class NettyClient {
 
     // 通道
@@ -39,7 +41,8 @@ public class NettyClient {
         try {
             doConnect(host, port);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            log.error("cmpp connect interrupted, host={}, port={}, serviceId={}", host, port, serviceId, e);
         }
     }
 
@@ -81,16 +84,23 @@ public class NettyClient {
                         Thread.sleep(10 * 1000);
                         times++;
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
+                        log.warn("cmpp reconnect sleep interrupted, host={}, port={}, serviceId={}",
+                                host, port, serviceId, e);
+                        break;
                     }
                 }
             } catch (Exception ex) {
-                System.out.println("尝试重连...:" + host + ":" + port + " / " + serviceId);
+                log.warn("cmpp reconnect attempt failed, host={}, port={}, serviceId={}, attempt={}",
+                        host, port, serviceId, times + 1, ex);
                 try {
                     Thread.sleep(10 * 1000);
                     times++;
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                    log.warn("cmpp reconnect backoff interrupted, host={}, port={}, serviceId={}",
+                            host, port, serviceId, e);
+                    break;
                 }
             }
         }

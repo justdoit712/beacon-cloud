@@ -8,6 +8,7 @@ import com.cz.smsgateway.netty4.utils.MsgUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
 /**
  * 中国移动给咱们响应信息时，通过当前Decoder接收并做数据的解析
  */
+@Slf4j
 public class CMPPDecoder extends ByteToMessageDecoder {
 
 
@@ -38,31 +40,38 @@ public class CMPPDecoder extends ByteToMessageDecoder {
         //连接请求响应
         switch (commandId) {
             case Command.CMPP_ACTIVE_TEST:
-                System.out.println("-----------------接收到链路检测-----------------");
+                log.debug("cmpp active test received, channelId={}, commandId={}",
+                        channelHandlerContext.channel().id().asShortText(), commandId);
                 channelHandlerContext.writeAndFlush(new CmppActiveTestResp());
                 break;
             case Command.CMPP_ACTIVE_TEST_RESP:
-                System.out.println("--------------接收到链路应答--------------");
+                log.debug("cmpp active test response received, channelId={}, commandId={}",
+                        channelHandlerContext.channel().id().asShortText(), commandId);
                 break;
             case Command.CMPP_DELIVER:
-                System.out.println("-------------状态报告---------------");
+                log.info("cmpp deliver received, channelId={}, totalLength={}, commandId={}",
+                        channelHandlerContext.channel().id().asShortText(), totalLength, commandId);
                 CmppDeliver deliver=new CmppDeliver(bytes);
                 list.add(deliver);
                 break;
             case Command.CMPP_SUBMIT_RESP:
-                System.out.println("-------------接收到短信提交应答-------------");
+                log.info("cmpp submit response received, channelId={}, totalLength={}, commandId={}",
+                        channelHandlerContext.channel().id().asShortText(), totalLength, commandId);
                 CmppSubmitResp submitResp=new CmppSubmitResp(bytes);
                 list.add(submitResp);
                 break;
             case Command.CMPP_QUERY_RESP:
-                System.out.println("-------------接收到短信查询应答-------------");
+                log.info("cmpp query response received, channelId={}, commandId={}",
+                        channelHandlerContext.channel().id().asShortText(), commandId);
                 break;
             case Command.CMPP_CONNECT_RESP:
-                System.out.println("-------------请求连接应答-------------");
+                log.info("cmpp connect response received, channelId={}, commandId={}",
+                        channelHandlerContext.channel().id().asShortText(), commandId);
                 //服务器端告诉客户端已接受你的连接
                 break;
             default:
-                System.out.println("暂无解析"+commandId);
+                log.warn("unsupported cmpp command, channelId={}, commandId={}, totalLength={}",
+                        channelHandlerContext.channel().id().asShortText(), commandId, totalLength);
                 break;
         }
         //list.add(commandId);
