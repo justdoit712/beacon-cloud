@@ -70,7 +70,8 @@ public class CacheSyncServiceImplMainlineTest {
                         stubLoader("channel"),
                         stubLoader("client_balance"),
                         stubLoader("transfer"),
-                        stubLoader("black")
+                        stubLoader("black"),
+                        stubLoader("dirty_word")
                 )),
                 cacheRebuildCoordinationSupport
         );
@@ -261,6 +262,37 @@ public class CacheSyncServiceImplMainlineTest {
     }
 
     @Test
+    public void shouldRouteDirtyWordUpsertToDeleteThenSaddStr() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("members", Arrays.asList("bad_1", "bad_2"));
+
+        cacheSyncService.syncUpsert("dirty_word", payload);
+
+        verify(cacheWriteClient, times(1)).delete("dirty_word");
+        ArgumentCaptor<String[]> captor = ArgumentCaptor.forClass(String[].class);
+        verify(cacheWriteClient, times(1)).saddStr(eq("dirty_word"), captor.capture());
+        Assert.assertArrayEquals(new String[]{"bad_1", "bad_2"}, captor.getValue());
+    }
+
+    @Test
+    public void shouldDeleteOnlyWhenDirtyWordMembersEmpty() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("members", Arrays.asList());
+
+        cacheSyncService.syncUpsert("dirty_word", payload);
+
+        verify(cacheWriteClient, times(1)).delete("dirty_word");
+        verify(cacheWriteClient, never()).saddStr(eq("dirty_word"), org.mockito.ArgumentMatchers.<String[]>any());
+        verify(cacheWriteClient, never()).sadd(eq("dirty_word"), org.mockito.ArgumentMatchers.<Map<String, Object>[]>any());
+    }
+
+    @Test
+    public void shouldDeleteSetKeyWhenSyncDeleteDirtyWord() {
+        cacheSyncService.syncDelete("dirty_word", new HashMap<String, Object>());
+        verify(cacheWriteClient, times(1)).delete("dirty_word");
+    }
+
+    @Test
     public void shouldSkipDeleteForClientBalanceBecauseOverwriteOnly() {
         Map<String, Object> payload = new HashMap<>();
         payload.put("clientId", 1001L);
@@ -278,7 +310,7 @@ public class CacheSyncServiceImplMainlineTest {
         Assert.assertEquals("ALL", report.getDomain());
         Assert.assertEquals("MANUAL", report.getTrigger());
         Assert.assertEquals("SUCCESS", report.getStatus());
-        Assert.assertEquals(8, report.getReports().size());
+        Assert.assertEquals(9, report.getReports().size());
         Assert.assertEquals("client_business", report.getReports().get(0).getDomain());
         Assert.assertEquals("client_sign", report.getReports().get(1).getDomain());
         Assert.assertEquals("client_template", report.getReports().get(2).getDomain());
@@ -287,6 +319,7 @@ public class CacheSyncServiceImplMainlineTest {
         Assert.assertEquals("client_balance", report.getReports().get(5).getDomain());
         Assert.assertEquals("transfer", report.getReports().get(6).getDomain());
         Assert.assertEquals("black", report.getReports().get(7).getDomain());
+        Assert.assertEquals("dirty_word", report.getReports().get(8).getDomain());
     }
 
     @Test

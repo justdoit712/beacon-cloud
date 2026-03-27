@@ -81,12 +81,11 @@ public final class CacheDomainRegistry {
                 CHANNEL,
                 CLIENT_BALANCE,
                 TRANSFER,
-                BLACK
-        )));
-
-        CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
+                BLACK,
                 DIRTY_WORD
         )));
+
+        CURRENT_LEGACY_COMPATIBLE_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>());
 
         CURRENT_MANUAL_REBUILD_DOMAIN_CODES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
                 CLIENT_BUSINESS,
@@ -96,7 +95,8 @@ public final class CacheDomainRegistry {
                 CHANNEL,
                 CLIENT_BALANCE,
                 TRANSFER,
-                BLACK
+                BLACK,
+                DIRTY_WORD
         )));
 
         CURRENT_BOOT_RECONCILE_DOMAIN_CODES = Collections.unmodifiableSet(
@@ -364,14 +364,7 @@ public final class CacheDomainRegistry {
                 "beacon-webmaster",
                 true
         ));
-    }
 
-    /**
-     * 注册当前兼容保留缓存域契约。
-     *
-     * @param contracts 契约可变列表
-     */
-    private static void registerLegacyCompatibleContracts(List<CacheDomainContract> contracts) {
         contracts.add(new CacheDomainContract(
                 DIRTY_WORD,
                 Collections.singletonList(CacheKeyConstants.DIRTY_WORD),
@@ -383,5 +376,14 @@ public final class CacheDomainRegistry {
                 "beacon-webmaster",
                 true
         ));
+    }
+
+    /**
+     * 注册当前兼容保留缓存域契约。
+     *
+     * @param contracts 契约可变列表
+     */
+    private static void registerLegacyCompatibleContracts(List<CacheDomainContract> contracts) {
+        // no legacy compatible domain currently
     }
 }

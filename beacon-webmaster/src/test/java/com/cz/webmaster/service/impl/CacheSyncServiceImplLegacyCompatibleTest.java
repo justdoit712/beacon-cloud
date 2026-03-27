@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -55,31 +54,6 @@ public class CacheSyncServiceImplLegacyCompatibleTest {
     }
 
     @Test
-    public void shouldRouteDirtyWordUpsertToDeleteThenSaddStr() {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("members", Arrays.asList("bad_1", "bad_2"));
-
-        cacheSyncService.syncUpsert("dirty_word", payload);
-
-        verify(cacheWriteClient, times(1)).delete("dirty_word");
-        ArgumentCaptor<String[]> captor = ArgumentCaptor.forClass(String[].class);
-        verify(cacheWriteClient, times(1)).saddStr(eq("dirty_word"), captor.capture());
-        Assert.assertArrayEquals(new String[]{"bad_1", "bad_2"}, captor.getValue());
-    }
-
-    @Test
-    public void shouldDeleteOnlyWhenDirtyWordMembersEmpty() {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("members", Arrays.asList());
-
-        cacheSyncService.syncUpsert("dirty_word", payload);
-
-        verify(cacheWriteClient, times(1)).delete("dirty_word");
-        verify(cacheWriteClient, never()).saddStr(eq("dirty_word"), org.mockito.ArgumentMatchers.<String[]>any());
-        verify(cacheWriteClient, never()).sadd(eq("dirty_word"), org.mockito.ArgumentMatchers.<Map<String, Object>[]>any());
-    }
-
-    @Test
     public void shouldFallbackToStringSetWhenClientSignMembersAreStrings() {
         Map<String, Object> payload = new HashMap<>();
         payload.put("clientId", 1001L);
@@ -93,15 +67,9 @@ public class CacheSyncServiceImplLegacyCompatibleTest {
     }
 
     @Test
-    public void shouldDeleteSetKeyWhenSyncDeleteDirtyWord() {
-        cacheSyncService.syncDelete("dirty_word", new HashMap<String, Object>());
-        verify(cacheWriteClient, times(1)).delete("dirty_word");
-    }
-
-    @Test
     public void shouldRejectManualRebuildForLegacyCompatibleDomain() {
         try {
-            cacheSyncService.rebuildDomain("dirty_word");
+            cacheSyncService.rebuildDomain("unknown_domain");
             Assert.fail("expected ApiException");
         } catch (ApiException ex) {
             Assert.assertNotNull(ex.getCode());

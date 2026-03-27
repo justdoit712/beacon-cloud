@@ -4,6 +4,7 @@ import com.cz.webmaster.entity.Channel;
 import com.cz.webmaster.entity.ClientBalance;
 import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.entity.MobileBlack;
+import com.cz.webmaster.entity.MobileDirtyWord;
 import com.cz.webmaster.entity.MobileTransfer;
 import com.cz.webmaster.mapper.ChannelMapper;
 import com.cz.webmaster.mapper.ClientBalanceMapper;
@@ -11,6 +12,7 @@ import com.cz.webmaster.mapper.ClientBusinessMapper;
 import com.cz.webmaster.mapper.ClientChannelMapper;
 import com.cz.webmaster.mapper.ClientTemplateMapper;
 import com.cz.webmaster.mapper.MobileBlackMapper;
+import com.cz.webmaster.mapper.MobileDirtyWordMapper;
 import com.cz.webmaster.mapper.MobileTransferMapper;
 import org.junit.Assert;
 import org.junit.Test;
@@ -242,6 +244,31 @@ public class MainlineDomainRebuildLoaderTest {
         Assert.assertFalse(first.containsKey("clientId"));
         Assert.assertEquals("13800000001", second.get("mobile"));
         Assert.assertEquals(1001, second.get("clientId"));
+        verify(mapper, times(1)).findAllActive();
+    }
+
+    @Test
+    public void shouldLoadDirtyWordSnapshotAsMembersPayload() {
+        MobileDirtyWordMapper mapper = Mockito.mock(MobileDirtyWordMapper.class);
+        DirtyWordDomainRebuildLoader loader = new DirtyWordDomainRebuildLoader(mapper);
+
+        MobileDirtyWord first = new MobileDirtyWord();
+        first.setDirtyword("spam_1");
+        MobileDirtyWord duplicate = new MobileDirtyWord();
+        duplicate.setDirtyword("spam_1");
+        MobileDirtyWord second = new MobileDirtyWord();
+        second.setDirtyword("spam_2");
+        MobileDirtyWord invalid = new MobileDirtyWord();
+
+        when(mapper.findAllActive()).thenReturn(Arrays.asList(first, duplicate, second, invalid));
+
+        List<Object> snapshot = loader.loadSnapshot();
+
+        Assert.assertEquals(1, snapshot.size());
+        Assert.assertTrue(snapshot.get(0) instanceof Map);
+        Map<String, Object> payload = (Map<String, Object>) snapshot.get(0);
+        Assert.assertTrue(payload.get("members") instanceof List);
+        Assert.assertEquals(Arrays.asList("spam_1", "spam_2"), payload.get("members"));
         verify(mapper, times(1)).findAllActive();
     }
 

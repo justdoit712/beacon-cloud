@@ -481,6 +481,10 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             cacheWriteClient.set(key, resolveStringValue(domain, entityOrId));
             return;
         }
+        if (CacheDomainRegistry.DIRTY_WORD.equals(domain)) {
+            rebuildSetDomain(key, entityOrId, false);
+            return;
+        }
         if (CacheDomainRegistry.TRANSFER.equals(domain)) {
             cacheWriteClient.set(key, resolveStringValue(domain, entityOrId));
             return;
@@ -510,7 +514,7 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      * @return true 表示属于兼容 Set 域
      */
     private boolean isLegacySetDomain(String domain) {
-        return CacheDomainRegistry.DIRTY_WORD.equals(domain);
+        return false;
     }
 
     /**
@@ -583,6 +587,9 @@ public class CacheSyncServiceImpl implements CacheSyncService {
             String mobile = readText(entityOrId, "mobile", "blackNumber", "black_number", "number");
             return clientId == null ? cacheKeyBuilder.blackGlobal(mobile) : cacheKeyBuilder.blackClient(clientId, mobile);
         }
+        if (CacheDomainRegistry.DIRTY_WORD.equals(domain)) {
+            return cacheKeyBuilder.dirtyWord();
+        }
         if (CacheDomainRegistry.TRANSFER.equals(domain)) {
             return cacheKeyBuilder.transfer(readText(entityOrId, "mobile"));
         }
@@ -597,9 +604,6 @@ public class CacheSyncServiceImpl implements CacheSyncService {
      * @return 兼容域逻辑 key
      */
     private String buildLegacyCompatibleKey(String domain, Object entityOrId) {
-        if (CacheDomainRegistry.DIRTY_WORD.equals(domain)) {
-            return cacheKeyBuilder.dirtyWord();
-        }
         throw new ApiException("unsupported legacy compatible key domain: " + domain, ExceptionEnums.CACHE_SYNC_CONFIG_INVALID.getCode());
     }
 

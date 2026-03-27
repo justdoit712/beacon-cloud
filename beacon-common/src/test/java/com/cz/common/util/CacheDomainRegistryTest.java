@@ -33,6 +33,7 @@ public class CacheDomainRegistryTest {
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.CLIENT_BALANCE));
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.TRANSFER));
         Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.BLACK));
+        Assert.assertTrue(CacheDomainRegistry.contains(CacheDomainRegistry.DIRTY_WORD));
     }
 
     @Test
@@ -45,7 +46,8 @@ public class CacheDomainRegistryTest {
                 CacheDomainRegistry.CHANNEL,
                 CacheDomainRegistry.CLIENT_BALANCE,
                 CacheDomainRegistry.TRANSFER,
-                CacheDomainRegistry.BLACK
+                CacheDomainRegistry.BLACK,
+                CacheDomainRegistry.DIRTY_WORD
         ));
 
         Assert.assertEquals(expected, CacheDomainRegistry.currentMainlineDomainCodes());
@@ -75,6 +77,8 @@ public class CacheDomainRegistryTest {
                 CacheDomainRegistry.require(CacheDomainRegistry.CLIENT_BALANCE).getRedisType());
         Assert.assertEquals(CacheRedisType.STRING,
                 CacheDomainRegistry.require(CacheDomainRegistry.BLACK).getRedisType());
+        Assert.assertEquals(CacheRedisType.SET,
+                CacheDomainRegistry.require(CacheDomainRegistry.DIRTY_WORD).getRedisType());
     }
 
     @Test
@@ -87,7 +91,8 @@ public class CacheDomainRegistryTest {
                 CacheDomainRegistry.CHANNEL,
                 CacheDomainRegistry.CLIENT_BALANCE,
                 CacheDomainRegistry.TRANSFER,
-                CacheDomainRegistry.BLACK
+                CacheDomainRegistry.BLACK,
+                CacheDomainRegistry.DIRTY_WORD
         ));
 
         Assert.assertEquals(expected, CacheDomainRegistry.currentManualRebuildDomainCodes());
@@ -109,7 +114,8 @@ public class CacheDomainRegistryTest {
                 CacheDomainRegistry.CHANNEL,
                 CacheDomainRegistry.CLIENT_BALANCE,
                 CacheDomainRegistry.TRANSFER,
-                CacheDomainRegistry.BLACK
+                CacheDomainRegistry.BLACK,
+                CacheDomainRegistry.DIRTY_WORD
         ));
 
         Assert.assertEquals(expected, CacheDomainRegistry.currentBootReconcileDomainCodes());
@@ -119,6 +125,7 @@ public class CacheDomainRegistryTest {
         Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.CLIENT_BALANCE));
         Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.TRANSFER));
         Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.BLACK));
+        Assert.assertTrue(CacheDomainRegistry.isCurrentBootReconcileDomain(CacheDomainRegistry.DIRTY_WORD));
     }
 
     @Test
@@ -188,6 +195,21 @@ public class CacheDomainRegistryTest {
                 contract.getLogicalKeyPatterns()
         );
         Assert.assertEquals(CacheWritePolicy.WRITE_THROUGH, contract.getWritePolicy());
+        Assert.assertEquals(CacheDeletePolicy.DELETE_KEY, contract.getDeletePolicy());
+        Assert.assertEquals(CacheRebuildPolicy.FULL_REBUILD, contract.getRebuildPolicy());
+        Assert.assertTrue(contract.isBootRebuildEnabled());
+    }
+
+    @Test
+    public void dirtyWordShouldUseMainlineSetContract() {
+        CacheDomainContract contract = CacheDomainRegistry.require(CacheDomainRegistry.DIRTY_WORD);
+        Assert.assertEquals(CacheSourceOfTruth.MYSQL, contract.getSourceOfTruth());
+        Assert.assertEquals(CacheRedisType.SET, contract.getRedisType());
+        Assert.assertEquals(
+                Arrays.asList(CacheKeyConstants.DIRTY_WORD),
+                contract.getLogicalKeyPatterns()
+        );
+        Assert.assertEquals(CacheWritePolicy.DELETE_AND_REBUILD, contract.getWritePolicy());
         Assert.assertEquals(CacheDeletePolicy.DELETE_KEY, contract.getDeletePolicy());
         Assert.assertEquals(CacheRebuildPolicy.FULL_REBUILD, contract.getRebuildPolicy());
         Assert.assertTrue(contract.isBootRebuildEnabled());
