@@ -76,7 +76,7 @@ var vm = new Vue({
             vm.showList = false;
             vm.title = "新增";
             vm.phase = {parentName: null, parentId: 0, type: 1, orderNum: 0};
-            $.get("../sys/provs/all", function (r) {
+            $.get("../sys/provinces/all", function (r) {
                 vm.sites = r.data;
             });
         },
@@ -90,10 +90,10 @@ var vm = new Vue({
             $.get("../sys/phase/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.phase = (r && r.data) ? r.data.phase : {};
-                $.get("../sys/provs/all", function (r1) {
+                vm.phase = (r && r.data) ? (r.data.phase || r.data) : {};
+                $.get("../sys/provinces/all", function (r1) {
                     vm.sites = r1.data;
-                    $.get("../sys/citys/all/" + vm.phase.provId, function (r2) {
+                    $.get("../sys/cities/all/" + vm.phase.provId, function (r2) {
                         vm.citys = r2.data;
                     });
                 });
@@ -121,7 +121,7 @@ var vm = new Vue({
         },
         getCitys: function (event) {
             var provId = event.target.value;
-            $.get("../sys/citys/all/"+provId, function (r) {
+            $.get("../sys/cities/all/"+provId, function (r) {
                 vm.citys = r.data;
             });
         },

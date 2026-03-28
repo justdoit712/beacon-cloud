@@ -19,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/sys/channel")
@@ -50,7 +48,7 @@ public class SysChannelController {
     }
 
     @GetMapping("/all")
-    public ResultVO<?> all() {
+    public ResultVO<List<ChannelVO>> all() {
         List<Channel> list = channelService.findAllActive();
         List<ChannelVO> voList = new ArrayList<>();
         for (Channel entity : list) {
@@ -62,17 +60,17 @@ public class SysChannelController {
     }
 
     @GetMapping("/info/{id}")
-    public ResultVO<?> info(@PathVariable("id") Long id) {
+    public ResultVO<ChannelVO> info(@PathVariable("id") Long id) {
         Channel entity = channelService.findById(id);
         ChannelVO vo = new ChannelVO();
         if (entity != null) {
             BeanUtils.copyProperties(entity, vo);
         }
-        return Result.ok(Collections.singletonMap("channel", vo));
+        return Result.ok(vo);
     }
 
     @PostMapping("/save")
-    public ResultVO save(@RequestBody ChannelVO channelVO) {
+    public ResultVO<?> save(@RequestBody ChannelVO channelVO) {
         if (channelVO == null
                 || !StringUtils.hasText(channelVO.getChannelName())
                 || channelVO.getChannelType() == null
@@ -94,7 +92,7 @@ public class SysChannelController {
     }
 
     @PostMapping("/update")
-    public ResultVO update(@RequestBody ChannelVO channelVO) {
+    public ResultVO<?> update(@RequestBody ChannelVO channelVO) {
         if (channelVO == null || channelVO.getId() == null) {
             return Result.error("通道id不能为空");
         }
@@ -110,7 +108,7 @@ public class SysChannelController {
     }
 
     @PostMapping("/del")
-    public ResultVO delete(@RequestBody List<Long> ids) {
+    public ResultVO<?> delete(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return Result.error("请选择要删除的数据");
         }

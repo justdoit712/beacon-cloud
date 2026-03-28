@@ -1,6 +1,6 @@
 ﻿$(function () {
     var option = {
-        url: '../sys/clientbusiness/list',
+        url: '../sys/client-business/list',
         pagination: true,	//显示分页条
         sidePagination: 'server',//服务器端分页
         showRefresh: true,  //显示刷新按钮
@@ -93,7 +93,7 @@ var vm = new Vue({
 
                 $.ajax({
                     type: "POST",
-                    url: "/sys/clientbusiness/del",
+                    url: "/sys/client-business/del",
                     data: JSON.stringify(ids),
                     success: function (r) {
                         if (r.code === 0) {
@@ -113,7 +113,7 @@ var vm = new Vue({
             vm.showList = false;
             vm.title = "新增";
             vm.clientbusiness = {};
-            $.get("../sys/clientbusiness/all", function (r) {
+            $.get("../sys/client-business/all", function (r) {
                 vm.sites = r.data;
             });
         },
@@ -124,20 +124,20 @@ var vm = new Vue({
                 return;
             }
 
-            $.get("../sys/clientbusiness/info/" + id, function (r) {
+            $.get("../sys/client-business/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.clientbusiness = (r && r.data) ? r.data.clientbusiness : {};
+                vm.clientbusiness = (r && r.data) ? (r.data.clientbusiness || r.data) : {};
             });
 
-            $.get("../sys/clientbusiness/all", function(r){
+            $.get("../sys/client-business/all", function(r){
                 vm.sites = r.data;
             });
 
 
         },
         saveOrUpdate: function (event) {
-            var url = vm.clientbusiness.id == null ? "../sys/clientbusiness/save" : "../sys/clientbusiness/update";
+            var url = vm.clientbusiness.id == null ? "../sys/client-business/save" : "../sys/client-business/update";
             $.ajax({
                 type: "POST",
                 url: url,

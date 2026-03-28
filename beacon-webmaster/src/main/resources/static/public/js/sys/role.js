@@ -103,7 +103,7 @@ var vm = new Vue({
             $.get("../sys/role/info/" + roleId, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.role = (r && r.data) ? r.data.role : {};
+                vm.role = (r && r.data) ? (r.data.role || r.data) : {};
             });
         },
         saveOrUpdate: function () {
@@ -201,7 +201,12 @@ var vm = new Vue({
                 var roleMenu = (roleMenuResp && roleMenuResp.code === 0 && $.isArray(roleMenuResp.data))
                     ? roleMenuResp.data : [];
                 $.get("../sys/role/menu/tree", function (r) {
-                    var menuList = (r && r.data && $.isArray(r.data.menuList)) ? r.data.menuList : [];
+                    var menuList = [];
+                    if (r && $.isArray(r.data)) {
+                        menuList = r.data;
+                    } else if (r && r.data && $.isArray(r.data.menuList)) {
+                        menuList = r.data.menuList;
+                    }
                     ztree = $.fn.zTree.init($("#menuTree"), setting, menuList);
                     ztree.expandAll(true);
                     for (var i = 0; i < roleMenu.length; i++) {

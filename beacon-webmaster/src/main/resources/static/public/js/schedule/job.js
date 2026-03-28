@@ -77,7 +77,7 @@ var vm = new Vue({
             $.get("../schedule/job/info/" + jobId, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.scheduleJob = (r && r.data) ? r.data.scheduleJob : {};
+                vm.scheduleJob = (r && r.data) ? (r.data.scheduleJob || r.data) : {};
             });
         },
         saveOrUpdate: function () {

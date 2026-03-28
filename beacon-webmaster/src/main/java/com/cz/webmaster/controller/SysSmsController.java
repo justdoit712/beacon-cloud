@@ -22,7 +22,7 @@ public class SysSmsController {
     }
 
     @PostMapping("/save")
-    public ResultVO save(@RequestBody SmsSendForm form) {
+    public ResultVO<?> save(@RequestBody SmsSendForm form) {
         String errorMsg = smsManageService.validateForSave(form);
         if (errorMsg != null) {
             return Result.error(errorMsg);
@@ -32,7 +32,7 @@ public class SysSmsController {
     }
 
     @PostMapping("/update")
-    public ResultVO update(@RequestBody SmsSendForm form) {
+    public ResultVO<?> update(@RequestBody SmsSendForm form) {
         String errorMsg = smsManageService.validateForUpdate(form);
         if (errorMsg != null) {
             return Result.error(errorMsg);
@@ -41,17 +41,13 @@ public class SysSmsController {
         return toResult(summary);
     }
 
-    private ResultVO toResult(SmsBatchSendVO summary) {
+    private ResultVO<SmsBatchSendVO> toResult(SmsBatchSendVO summary) {
         if (summary == null) {
-            return Result.error("send failed");
+            return new ResultVO<>(-1, "发送失败");
         }
-        String message = summary.getMessage() == null ? "send failed" : summary.getMessage();
-        ResultVO resultVO;
-        if (summary.getSuccess() == null || summary.getSuccess() <= 0) {
-            resultVO = Result.error(message);
-        } else {
-            resultVO = Result.ok(message);
-        }
+        String message = summary.getMessage() == null ? "发送失败" : summary.getMessage();
+        int code = summary.getSuccess() == null || summary.getSuccess() <= 0 ? -1 : 0;
+        ResultVO<SmsBatchSendVO> resultVO = new ResultVO<>(code, message);
         resultVO.setData(summary);
         return resultVO;
     }

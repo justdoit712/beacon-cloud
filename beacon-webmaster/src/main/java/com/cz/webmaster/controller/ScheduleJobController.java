@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -36,68 +35,44 @@ public class ScheduleJobController {
     }
 
     @GetMapping("/info/{jobId}")
-    public ResultVO<?> info(@PathVariable("jobId") Long jobId) {
-        return Result.ok(Collections.singletonMap("scheduleJob", scheduleJobService.findById(jobId)));
+    public ResultVO<ScheduleJob> info(@PathVariable("jobId") Long jobId) {
+        return Result.ok(scheduleJobService.findById(jobId));
     }
 
     @PostMapping("/save")
-    public ResultVO save(@RequestBody ScheduleJob scheduleJob) {
-        try {
-            boolean success = scheduleJobService.save(scheduleJob);
-            return success ? Result.ok("save success") : Result.error("save failed");
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+    public ResultVO<?> save(@RequestBody ScheduleJob scheduleJob) {
+        boolean success = scheduleJobService.save(scheduleJob);
+        return success ? Result.ok("新增成功") : Result.error("新增失败");
     }
 
     @PostMapping("/update")
-    public ResultVO update(@RequestBody ScheduleJob scheduleJob) {
-        try {
-            boolean success = scheduleJobService.update(scheduleJob);
-            return success ? Result.ok("update success") : Result.error("update failed");
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+    public ResultVO<?> update(@RequestBody ScheduleJob scheduleJob) {
+        boolean success = scheduleJobService.update(scheduleJob);
+        return success ? Result.ok("修改成功") : Result.error("修改失败");
     }
 
     @PostMapping("/del")
-    public ResultVO del(@RequestBody List<Long> jobIds) {
-        try {
-            boolean success = scheduleJobService.deleteBatch(jobIds);
-            return success ? Result.ok("delete success") : Result.error("delete failed");
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+    public ResultVO<?> del(@RequestBody List<Long> jobIds) {
+        boolean success = scheduleJobService.deleteBatch(jobIds);
+        return success ? Result.ok("删除成功") : Result.error("删除失败");
     }
 
     @PostMapping("/pause")
-    public ResultVO pause(@RequestBody List<Long> jobIds) {
-        try {
-            boolean success = scheduleJobService.pauseBatch(jobIds);
-            return success ? Result.ok("pause success") : Result.error("pause failed");
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+    public ResultVO<?> pause(@RequestBody List<Long> jobIds) {
+        boolean success = scheduleJobService.pauseBatch(jobIds);
+        return success ? Result.ok("暂停成功") : Result.error("暂停失败");
     }
 
     @PostMapping("/resume")
-    public ResultVO resume(@RequestBody List<Long> jobIds) {
-        try {
-            boolean success = scheduleJobService.resumeBatch(jobIds);
-            return success ? Result.ok("resume success") : Result.error("resume failed");
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+    public ResultVO<?> resume(@RequestBody List<Long> jobIds) {
+        boolean success = scheduleJobService.resumeBatch(jobIds);
+        return success ? Result.ok("恢复成功") : Result.error("恢复失败");
     }
 
     @PostMapping("/run")
-    public ResultVO run(@RequestBody List<Long> jobIds) {
-        try {
-            boolean success = scheduleJobService.runBatch(jobIds);
-            return success ? Result.ok("run success") : Result.error("run failed");
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+    public ResultVO<?> run(@RequestBody List<Long> jobIds) {
+        boolean success = scheduleJobService.runBatch(jobIds);
+        return success ? Result.ok("执行成功") : Result.error("执行失败");
     }
 }
 

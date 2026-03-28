@@ -136,7 +136,7 @@ var vm = new Vue({
             vm.user = {parentName: null, parentId: 0, type: 1, orderNum: 0};
             vm.saving = false;
             vm.clearValidation();
-            $.get("../sys/clientbusiness/all", function (r) {
+            $.get("../sys/client-business/all", function (r) {
                 vm.sites = r.data;
             });
         },
@@ -149,11 +149,11 @@ var vm = new Vue({
             $.get("../sys/user/info/" + userId, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.user = (r && r.data) ? r.data.user : {};
+                vm.user = (r && r.data) ? (r.data.user || r.data) : {};
                 vm.saving = false;
                 vm.clearValidation();
             });
-            $.get("../sys/clientbusiness/all", function (r) {
+            $.get("../sys/client-business/all", function (r) {
                 vm.sites = r.data;
             });
         },

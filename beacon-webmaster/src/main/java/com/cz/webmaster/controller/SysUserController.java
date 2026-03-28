@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -56,13 +55,13 @@ public class SysUserController {
     }
 
     @GetMapping("/info/{id}")
-    public ResultVO<?> info(@PathVariable("id") Integer id) {
+    public ResultVO<Map<String, Object>> info(@PathVariable("id") Integer id) {
         SmsUser user = userService.findById(id);
-        return Result.ok(Collections.singletonMap("user", SysUserConverter.toView(user, true)));
+        return Result.ok(SysUserConverter.toView(user, true));
     }
 
     @PostMapping("/save")
-    public ResultVO save(@RequestBody SysUserForm form) {
+    public ResultVO<?> save(@RequestBody SysUserForm form) {
         if (form == null || !StringUtils.hasText(form.getUsercode())) {
             return Result.error("用户名不能为空");
         }
@@ -82,7 +81,7 @@ public class SysUserController {
     }
 
     @PostMapping("/update")
-    public ResultVO update(@RequestBody SysUserForm form) {
+    public ResultVO<?> update(@RequestBody SysUserForm form) {
         if (form == null || form.getId() == null) {
             return Result.error("用户id不能为空");
         }
@@ -104,7 +103,7 @@ public class SysUserController {
     }
 
     @PostMapping("/del")
-    public ResultVO delete(@RequestBody List<Integer> ids) {
+    public ResultVO<?> delete(@RequestBody List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
             return Result.error("请选择要删除的数据");
         }

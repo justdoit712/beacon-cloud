@@ -49,7 +49,7 @@ public class SmsUserController {
     }
 
     @PostMapping("/login")
-    public ResultVO login(@RequestBody @Valid UserDTO userDTO, BindingResult bindingResult) {
+    public ResultVO<?> login(@RequestBody @Valid UserDTO userDTO, BindingResult bindingResult) {
         if (bindingResult.hasFieldErrors("captcha")) {
             log.info("【认证操作】验证码参数不合法, userDTO={}", userDTO);
             return Result.error(ExceptionEnums.KAPACHA_ERROR);
@@ -78,7 +78,7 @@ public class SmsUserController {
     }
 
     @GetMapping("/user/info")
-    public ResultVO info() {
+    public ResultVO<?> info() {
         Subject subject = SecurityUtils.getSubject();
         SmsUser smsUser = (SmsUser) subject.getPrincipal();
         if (smsUser == null) {
@@ -92,7 +92,7 @@ public class SmsUserController {
     }
 
     @GetMapping("/menu/user")
-    public ResultVO menuUser() {
+    public ResultVO<?> menuUser() {
         SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if (smsUser == null) {
             log.info("【获取用户菜单信息】用户未登录");
@@ -108,8 +108,8 @@ public class SmsUserController {
     }
 
     @PostMapping("/user/password")
-    public ResultVO updatePassword(@RequestParam("password") String password,
-                                   @RequestParam("newPassword") String newPassword) {
+    public ResultVO<?> updatePassword(@RequestParam("password") String password,
+                                      @RequestParam("newPassword") String newPassword) {
         SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if (smsUser == null) {
             return Result.error(ExceptionEnums.NOT_LOGIN);

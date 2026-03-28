@@ -127,7 +127,7 @@ var vm = new Vue({
             $.get("../sys/client/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.client = (r && r.data) ? r.data.client : {};
+                vm.client = (r && r.data) ? (r.data.client || r.data) : {};
                 vm.saving = false;
                 vm.clearValidation();
             });

@@ -34,7 +34,7 @@ var vm = new Vue({
             this.loadSites();
         },
         loadSites: function () {
-            $.get('../sys/clientbusiness/all', function (r) {
+            $.get('../sys/client-business/all', function (r) {
                 if (!r || r.code !== 0) {
                     layer.alert(r && r.msg ? r.msg : '加载客户列表失败');
                     return;

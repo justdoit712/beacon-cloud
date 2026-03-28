@@ -52,9 +52,9 @@ public class CacheRebuildController {
      * @return 包含结构化重建报告的统一响应对象
      */
     @PostMapping("/rebuild")
-    public ResultVO rebuild(@RequestParam("domain") String domain) {
+    public ResultVO<?> rebuild(@RequestParam("domain") String domain) {
         if (!StringUtils.hasText(domain)) {
-            return Result.error("domain is required");
+            return Result.error("缓存域不能为空");
         }
         Long operatorId = OperatorContextUtils.currentOperatorId();
         if (operatorId == null) {

@@ -25,8 +25,6 @@ public interface LegacyCrudService {
 
     boolean supportsFamily(String family);
 
-    String getDetailKey(String family);
-
     String validateForSave(String family, Map<String, Object> body);
 
     String validateForUpdate(String family, Map<String, Object> body);
@@ -41,4 +39,3 @@ public interface LegacyCrudService {
 
     boolean deleteBatch(String family, List<Long> ids);
 }
-

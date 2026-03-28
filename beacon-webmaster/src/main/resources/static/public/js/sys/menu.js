@@ -120,7 +120,7 @@ var vm = new Vue({
             $.get("../sys/menu/info/" + menuId, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.menu = (r && r.data) ? r.data.menu : {};
+                vm.menu = (r && r.data) ? (r.data.menu || r.data) : {};
 
                 vm.getMenu();
             });
@@ -186,8 +186,14 @@ var vm = new Vue({
 
             //加载菜单树
             $.get("../sys/menu/select", function (r) {
+                var menuList = [];
+                if (r && $.isArray(r.data)) {
+                    menuList = r.data;
+                } else if (r && r.data && $.isArray(r.data.menuList)) {
+                    menuList = r.data.menuList;
+                }
                 //设置ztree的数据
-                ztree = $.fn.zTree.init($("#menuTree"), setting, (r.data ? r.data.menuList : []));
+                ztree = $.fn.zTree.init($("#menuTree"), setting, menuList);
 
                 //编辑（update）时，打开tree，自动高亮选择的条目menuId
                 var node = ztree.getNodeByParam("id", vm.menu.parentId);

@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,7 @@ import java.util.Set;
  */
 @RestController
 @Slf4j
-@RequestMapping("/sys/clientbusiness")
+@RequestMapping({"/sys/client-business", "/sys/clientbusiness"})
 public class ClientBusinessController {
 
     private final SmsRoleService roleService;
@@ -75,13 +74,13 @@ public class ClientBusinessController {
     }
 
     @GetMapping("/info/{id}")
-    public ResultVO<?> info(@PathVariable("id") Long id) {
+    public ResultVO<ClientBusinessDetailVO> info(@PathVariable("id") Long id) {
         ClientBusiness cb = clientBusinessService.findById(id);
-        return Result.ok(Collections.singletonMap("clientbusiness", ClientBusinessConverter.toDetailVO(cb)));
+        return Result.ok(ClientBusinessConverter.toDetailVO(cb));
     }
 
     @PostMapping("/save")
-    public ResultVO save(@RequestBody ClientBusinessForm form) {
+    public ResultVO<?> save(@RequestBody ClientBusinessForm form) {
         if (form == null || !StringUtils.hasText(form.getCorpname())) {
             return Result.error("公司名称不能为空");
         }
@@ -96,7 +95,7 @@ public class ClientBusinessController {
     }
 
     @PostMapping("/update")
-    public ResultVO update(@RequestBody ClientBusinessForm form) {
+    public ResultVO<?> update(@RequestBody ClientBusinessForm form) {
         if (form == null || form.getId() == null) {
             return Result.error("客户id不能为空");
         }
@@ -110,7 +109,7 @@ public class ClientBusinessController {
     }
 
     @PostMapping("/del")
-    public ResultVO delete(@RequestBody List<Long> ids) {
+    public ResultVO<?> delete(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return Result.error("请选择要删除的数据");
         }
@@ -150,15 +149,15 @@ public class ClientBusinessController {
      * Client recharge endpoint.
      */
     @GetMapping("/pay")
-    public ResultVO pay(@RequestParam("jine") Long amount,
-                        @RequestParam(value = "clientId", required = false) Long clientId) {
+    public ResultVO<?> pay(@RequestParam("jine") Long amount,
+                           @RequestParam(value = "clientId", required = false) Long clientId) {
         if (amount == null || amount <= 0) {
-            return Result.error("jine must be greater than 0");
+            return Result.error("充值金额必须大于0");
         }
 
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         if (currentUser == null) {
-            return Result.error(ExceptionEnums.NOT_LOGIN.getMsg());
+            return Result.error(ExceptionEnums.NOT_LOGIN);
         }
 
         Set<String> roleNameSet = roleService.getRoleName(currentUser.getId());
@@ -170,13 +169,13 @@ public class ClientBusinessController {
                     ? clientBusinessService.findAll()
                     : clientBusinessService.findByUserId(currentUser.getId());
             if (scope == null || scope.isEmpty()) {
-                return Result.error("no available client to pay");
+                return Result.error("当前无可充值客户");
             }
             target = scope.get(0);
         } else {
             target = clientBusinessService.findById(clientId);
             if (target == null) {
-                return Result.error("client not found");
+                return Result.error("客户不存在");
             }
             if (!isRoot) {
                 List<ClientBusiness> scope = clientBusinessService.findByUserId(currentUser.getId());
@@ -188,7 +187,7 @@ public class ClientBusinessController {
                     }
                 }
                 if (!allowed) {
-                    return Result.error(ExceptionEnums.SMS_NO_AUTHOR.getMsg());
+                    return Result.error(ExceptionEnums.SMS_NO_AUTHOR);
                 }
             }
         }
@@ -205,7 +204,7 @@ public class ClientBusinessController {
                 return Result.error(commandResult.getCode(), commandResult.getMessage());
             }
 
-            ResultVO resultVO = Result.ok("pay success");
+            ResultVO<Map<String, Object>> resultVO = new ResultVO<>(0, "充值成功");
             Map<String, Object> data = new HashMap<>();
             data.put("clientId", target.getId());
             data.put("corpname", target.getCorpname());

@@ -30,6 +30,7 @@ public enum ExceptionEnums {
     USER_MENU_ERROR(-103,"查询用户的菜单信息失败！"),
     SMS_NO_AUTHOR(-104,"当前登录用户没有权限查询当前短信信息"),
     CACHE_REBUILD_NO_AUTHOR(-105,"当前登录用户没有权限执行缓存重建"),
+    INTERNAL_TOKEN_INVALID(-106,"内部调用令牌无效！"),
 
     CACHE_SYNC_WRITE_FAIL(-201,"缓存同步写入失败"),
     CACHE_SYNC_DELETE_FAIL(-202,"缓存同步删除失败"),

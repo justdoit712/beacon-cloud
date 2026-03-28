@@ -64,27 +64,9 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
             ))
     );
 
-    private static final Map<String, String> DETAIL_KEY_MAP;
     private static final Map<String, List<String>> REQUIRED_FIELDS;
 
     static {
-        Map<String, String> detailKeys = new LinkedHashMap<>();
-        detailKeys.put(ACTIVITY, "activity");
-        detailKeys.put(API_MAPPING, "apimapping");
-        detailKeys.put(GRAY_RELEASE, "grayrelease");
-        detailKeys.put(PUBLIC_PARAMS, "param");
-        detailKeys.put(BLACK, "black");
-        detailKeys.put(NOTIFY, "notify");
-        detailKeys.put(SEARCH_PARAMS, "searchparams");
-        detailKeys.put(MESSAGE, "message");
-        detailKeys.put(CLIENT_SIGN, "clientsign");
-        detailKeys.put(CLIENT_TEMPLATE, "clienttemplate");
-        detailKeys.put(API_GATEWAY_FILTER, "filter");
-        detailKeys.put(STRAGETY_FILTER, "filter");
-        detailKeys.put(LIMIT, "limit");
-        detailKeys.put(SMS_TEMP, "smstemplate");
-        DETAIL_KEY_MAP = Collections.unmodifiableMap(detailKeys);
-
         Map<String, List<String>> requiredFieldMap = new LinkedHashMap<>();
         requiredFieldMap.put(ACTIVITY, Collections.singletonList("title"));
         requiredFieldMap.put(API_MAPPING, Arrays.asList("gatewayApiName", "serviceId", "insideApiUrl"));
@@ -110,11 +92,6 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
     @Override
     public boolean supportsFamily(String family) {
         return SUPPORTED_FAMILIES.contains(family);
-    }
-
-    @Override
-    public String getDetailKey(String family) {
-        return DETAIL_KEY_MAP.get(family);
     }
 
     @Override

@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,50 +57,50 @@ public class SystemRoleController {
     }
 
     @GetMapping("/info/{id}")
-    public ResultVO<?> info(@PathVariable("id") Integer id) {
+    public ResultVO<Map<String, Object>> info(@PathVariable("id") Integer id) {
         SmsRole role = roleService.findById(id);
-        return Result.ok(Collections.singletonMap("role", SysRoleConverter.toView(role)));
+        return Result.ok(SysRoleConverter.toView(role));
     }
 
     @PostMapping("/save")
     public ResultVO<?> save(@RequestBody SysRoleForm form) {
         if (form == null || !StringUtils.hasText(form.getName())) {
-            return Result.error("role name is required");
+            return Result.error("角色名称不能为空");
         }
         if (roleService.existsByName(form.getName(), null)) {
-            return Result.error("role name already exists");
+            return Result.error("角色名称已存在");
         }
 
         SmsRole role = SysRoleConverter.toEntity(form);
         boolean success = roleService.save(role);
-        return success ? Result.ok("save success") : Result.error("save failed");
+        return success ? Result.ok("新增成功") : Result.error("新增失败");
     }
 
     @PostMapping("/update")
     public ResultVO<?> update(@RequestBody SysRoleForm form) {
         if (form == null || form.getId() == null) {
-            return Result.error("role id is required");
+            return Result.error("角色id不能为空");
         }
         if (StringUtils.hasText(form.getName()) && roleService.existsByName(form.getName(), form.getId())) {
-            return Result.error("role name already exists");
+            return Result.error("角色名称已存在");
         }
 
         SmsRole role = SysRoleConverter.toEntity(form);
         boolean success = roleService.update(role);
-        return success ? Result.ok("update success") : Result.error("update failed");
+        return success ? Result.ok("修改成功") : Result.error("修改失败");
     }
 
     @PostMapping("/del")
     public ResultVO<?> delete(@RequestBody List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
-            return Result.error("ids are required");
+            return Result.error("请选择要删除的数据");
         }
         boolean success = roleService.deleteBatch(ids);
-        return success ? Result.ok("delete success") : Result.error("delete failed");
+        return success ? Result.ok("删除成功") : Result.error("删除失败");
     }
 
     @GetMapping("/menu/tree")
-    public ResultVO<?> menuTree() {
+    public ResultVO<List<Map<String, Object>>> menuTree() {
         List<SmsMenu> menus = menuService.findAll();
         List<Map<String, Object>> menuList = new ArrayList<>();
 
@@ -119,11 +118,11 @@ public class SystemRoleController {
             menuList.add(node);
         }
 
-        return Result.ok(Collections.singletonMap("menuList", menuList));
+        return Result.ok(menuList);
     }
 
     @GetMapping("/menu/{roleId}")
-    public ResultVO<?> roleMenu(@PathVariable("roleId") Integer roleId) {
+    public ResultVO<List<Integer>> roleMenu(@PathVariable("roleId") Integer roleId) {
         return Result.ok(roleService.findMenuIdsByRoleId(roleId));
     }
 
@@ -131,6 +130,6 @@ public class SystemRoleController {
     public ResultVO<?> assignMenu(@RequestParam("roleId") Integer roleId,
                                   @RequestParam(value = "menuIds", required = false) List<Integer> menuIds) {
         boolean success = roleService.assignMenu(roleId, menuIds);
-        return success ? Result.ok("assign success") : Result.error("assign failed");
+        return success ? Result.ok("分配成功") : Result.error("分配失败");
     }
 }

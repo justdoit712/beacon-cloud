@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -56,25 +55,25 @@ public class SysMenuController {
     }
 
     @GetMapping("/info/{id}")
-    public ResultVO<?> info(@PathVariable("id") Integer id) {
+    public ResultVO<Map<String, Object>> info(@PathVariable("id") Integer id) {
         SmsMenu menu = menuService.findById(id);
         Map<Integer, String> nameMap = SysMenuConverter.buildNameMap(menuService.findAll());
-        return Result.ok(Collections.singletonMap("menu", SysMenuConverter.toView(menu, nameMap)));
+        return Result.ok(SysMenuConverter.toView(menu, nameMap));
     }
 
     @GetMapping("/select")
-    public ResultVO<?> select() {
+    public ResultVO<List<Map<String, Object>>> select() {
         List<SmsMenu> menus = menuService.findAll();
         List<Map<String, Object>> menuList = new ArrayList<>();
         menuList.add(SysMenuConverter.rootNode());
         for (SmsMenu menu : menus) {
             menuList.add(SysMenuConverter.toTreeNode(menu));
         }
-        return Result.ok(Collections.singletonMap("menuList", menuList));
+        return Result.ok(menuList);
     }
 
     @PostMapping("/save")
-    public ResultVO save(@RequestBody SysMenuForm form) {
+    public ResultVO<?> save(@RequestBody SysMenuForm form) {
         if (form == null || !StringUtils.hasText(form.getName())) {
             return Result.error("菜单名称不能为空");
         }
@@ -84,7 +83,7 @@ public class SysMenuController {
     }
 
     @PostMapping("/update")
-    public ResultVO update(@RequestBody SysMenuForm form) {
+    public ResultVO<?> update(@RequestBody SysMenuForm form) {
         if (form == null || form.getId() == null) {
             return Result.error("菜单id不能为空");
         }
@@ -94,7 +93,7 @@ public class SysMenuController {
     }
 
     @PostMapping("/del")
-    public ResultVO delete(@RequestBody List<Integer> ids) {
+    public ResultVO<?> delete(@RequestBody List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
             return Result.error("请选择要删除的数据");
         }

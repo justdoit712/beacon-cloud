@@ -1,6 +1,6 @@
 $(function () {
     var option = {
-        url: '../sys/searchparams/list',
+        url: '../sys/search-params/list',
         pagination: true,	//显示分页条
         sidePagination: 'server',//服务器端分页
         showRefresh: true,  //显示刷新按钮
@@ -70,7 +70,7 @@ var vm = new Vue({
 
                 $.ajax({
                     type: "POST",
-                    url: "/sys/searchparams/del",
+                    url: "/sys/search-params/del",
                     data: JSON.stringify(ids),
                     success: function (r) {
                         if (r.code === 0) {
@@ -98,14 +98,14 @@ var vm = new Vue({
                 return;
             }
 
-            $.get("../sys/searchparams/info/" + id, function (r) {
+            $.get("../sys/search-params/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.searchparams = r.searchparams;
+                vm.searchparams = (r && r.data) ? (r.data.searchparams || r.data) : (r && r.searchparams ? r.searchparams : {});
             });
         },
         saveOrUpdate: function (event) {
-            var url = vm.searchparams.id == null ? "../sys/searchparams/save" : "../sys/searchparams/update";
+            var url = vm.searchparams.id == null ? "../sys/search-params/save" : "../sys/search-params/update";
             $.ajax({
                 type: "POST",
                 url: url,

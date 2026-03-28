@@ -1,6 +1,6 @@
 ﻿$(function () {
     var option = {
-        url: '../sys/clientchannel/list',
+        url: '../sys/client-channel/list',
         pagination: true,	//显示分页条
         sidePagination: 'server',//服务器端分页
         showRefresh: true,  //显示刷新按钮
@@ -40,7 +40,7 @@ var vm = new Vue({
     },
     methods: {
         loadSites: function () {
-            $.get("../sys/clientbusiness/all", function (r) {
+            $.get("../sys/client-business/all", function (r) {
                 if (r && r.code === 0 && $.isArray(r.data)) {
                     vm.sites = r.data;
                     if (vm.sites.length === 0) {
@@ -89,7 +89,7 @@ var vm = new Vue({
 
                 $.ajax({
                     type: "POST",
-                    url: "/sys/clientchannel/del",
+                    url: "/sys/client-channel/del",
                     data: JSON.stringify(ids),
                     success: function (r) {
                         if (r.code === 0) {
@@ -119,17 +119,17 @@ var vm = new Vue({
                 return;
             }
 
-            $.get("../sys/clientchannel/info/" + id, function (r) {
+            $.get("../sys/client-channel/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.clientchannel = (r && r.data) ? r.data.clientchannel : {};
+                vm.clientchannel = (r && r.data) ? (r.data.clientchannel || r.data) : {};
             });
 
             vm.loadSites();
             vm.loadChannelSites();
         },
         saveOrUpdate: function (event) {
-            var url = vm.clientchannel.id == null ? "../sys/clientchannel/save" : "../sys/clientchannel/update";
+            var url = vm.clientchannel.id == null ? "../sys/client-channel/save" : "../sys/client-channel/update";
             $.ajax({
                 type: "POST",
                 url: url,

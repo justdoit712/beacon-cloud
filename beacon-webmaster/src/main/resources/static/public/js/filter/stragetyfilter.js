@@ -1,6 +1,6 @@
 $(function () {
     var option = {
-        url: '../sys/stragetyfilter/list',
+        url: '../sys/strategy-filter/list',
         pagination: true,	//显示分页条
         sidePagination: 'server',//服务器端分页
         showRefresh: true,  //显示刷新按钮
@@ -61,7 +61,7 @@ var vm = new Vue({
 
                 $.ajax({
                     type: "POST",
-                    url: "/sys/stragetyfilter/del",
+                    url: "/sys/strategy-filter/del",
                     data: JSON.stringify(ids),
                     success: function (r) {
                         if (r.code === 0) {
@@ -89,14 +89,14 @@ var vm = new Vue({
                 return;
             }
 
-            $.get("../sys/stragetyfilter/info/" + id, function (r) {
+            $.get("../sys/strategy-filter/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.filter = r.filter;
+                vm.filter = (r && r.data) ? (r.data.filter || r.data) : (r && r.filter ? r.filter : {});
             });
         },
         saveOrUpdate: function (event) {
-            var url = vm.filter.id == null ? "../sys/stragetyfilter/save" : "../sys/stragetyfilter/update";
+            var url = vm.filter.id == null ? "../sys/strategy-filter/save" : "../sys/strategy-filter/update";
             $.ajax({
                 type: "POST",
                 url: url,

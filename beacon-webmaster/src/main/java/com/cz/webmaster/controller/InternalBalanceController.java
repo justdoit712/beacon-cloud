@@ -66,9 +66,9 @@ public class InternalBalanceController {
      * @return 统一响应结果；成功时 data 中包含 clientId、balance、amountLimit、requestId
      */
     @PostMapping("/debit")
-    public ResultVO debit(@RequestBody @Validated InternalBalanceDebitRequest request,
-                          BindingResult bindingResult,
-                          @RequestHeader(value = "X-Internal-Token", required = false) String requestToken) {
+    public ResultVO<?> debit(@RequestBody @Validated InternalBalanceDebitRequest request,
+                             BindingResult bindingResult,
+                             @RequestHeader(value = "X-Internal-Token", required = false) String requestToken) {
         // 优先返回参数校验错误，避免无效请求进入业务扣费流程。
         if (bindingResult.hasErrors()) {
             return Result.error(ExceptionEnums.PARAMETER_ERROR.getCode(), firstError(bindingResult));
@@ -76,7 +76,7 @@ public class InternalBalanceController {
 
         // 当系统配置了内部调用令牌时，必须校验请求头中的令牌是否一致。
         if (StringUtils.hasText(internalBalanceToken) && !internalBalanceToken.equals(requestToken)) {
-            return Result.error(-403, "internal token invalid");
+            return Result.error(ExceptionEnums.INTERNAL_TOKEN_INVALID);
         }
 
         try {
@@ -102,7 +102,7 @@ public class InternalBalanceController {
             return Result.error(ExceptionEnums.PARAMETER_ERROR.getCode(), ex.getMessage());
         } catch (Exception ex) {
             log.error("internal balance debit failed, clientId={}, requestId={}", request.getClientId(), request.getRequestId(), ex);
-            return Result.error(ExceptionEnums.UNKNOWN_ERROR.getCode(), "internal balance debit failed");
+            return Result.error(ExceptionEnums.UNKNOWN_ERROR.getCode(), "内部余额扣减失败");
         }
     }
 

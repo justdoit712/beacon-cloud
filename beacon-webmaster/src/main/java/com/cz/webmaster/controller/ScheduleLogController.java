@@ -34,13 +34,9 @@ public class ScheduleLogController {
     }
 
     @PostMapping("/del")
-    public ResultVO del(@RequestBody List<Long> logIds) {
-        try {
-            boolean success = scheduleLogService.deleteBatch(logIds);
-            return success ? Result.ok("delete success") : Result.error("delete failed");
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+    public ResultVO<?> del(@RequestBody List<Long> logIds) {
+        boolean success = scheduleLogService.deleteBatch(logIds);
+        return success ? Result.ok("删除成功") : Result.error("删除失败");
     }
 }
 

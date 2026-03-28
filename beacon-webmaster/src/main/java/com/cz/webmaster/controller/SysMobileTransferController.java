@@ -19,12 +19,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
-@RequestMapping("/sys/mobiletransfer")
+@RequestMapping({"/sys/mobile-transfer", "/sys/mobiletransfer"})
 public class SysMobileTransferController {
 
     private final MobileTransferService mobileTransferService;
@@ -49,21 +47,19 @@ public class SysMobileTransferController {
     }
 
     @GetMapping("/info/{id}")
-    public ResultVO<?> info(@PathVariable("id") Long id) {
+    public ResultVO<MobileTransferVO> info(@PathVariable("id") Long id) {
         MobileTransfer entity = mobileTransferService.findById(id);
         MobileTransferVO vo = new MobileTransferVO();
         if (entity != null) {
             BeanUtils.copyProperties(entity, vo);
         }
-        Map<String, Object> result = new HashMap<>();
-        result.put("mobiletransfer", vo);
-        return Result.ok(result);
+        return Result.ok(vo);
     }
 
     @PostMapping("/save")
-    public ResultVO save(@RequestBody MobileTransferVO mobileTransferVO) {
+    public ResultVO<?> save(@RequestBody MobileTransferVO mobileTransferVO) {
         if (!isValidForSave(mobileTransferVO)) {
-            return Result.error("mobile_transfer required fields are missing");
+            return Result.error("号段转移必填字段不能为空");
         }
         MobileTransfer entity = new MobileTransfer();
         BeanUtils.copyProperties(mobileTransferVO, entity);
@@ -73,13 +69,13 @@ public class SysMobileTransferController {
             entity.setCreateId(currentUser.getId().longValue());
             entity.setUpdateId(currentUser.getId().longValue());
         }
-        return mobileTransferService.save(entity) ? Result.ok("save success") : Result.error("save failed");
+        return mobileTransferService.save(entity) ? Result.ok("新增成功") : Result.error("新增失败");
     }
 
     @PostMapping("/update")
-    public ResultVO update(@RequestBody MobileTransferVO mobileTransferVO) {
+    public ResultVO<?> update(@RequestBody MobileTransferVO mobileTransferVO) {
         if (mobileTransferVO == null || mobileTransferVO.getId() == null) {
-            return Result.error("mobile_transfer id is required");
+            return Result.error("号段转移id不能为空");
         }
         MobileTransfer entity = new MobileTransfer();
         BeanUtils.copyProperties(mobileTransferVO, entity);
@@ -88,17 +84,17 @@ public class SysMobileTransferController {
         if (currentUser != null) {
             entity.setUpdateId(currentUser.getId().longValue());
         }
-        return mobileTransferService.update(entity) ? Result.ok("update success") : Result.error("update failed");
+        return mobileTransferService.update(entity) ? Result.ok("修改成功") : Result.error("修改失败");
     }
 
     @PostMapping("/del")
-    public ResultVO del(@RequestBody List<Long> ids) {
+    public ResultVO<?> del(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            return Result.error("ids is required");
+            return Result.error("请选择要删除的数据");
         }
         SmsUser currentUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
         Long updateId = currentUser == null ? null : currentUser.getId().longValue();
-        return mobileTransferService.deleteBatch(ids, updateId) ? Result.ok("delete success") : Result.error("delete failed");
+        return mobileTransferService.deleteBatch(ids, updateId) ? Result.ok("删除成功") : Result.error("删除失败");
     }
 
     private boolean isValidForSave(MobileTransferVO mobileTransferVO) {

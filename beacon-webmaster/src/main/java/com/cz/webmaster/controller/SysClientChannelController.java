@@ -19,15 +19,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 客户通道管理
  */
 @RestController
-@RequestMapping("/sys/clientchannel")
+@RequestMapping({"/sys/client-channel", "/sys/clientchannel"})
 public class SysClientChannelController {
 
     private final ClientChannelService clientChannelService;
@@ -55,21 +53,18 @@ public class SysClientChannelController {
     }
 
     @GetMapping("/info/{id}")
-    public ResultVO<?> info(@PathVariable("id") Long id) {
+    public ResultVO<ClientChannelVO> info(@PathVariable("id") Long id) {
         ClientChannel entity = clientChannelService.findById(id);
 
         ClientChannelVO vo = new ClientChannelVO();
         if (entity != null) {
             BeanUtils.copyProperties(entity, vo);
         }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("clientchannel", vo);
-        return Result.ok(result);
+        return Result.ok(vo);
     }
 
     @PostMapping("/save")
-    public ResultVO save(@RequestBody ClientChannelVO clientChannelVO) {
+    public ResultVO<?> save(@RequestBody ClientChannelVO clientChannelVO) {
         if (clientChannelVO == null
                 || clientChannelVO.getClientId() == null
                 || clientChannelVO.getChannelId() == null
@@ -91,7 +86,7 @@ public class SysClientChannelController {
     }
 
     @PostMapping("/update")
-    public ResultVO update(@RequestBody ClientChannelVO clientChannelVO) {
+    public ResultVO<?> update(@RequestBody ClientChannelVO clientChannelVO) {
         if (clientChannelVO == null || clientChannelVO.getId() == null) {
             return Result.error("客户通道id不能为空");
         }
@@ -108,7 +103,7 @@ public class SysClientChannelController {
     }
 
     @PostMapping("/del")
-    public ResultVO delete(@RequestBody List<Long> ids) {
+    public ResultVO<?> delete(@RequestBody List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return Result.error("请选择要删除的数据");
         }

@@ -134,7 +134,7 @@ var vm = new Vue({
             $.get("../sys/channel/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.channel = (r && r.data) ? r.data.channel : {};
+                vm.channel = (r && r.data) ? (r.data.channel || r.data) : {};
                 if (vm.channel.isavailable === null || vm.channel.isavailable === undefined || vm.channel.isavailable === '') {
                     vm.channel.isavailable = 0;
                 }

@@ -93,7 +93,7 @@ var vm = new Vue({
         }
     },
     created: function () {
-        $.get("../sys/clientbusiness/all", function (r) {
+        $.get("../sys/client-business/all", function (r) {
             vm.sites = (r && r.data) ? r.data : [];
         });
     }

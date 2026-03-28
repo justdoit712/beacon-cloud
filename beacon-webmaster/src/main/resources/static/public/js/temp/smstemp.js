@@ -1,6 +1,6 @@
 $(function () {
     var option = {
-        url: '../sys/smstemp/list',
+        url: '../sys/sms-template/list',
         pagination: true,	//显示分页条
         sidePagination: 'server',//服务器端分页
         showRefresh: true,  //显示刷新按钮
@@ -71,7 +71,7 @@ var vm = new Vue({
 
                 $.ajax({
                     type: "POST",
-                    url: "/sys/smstemp/del",
+                    url: "/sys/sms-template/del",
                     data: JSON.stringify(ids),
                     success: function (r) {
                         if (r.code === 0) {
@@ -99,14 +99,14 @@ var vm = new Vue({
                 return;
             }
 
-            $.get("../sys/smstemp/info/" + id, function (r) {
+            $.get("../sys/sms-template/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.smstemplate = r.smstemplate;
+                vm.smstemplate = (r && r.data) ? (r.data.smstemplate || r.data) : (r && r.smstemplate ? r.smstemplate : {});
             });
         },
         saveOrUpdate: function (event) {
-            var url = vm.smstemplate.id == null ? "../sys/smstemp/save" : "../sys/smstemp/update";
+            var url = vm.smstemplate.id == null ? "../sys/sms-template/save" : "../sys/sms-template/update";
             $.ajax({
                 type: "POST",
                 url: url,

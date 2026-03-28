@@ -1,6 +1,6 @@
 $(function () {
     var option = {
-        url: '../sys/publicparams/list',
+        url: '../sys/public-params/list',
         pagination: true,	//显示分页条
         sidePagination: 'server',//服务器端分页
         showRefresh: true,  //显示刷新按钮
@@ -81,7 +81,7 @@ var vm = new Vue({
 
                 $.ajax({
                     type: "POST",
-                    url: "/sys/publicparams/del",
+                    url: "/sys/public-params/del",
                     data: JSON.stringify(ids),
                     success: function (r) {
                         if (r.code === 0) {
@@ -109,14 +109,14 @@ var vm = new Vue({
                 return;
             }
 
-            $.get("../sys/publicparams/info/" + id, function (r) {
+            $.get("../sys/public-params/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.param = r.param;
+                vm.param = (r && r.data) ? (r.data.param || r.data) : (r && r.param ? r.param : {});
             });
         },
         saveOrUpdate: function (event) {
-            var url = vm.param.id == null ? "../sys/publicparams/save" : "../sys/publicparams/update";
+            var url = vm.param.id == null ? "../sys/public-params/save" : "../sys/public-params/update";
             $.ajax({
                 type: "POST",
                 url: url,

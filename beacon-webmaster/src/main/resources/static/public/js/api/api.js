@@ -1,6 +1,6 @@
 $(function () {
     var option = {
-        url: '../sys/apimapping/list',
+        url: '../sys/api-mapping/list',
         pagination: true,	//显示分页条
         sidePagination: 'server',//服务器端分页
         showRefresh: true,  //显示刷新按钮
@@ -81,7 +81,7 @@ var vm = new Vue({
 
                 $.ajax({
                     type: "POST",
-                    url: "/sys/apimapping/del",
+                    url: "/sys/api-mapping/del",
                     data: JSON.stringify(ids),
                     success: function (r) {
                         if (r.code === 0) {
@@ -109,14 +109,14 @@ var vm = new Vue({
                 return;
             }
 
-            $.get("../sys/apimapping/info/" + id, function (r) {
+            $.get("../sys/api-mapping/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.apimapping = r.apimapping;
+                vm.apimapping = (r && r.data) ? (r.data.apimapping || r.data) : (r && r.apimapping ? r.apimapping : {});
             });
         },
         saveOrUpdate: function (event) {
-            var url = vm.apimapping.id == null ? "../sys/apimapping/save" : "../sys/apimapping/update";
+            var url = vm.apimapping.id == null ? "../sys/api-mapping/save" : "../sys/api-mapping/update";
             $.ajax({
                 type: "POST",
                 url: url,
