@@ -302,32 +302,7 @@ String hget(...);
 
 ---
 
-## 3.9 P1：日志与异常处理不规范（大量 `System.out`/`printStackTrace`）
-
-### 现状代码（需要重构）
-
-文件：
-
-1. `beacon-smsgateway/src/main/java/com/cz/smsgateway/netty4/CMPPDecoder.java:41`
-2. `beacon-smsgateway/src/main/java/com/cz/smsgateway/netty4/HeartHandler.java:23`
-3. `beacon-smsgateway/src/main/java/com/cz/smsgateway/netty4/NettyClient.java:42`
-4. `beacon-smsgateway/src/main/java/com/cz/smsgateway/netty4/entity/CmppDeliver.java:100`
-5. `beacon-smsgateway/src/main/java/com/cz/smsgateway/netty4/utils/MsgUtils.java:55`
-
-### 原因
-
-1. stdout 不利于结构化日志聚合和告警。
-2. `printStackTrace` 破坏日志上下文，不能统一检索 traceId/sid。
-
-### 如何重构
-
-1. 统一替换为 `Slf4j`。
-2. 日志字段统一：`sid`、`sequence`、`msgId`、`channelId`、`apiKey`。
-3. 关键异常使用 error 级别 + 指标埋点。
-
----
-
-## 3.10 P1：生产路径暴露测试接口
+## 3.9 P1：生产路径暴露测试接口
 
 ### 现状代码（需要重构）
 
@@ -341,7 +316,6 @@ public String test(){ ... }
 ### 原因
 
 1. `/test` 在生产包可访问，存在误触发风险。
-2. 方法内部仍使用 `System.out.println`。
 
 ### 如何重构
 
@@ -350,7 +324,7 @@ public String test(){ ... }
 
 ---
 
-## 3.11 P2：RabbitMQ 参数与序列化策略建议配置化
+## 3.10 P2：RabbitMQ 参数与序列化策略建议配置化
 
 ### 现状代码（需要重构）
 
@@ -378,7 +352,7 @@ return new Jackson2JsonMessageConverter();
 
 ---
 
-## 3.12 P2：线程池参数未显式声明，容量边界不清晰
+## 3.11 P2：线程池参数未显式声明，容量边界不清晰
 
 ### 现状代码（需要重构）
 
@@ -416,8 +390,7 @@ ThreadPoolBuilder.builder()
 
 1. 修复 `CmppSubmit` 字段封装问题（serviceId/sourceAddr 规则）。
 2. 迁移 cache 客户端到 typed Feign 契约。
-3. 替换所有 `System.out`/`printStackTrace` 为结构化日志。
-4. 下线 `TestController`。
+3. 下线 `TestController`。
 
 ## 阶段三（P2，治理与优化）
 

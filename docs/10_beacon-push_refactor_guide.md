@@ -262,56 +262,7 @@ flag = SUCCESS.equals(result);
 
 ---
 
-## 3.8 P1：监听器重复逻辑可抽象，降低维护成本
-
-### 现状代码（需要重构）
-
-文件：
-
-1. `beacon-push/src/main/java/com/cz/push/mq/PushReportListener.java:53`
-2. `beacon-push/src/main/java/com/cz/push/mq/PushReportListener.java:81`
-
-两个监听方法都执行：
-
-1. `pushReport(report)`
-2. `isResend(report, flag)`
-3. `basicAck(...)`
-
-### 原因
-
-1. 逻辑重复，后续改动容易漏改。
-2. 行为一致性依赖人工保证。
-
-### 如何重构
-
-1. 提取统一处理方法 `process(report, channel, message)`。
-2. 两个 listener 只负责入口路由。
-
----
-
-## 3.9 P1：依赖 `org.apache.commons.lang.StringUtils` 版本老旧风格
-
-### 现状代码（需要重构）
-
-文件：`beacon-push/src/main/java/com/cz/push/mq/PushReportListener.java:10`
-
-```java
-import org.apache.commons.lang.StringUtils;
-```
-
-### 原因
-
-1. `commons-lang`（老包名）与项目其他模块常见 `lang3` 风格不一致。
-2. 增加依赖歧义和维护成本。
-
-### 如何重构
-
-1. 替换为 `org.springframework.util.StringUtils` 或 `org.apache.commons.lang3.StringUtils`。
-2. 统一全项目字符串工具使用规范。
-
----
-
-## 3.11 P2：测试缺失，回调与重试链路无自动回归
+## 3.8 P2：测试缺失，回调与重试链路无自动回归
 
 ### 现状
 
@@ -344,8 +295,6 @@ import org.apache.commons.lang.StringUtils;
 
 1. 重试次数与间隔配置化。
 2. 回调成功判定规则配置化。
-3. 抽取监听器重复逻辑，统一处理入口。
-4. 统一 StringUtils 依赖风格。
 
 ## 阶段三（P2，工程化治理）
 

@@ -37,9 +37,8 @@
 
 ### P1
 
-1. `CMPP*MapUtil` 为无界内存容器，无过期策略
+1. `CMPP*MapUtil` 仍仅限进程内缓存，缺少跨实例共享与重启恢复能力
 2. 注释与字符集混乱（文件内容出现乱码）
-3. `ResultVO` 缺少泛型，接口契约表达能力弱
 
 ---
 
@@ -187,53 +186,6 @@ try {
 // 方向二：迁移到 Redis / 状态表
 ```
 
-## 3.5 ResultVO：补齐泛型表达能力
-
-### 现状代码（需要重构）
-
-文件：`beacon-common/src/main/java/com/cz/common/vo/ResultVO.java`
-
-```java
-public class ResultVO {
-    private Integer code;
-    private String msg;
-    private Object data;
-    private Long total;
-    private Object rows;
-}
-```
-
-### 原因
-
-1. `data` 和 `rows` 都是 `Object`，缺少编译期约束。
-2. 调用方和前端契约只能依赖约定，容易出现隐式类型漂移。
-3. 列表响应和普通响应复用同一个对象，表达力不够清晰。
-
-### 如何重构
-
-1. 将普通响应调整为 `ResultVO<T>`。
-2. 为分页场景补一个单独的分页响应对象，避免 `data/rows/total` 混杂。
-3. 同步调整 `Result` 工具类和接口层返回值声明。
-
-### 目标代码（建议）
-
-```java
-public class ResultVO<T> {
-    private Integer code;
-    private String msg;
-    private T data;
-}
-
-public class PageResultVO<T> {
-    private Integer code;
-    private String msg;
-    private Long total;
-    private List<T> rows;
-}
-```
-
----
-
 ## 4. 分阶段重构顺序（建议）
 
 ## Phase 1（低风险，先做）
@@ -251,8 +203,7 @@ public class PageResultVO<T> {
 
 1. 抽象 `BizException`
 2. 三类异常迁移继承
-3. `ResultVO` 泛型化（可选）
-4. `CMPP*MapUtil` 引入过期策略
+3. 为 `CMPP*MapUtil` 补监控指标并评估外部化方案
 
 ## Phase 4（清理）
 

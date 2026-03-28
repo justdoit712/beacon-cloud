@@ -474,7 +474,7 @@ rabbitTemplate.setReturnCallback(...);
 1. 补充 `rabbitTemplate.setMandatory(true)`。
 2. 升级到新式 `ReturnsCallback`/`ConfirmCallback` 用法并加集成测试。
 
-## 3.13 P2：测试体系缺失
+## 3.13 P2：测试覆盖仍有缺口
 
 ### 现状
 
@@ -484,19 +484,22 @@ rabbitTemplate.setReturnCallback(...);
 2. `RouteStrategyFilter`
 3. `PreSendListener`
 4. `ErrorSendMsgUtil`
+5. `FeeStrategyFilter`
+6. `LimitOneHourStrategyFilter`
+7. `DirtyWordHutoolDFAStrategyFilter`
 
-但整体测试覆盖仍然偏薄，尤其是扣费、限流、敏感词策略和契约一致性场景还缺少自动化保护。
+但 MQ 异常分支、strategy/cache 契约一致性，以及多过滤器组合回归仍缺少自动化保护。
 
 ### 风险
 
-1. 策略行为高度依赖配置和缓存结构，仅覆盖部分主链路仍容易引发回归事故。
-2. 路由之外的限流、扣费、敏感词与契约链路仍缺少自动化回归。
+1. 策略行为高度依赖配置和缓存结构，仅覆盖部分链路仍容易引发回归事故。
+2. MQ 异常路径、Feign 契约和跨过滤器组合仍缺少自动化回归。
 
 ### 如何重构
 
-1. 继续补齐关键过滤器的成功/失败路径，优先覆盖 `FeeStrategyFilter`、`LimitOneHourStrategyFilter`、`DirtyWord*StrategyFilter`。
-2. 在现有 listener 测试基础上，继续补足 MQ 异常分支与失败回传校验。
-3. 增加 strategy 与 cache 的 Feign 契约一致性测试。
+1. 在现有 listener 测试基础上，继续补足 MQ 异常分支与失败回传校验。
+2. 增加 strategy 与 cache 的 Feign 契约一致性测试。
+3. 增加多过滤器组合链路回归，例如扣费、限流、路由串联场景。
 
 ---
 
@@ -528,9 +531,9 @@ rabbitTemplate.setReturnCallback(...);
 
 ## 5.1 单元测试
 
-1. `FeeStrategyFilter`：扣费成功、阈值不足回滚、缓存异常路径。
-2. `LimitOneHourStrategyFilter`：分钟/小时/天限流命中路径。
-3. `DirtyWord*StrategyFilter`：命中敏感词后统一异常行为。
+1. `PhaseStrategyFilter`：外部号段接口异常、兜底格式与 `operatorId` 推导。
+2. `RouteStrategyFilter`：`clientChannels` 为空、权重相等、缓存类型漂移场景。
+3. `RabbitTemplateConfig`：`mandatory` 与 return/confirm 回调行为。
 
 ## 5.2 集成测试
 
