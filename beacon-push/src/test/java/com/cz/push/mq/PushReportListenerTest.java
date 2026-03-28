@@ -109,6 +109,31 @@ public class PushReportListenerTest {
         verify(channel).basicAck(404L, false);
     }
 
+    @Test
+    public void shouldTreatJsonSerializationFailureAsRetryablePushFailure() throws IOException {
+        RestTemplate restTemplate = Mockito.mock(RestTemplate.class);
+        RabbitTemplate rabbitTemplate = Mockito.mock(RabbitTemplate.class);
+        Channel channel = Mockito.mock(Channel.class);
+
+        PushReportListener listener = buildListener(restTemplate, rabbitTemplate);
+        SelfRefReport report = new SelfRefReport();
+        report.setSequenceId(90001L);
+        report.setApiKey("ak_json_fail");
+        report.setClientId(1009L);
+        report.setMobile("13800138009");
+        report.setResendCount(0);
+        report.setCallbackUrl("callback.test/push");
+        report.self = report;
+        Message message = buildMessage(505L);
+
+        listener.consume(report, channel, message);
+
+        Assert.assertEquals(Integer.valueOf(1), report.getResendCount());
+        verify(restTemplate, never()).postForObject(any(String.class), any(HttpEntity.class), eq(String.class));
+        verify(rabbitTemplate).convertAndSend(eq(RabbitMQConfig.DELAYED_EXCHANGE), eq(""), eq(report), any(MessagePostProcessor.class));
+        verify(channel).basicAck(505L, false);
+    }
+
     private static PushReportListener buildListener(RestTemplate restTemplate, RabbitTemplate rabbitTemplate) {
         PushReportListener listener = new PushReportListener();
         ReflectionTestUtils.setField(listener, "restTemplate", restTemplate);
@@ -130,5 +155,9 @@ public class PushReportListenerTest {
         MessageProperties properties = new MessageProperties();
         properties.setDeliveryTag(deliveryTag);
         return new Message(new byte[0], properties);
+    }
+
+    private static final class SelfRefReport extends StandardReport {
+        public Object self;
     }
 }

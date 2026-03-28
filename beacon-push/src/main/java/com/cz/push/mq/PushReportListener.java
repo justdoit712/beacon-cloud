@@ -2,6 +2,7 @@ package com.cz.push.mq;
 
 
 import com.cz.common.constant.RabbitMQConstants;
+import com.cz.common.exception.JsonSerializeException;
 import com.cz.common.model.StandardReport;
 import com.cz.common.util.JsonUtil;
 import com.cz.push.config.RabbitMQConfig;
@@ -106,6 +107,9 @@ public class PushReportListener {
             log.info("【推送模块-推送状态报告】 第{}次推送状态报告开始！report = {}",report.getResendCount() + 1,report);
             String result = restTemplate.postForObject("http://" + report.getCallbackUrl(), new HttpEntity<>(body, httpHeaders), String.class);
             flag = SUCCESS.equals(result);
+        } catch (JsonSerializeException e) {
+            log.warn("【推送模块-推送状态报告】 序列化失败 callbackUrl={}, sequenceId={}, resendCount={}",
+                    report.getCallbackUrl(), report.getSequenceId(), report.getResendCount(), e);
         } catch (RestClientException | IllegalStateException e) {
             log.warn("【推送模块-推送状态报告】 推送失败 callbackUrl={}, sequenceId={}, resendCount={}, error={}",
                     report.getCallbackUrl(), report.getSequenceId(), report.getResendCount(), e.getMessage());
