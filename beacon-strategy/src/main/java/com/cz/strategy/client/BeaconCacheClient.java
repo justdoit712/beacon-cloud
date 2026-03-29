@@ -1,6 +1,7 @@
 package com.cz.strategy.client;
 
 import com.cz.strategy.config.CacheFeignAuthConfig;
+import com.cz.common.vo.ResultVO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,23 +11,23 @@ import java.util.Set;
 @FeignClient(value = "beacon-cache", configuration = CacheFeignAuthConfig.class)
 public interface BeaconCacheClient {
 
-    @GetMapping("/cache/hget/{key}/{field}")
-    String hget(@PathVariable(value = "key")String key, @PathVariable(value = "field")String field);
+    @GetMapping("/v2/cache/hash/{key}/string/{field}")
+    ResultVO<String> hgetTyped(@PathVariable(value = "key")String key, @PathVariable(value = "field")String field);
 
-    @GetMapping("/cache/hget/{key}/{field}")
-    Integer hgetInteger(@PathVariable(value = "key")String key, @PathVariable(value = "field")String field);
+    @GetMapping("/v2/cache/hash/{key}/int/{field}")
+    ResultVO<Integer> hgetIntegerTyped(@PathVariable(value = "key")String key, @PathVariable(value = "field")String field);
 
-    @GetMapping("/cache/get/{key}")
-    String getString(@PathVariable(value = "key")String key);
+    @GetMapping("/v2/cache/string/{key}")
+    ResultVO<String> getStringTyped(@PathVariable(value = "key")String key);
 
     @PostMapping(value = "/cache/sinterstr/{key}/{sinterKey}")
     Set<Object> sinterStr(@PathVariable(value = "key")String key, @PathVariable String sinterKey, @RequestBody String... value);
 
-    @GetMapping("/cache/smember/{key}")
-    Set smember(@PathVariable(value = "key")String key);
+    @GetMapping("/v2/cache/set/{key}/string-members")
+    ResultVO<Set<String>> smemberTyped(@PathVariable(value = "key")String key);
 
-    @GetMapping("/cache/smember/{key}")
-    Set<Map> smemberMap(@PathVariable(value = "key")String key);
+    @GetMapping("/v2/cache/set/{key}/map-members")
+    ResultVO<Set<Map<String, Object>>> smemberMapTyped(@PathVariable(value = "key")String key);
 
 
     @PostMapping(value = "/cache/zadd/{key}/{score}/{member}")
@@ -48,7 +49,45 @@ public interface BeaconCacheClient {
                         @PathVariable(value = "field") String field,
                         @PathVariable(value = "delta") Long delta);
 
-    @GetMapping("/cache/hgetall/{key}")
-    Map hGetAll(@PathVariable(value = "key")String key);
+    @GetMapping("/v2/cache/hash/{key}")
+    ResultVO<Map<String, String>> hGetAllTyped(@PathVariable(value = "key")String key);
+
+    default String hget(@PathVariable(value = "key")String key, @PathVariable(value = "field")String field) {
+        return unwrap(hgetTyped(key, field));
+    }
+
+    default Integer hgetInteger(@PathVariable(value = "key")String key, @PathVariable(value = "field")String field) {
+        return unwrap(hgetIntegerTyped(key, field));
+    }
+
+    default String getString(@PathVariable(value = "key")String key) {
+        return unwrap(getStringTyped(key));
+    }
+
+    @SuppressWarnings("unchecked")
+    default Set smember(@PathVariable(value = "key")String key) {
+        return (Set) unwrap(smemberTyped(key));
+    }
+
+    @SuppressWarnings("unchecked")
+    default Set<Map> smemberMap(@PathVariable(value = "key")String key) {
+        return (Set<Map>) (Set<?>) unwrap(smemberMapTyped(key));
+    }
+
+    @SuppressWarnings("unchecked")
+    default Map hGetAll(@PathVariable(value = "key")String key) {
+        return unwrap(hGetAllTyped(key));
+    }
+
+    static <T> T unwrap(ResultVO<T> response) {
+        if (response == null) {
+            return null;
+        }
+        Integer code = response.getCode();
+        if (code != null && code != 0) {
+            throw new IllegalStateException("cache v2 call failed, code=" + code + ", msg=" + response.getMsg());
+        }
+        return response.getData();
+    }
 
 }
