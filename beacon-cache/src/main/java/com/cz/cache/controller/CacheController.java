@@ -71,12 +71,6 @@ public class CacheController {
      * @param key 逻辑 key
      * @return Hash 字段映射
      */
-    @GetMapping("/cache/hgetall/{key}")
-    @Deprecated
-    public Map hGetAll(@PathVariable(value = "key")String key){
-        return cacheFacade.hGetAll(key);
-    }
-
     @GetMapping("/v2/cache/hash/{key}")
     public ResultVO<Map<String, String>> hGetAllString(@PathVariable(value = "key") String key) {
         return Result.ok(cacheFacade.hGetAllString(key));
@@ -89,12 +83,6 @@ public class CacheController {
      * @param field 字段名
      * @return 字段值；未命中时返回 {@code null}
      */
-    @GetMapping("/cache/hget/{key}/{field}")
-    @Deprecated
-    public Object hget(@PathVariable(value = "key")String key,@PathVariable(value = "field")String field){
-        return cacheFacade.hget(key, field);
-    }
-
     @GetMapping("/v2/cache/hash/{key}/string/{field}")
     public ResultVO<String> hGetString(@PathVariable(value = "key") String key,
                                        @PathVariable(value = "field") String field) {
@@ -119,12 +107,6 @@ public class CacheController {
      * @param key 逻辑 key
      * @return Set 成员集合
      */
-    @GetMapping("/cache/smember/{key}")
-    @Deprecated
-    public Set smember(@PathVariable(value = "key")String key){
-        return cacheFacade.smember(key);
-    }
-
     @GetMapping("/v2/cache/set/{key}/string-members")
     public ResultVO<Set<String>> sMembersString(@PathVariable(value = "key") String key) {
         return Result.ok(cacheFacade.sMembersString(key));
@@ -151,12 +133,6 @@ public class CacheController {
      * @param key 逻辑 key
      * @return key 对应的值；未命中时返回 {@code null}
      */
-    @GetMapping("/cache/get/{key}")
-    @Deprecated
-    public Object get(@PathVariable(value = "key")String key){
-        return cacheFacade.get(key);
-    }
-
     @GetMapping("/v2/cache/string/{key}")
     public ResultVO<String> getString(@PathVariable(value = "key") String key) {
         return okData(cacheFacade.getString(key));

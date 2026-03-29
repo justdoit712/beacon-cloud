@@ -2,6 +2,7 @@ package com.cz.webmaster.client;
 
 import com.cz.webmaster.config.CacheFeignAuthConfig;
 import com.cz.webmaster.dto.CacheDeleteResultDTO;
+import com.cz.common.vo.ResultVO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -69,8 +70,12 @@ public interface BeaconCacheWriteClient {
     /**
      * 读取单个 key。
      */
-    @GetMapping(value = "/cache/get/{key}")
-    Object get(@PathVariable("key") String key);
+    @GetMapping(value = "/v2/cache/string/{key}")
+    ResultVO<String> getTyped(@PathVariable("key") String key);
+
+    default Object get(String key) {
+        return unwrap(getTyped(key));
+    }
 
     /**
      * 按 pattern 扫描逻辑 key 列表。
@@ -90,4 +95,15 @@ public interface BeaconCacheWriteClient {
      */
     @DeleteMapping(value = "/cache/delete-if-match/{key}")
     Boolean deleteIfValueMatches(@PathVariable("key") String key, @RequestParam("value") String value);
+
+    static <T> T unwrap(ResultVO<T> response) {
+        if (response == null) {
+            return null;
+        }
+        Integer code = response.getCode();
+        if (code != null && code != 0) {
+            throw new IllegalStateException("cache v2 call failed, code=" + code + ", msg=" + response.getMsg());
+        }
+        return response.getData();
+    }
 }
