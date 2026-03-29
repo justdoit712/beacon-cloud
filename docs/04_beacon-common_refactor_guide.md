@@ -31,10 +31,6 @@
 1. 雪花算法实现存在可读性和健壮性问题  
     文件：`beacon-common/src/main/java/com/cz/common/util/SnowFlakeUtil.java`
 
-2. 工具类与调用方的异常处理边界仍需统一  
-    文件：`beacon-common/src/main/java/com/cz/common/util/JsonUtil.java`  
-    需要统一序列化异常的接收与记录策略。
-
 ### P1
 
 1. `CMPP*MapUtil` 仍仅限进程内缓存，缺少跨实例共享与重启恢复能力
@@ -102,62 +98,7 @@ long id = ((timestamp - timeStart) << TIMESTAMP_SHIFT)
 return id & Long.MAX_VALUE;
 ```
 
----
-
-## 3.2 JsonUtil：统一序列化异常边界
-
-### 现状代码（需要重构）
-
-文件：`beacon-common/src/main/java/com/cz/common/util/JsonUtil.java`
-
-```java
-public static String toJson(Object obj){
-    try {
-        return OBJECT_MAPPER.writeValueAsString(obj);
-    } catch (JsonProcessingException e) {
-        throw new IllegalStateException("serialize object to json failed", e);
-    }
-}
-```
-
-### 原因
-
-1. 工具类当前统一抛 `IllegalStateException`，异常语义过于宽泛。
-2. 搜索写 ES 和推送客户回调都依赖 `JsonUtil`，但两边对序列化失败的处理策略不同。
-3. 排障时难以第一时间区分“对象序列化失败”和“下游 IO / HTTP 调用失败”。
-
-### 如何重构
-
-1. 为 JSON 序列化失败定义更明确的异常语义，如 `JsonSerializeException`。
-2. 调用方显式决定失败策略：
-   搜索链路将其视为消息处理失败，回调链路将其视为一次推送失败并记录上下文。
-3. 在日志中统一补足对象类型、主键和关键业务字段，减少排障成本。
-
-### 目标代码（建议）
-
-```java
-public static String toJson(Object obj) {
-    try {
-        return OBJECT_MAPPER.writeValueAsString(obj);
-    } catch (JsonProcessingException e) {
-        throw new JsonSerializeException("serialize object to json failed", e);
-    }
-}
-```
-
-```java
-try {
-    String body = JsonUtil.toJson(report);
-    ...
-} catch (JsonSerializeException ex) {
-    log.warn("push callback serialize failed, sequenceId={}, callbackUrl={}",
-            report.getSequenceId(), report.getCallbackUrl(), ex);
-}
-```
-
----
-
-## 3.3 CMPP 临时缓存：避免进程内状态成为长期瓶颈
+## 3.2 CMPP 临时缓存：避免进程内状态成为长期瓶颈
 
 ### 现状代码（需要重构）
 
@@ -190,8 +131,7 @@ try {
 
 ## Phase 1（低风险，先做）
 
-1. `JsonUtil` 改造
-2. `SnowFlakeUtil` 参数校验和日志改造
+1. `SnowFlakeUtil` 参数校验和日志改造
 
 ## Phase 2（兼容迁移）
 

@@ -59,41 +59,7 @@
 
 以下按优先级从高到低列出。
 
-## 3.1 P0：`SearchRequest` 传入空索引名，存在查询异常风险
-
-### 现状代码（需要重构）
-
-文件：`beacon-search/src/main/java/com/cz/search/service/impl/ElasticsearchServiceImpl.java:137`
-
-```java
-SearchRequest request = new SearchRequest(SearchUtils.getCurrYearIndex(), "");
-```
-
-文件：`beacon-search/src/main/java/com/cz/search/service/impl/ElasticsearchServiceImpl.java:185`
-
-```java
-SearchRequest request = new SearchRequest(SearchUtils.getCurrYearIndex(), "");
-```
-
-### 原因
-
-1. 第二个索引参数是空字符串，可能导致 ES 请求报错或行为不可预期。
-2. 查询链路是核心路径，不能依赖“空字符串恰好被忽略”。
-
-### 如何重构
-
-1. 只传有效索引数组。
-2. 后续支持跨年查询时，传明确索引集合，不要放占位空值。
-
-### 目标代码（建议）
-
-```java
-SearchRequest request = new SearchRequest(SearchUtils.getCurrYearIndex());
-```
-
----
-
-## 3.2 P0：写入幂等处理错误，重复消息会被判定为失败
+## 3.1 P0：写入幂等处理错误，重复消息会被判定为失败
 
 ### 现状代码（需要重构）
 
@@ -127,7 +93,7 @@ if (result != Result.CREATED && result != Result.UPDATED) {
 
 ---
 
-## 3.3 P0：更新链路使用 `ThreadLocal` 传参，且清理不完整
+## 3.2 P0：更新链路使用 `ThreadLocal` 传参，且清理不完整
 
 ### 现状代码（需要重构）
 
@@ -171,7 +137,7 @@ public void update(String index, String id, Map<String, Object> doc, StandardRep
 
 ---
 
-## 3.4 P0：索引年份使用“当前系统时间”，跨年场景会错索引
+## 3.3 P0：索引年份使用“当前系统时间”，跨年场景会错索引
 
 ### 现状代码（需要重构）
 
@@ -200,7 +166,7 @@ searchService.update(SearchUtils.INDEX + SearchUtils.getYear(), report.getSequen
 
 ---
 
-## 3.5 P1：监听器异常路径缺少统一 nack/retry 策略
+## 3.4 P1：监听器异常路径缺少统一 nack/retry 策略
 
 ### 现状代码（需要重构）
 
@@ -230,7 +196,7 @@ channel.basicAck(...);
 
 ---
 
-## 3.6 P1：查询参数与结果映射是弱类型，存在类型转换风险
+## 3.5 P1：查询参数与结果映射是弱类型，存在类型转换风险
 
 ### 现状代码（需要重构）
 
@@ -269,30 +235,7 @@ boolQuery.must(QueryBuilders.prefixQuery("mobile", (String) mobileObj));
 
 ---
 
-## 3.7 P1：`SmsWriteLogListener` 每条消息 new `ObjectMapper`
-
-### 现状代码（需要重构）
-
-文件：`beacon-search/src/main/java/com/cz/search/mq/SmsWriteLogListener.java:33`
-
-```java
-ObjectMapper mapper = new ObjectMapper();
-Map<String, Object> doc = mapper.convertValue(submit, Map.class);
-```
-
-### 原因
-
-1. 高频场景下重复创建对象增加 GC 压力。
-2. 与全局 JSON 配置不一致，时间字段序列化行为可能漂移。
-
-### 如何重构
-
-1. 注入 Spring 管理的 `ObjectMapper` 或统一转换组件。
-2. 封装 `SubmitDocumentMapper`，集中维护字段映射规则。
-
----
-
-## 3.8 P1：`SearchUtils` 工具类职责混杂（索引工具 + 线程上下文）
+## 3.6 P1：`SearchUtils` 工具类职责混杂（索引工具 + 线程上下文）
 
 ### 现状代码（需要重构）
 
@@ -317,11 +260,11 @@ private static ThreadLocal<StandardReport> reportThreadLocal = new ThreadLocal<>
 
 1. `IndexNameResolver`：专门负责索引命名策略。
 2. `ReportUpdateContext`：如确需上下文，封装成明确组件并统一清理。
-3. 优先去除 ThreadLocal（见 3.3）。
+3. 优先去除 ThreadLocal（见 3.2）。
 
 ---
 
-## 3.9 P1：ES 客户端配置缺少参数校验与连接参数
+## 3.7 P1：ES 客户端配置缺少参数校验与连接参数
 
 ### 现状代码（需要重构）
 
@@ -345,7 +288,7 @@ httpHosts[i] = new HttpHost(hostAndPort[0], Integer.parseInt(hostAndPort[1]));
 
 ---
 
-## 3.10 P2：ES 客户端版本老旧，后续升级需规划
+## 3.8 P2：ES 客户端版本老旧，后续升级需规划
 
 ### 现状代码（需要重构）
 
@@ -368,7 +311,7 @@ httpHosts[i] = new HttpHost(hostAndPort[0], Integer.parseInt(hostAndPort[1]));
 
 ---
 
-## 3.11 P2：测试覆盖薄弱，缺少关键回归场景
+## 3.9 P2：测试覆盖薄弱，缺少关键回归场景
 
 ### 现状代码（需要重构）
 
@@ -395,17 +338,15 @@ searchService.index("sms_submit_log_2026","3","{\"clientId\": 3}");
 
 ## 阶段一（P0，先修正确性）
 
-1. 修复 `SearchRequest` 空索引参数问题。
-2. 修复 `index()` 幂等逻辑（CREATED/UPDATED）。
-3. 去掉 ThreadLocal 传参或补齐 finally 清理 + 空值防御。
-4. 按业务时间路由索引（写入与更新一致）。
+1. 修复 `index()` 幂等逻辑（CREATED/UPDATED）。
+2. 去掉 ThreadLocal 传参或补齐 finally 清理 + 空值防御。
+3. 按业务时间路由索引（写入与更新一致）。
 
 ## 阶段二（P1，做稳定性与契约治理）
 
 1. listener 异常重试策略显式化（ack/nack/requeue）。
 2. 查询入参 DTO 化与类型安全改造。
-3. ObjectMapper 复用与映射组件化。
-4. Rest 客户端配置校验与超时参数补齐。
+3. Rest 客户端配置校验与超时参数补齐。
 
 ## 阶段三（P2，演进与工程化）
 

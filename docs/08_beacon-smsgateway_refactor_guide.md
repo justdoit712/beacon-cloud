@@ -302,29 +302,7 @@ String hget(...);
 
 ---
 
-## 3.9 P1：生产路径暴露测试接口
-
-### 现状代码（需要重构）
-
-文件：`beacon-smsgateway/src/main/java/com/cz/smsgateway/controller/TestController.java:19`
-
-```java
-@GetMapping("/test")
-public String test(){ ... }
-```
-
-### 原因
-
-1. `/test` 在生产包可访问，存在误触发风险。
-
-### 如何重构
-
-1. 删除该控制器，或迁移到 `test` profile。
-2. 线程池验证放到单元/集成测试，不暴露公网接口。
-
----
-
-## 3.10 P2：RabbitMQ 参数与序列化策略建议配置化
+## 3.9 P2：RabbitMQ 参数与序列化策略建议配置化
 
 ### 现状代码（需要重构）
 
@@ -352,7 +330,7 @@ return new Jackson2JsonMessageConverter();
 
 ---
 
-## 3.11 P2：线程池参数未显式声明，容量边界不清晰
+## 3.10 P2：线程池参数未显式声明，容量边界不清晰
 
 ### 现状代码（需要重构）
 
@@ -390,7 +368,6 @@ ThreadPoolBuilder.builder()
 
 1. 修复 `CmppSubmit` 字段封装问题（serviceId/sourceAddr 规则）。
 2. 迁移 cache 客户端到 typed Feign 契约。
-3. 下线 `TestController`。
 
 ## 阶段三（P2，治理与优化）
 

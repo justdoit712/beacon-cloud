@@ -95,32 +95,6 @@ spring:
 
 ---
 
-## 3.2 `XxlJobConfig` 有未使用配置项，且缺少配置校验
-
-### 现状代码（需要重构）
-
-文件：`beacon-monitor/src/main/java/com/cz/monitor/config/XxlJobConfig.java`
-
-```java
-@Value("${xxl.job.executor.address}")
-private String address;
-```
-
-字段存在但没有注入到 `XxlJobSpringExecutor`，例如未调用 `setAddress`。
-
-### 原因
-
-1. 配置项与运行时不一致，容易误导
-2. 配置空值场景缺少显式保护
-
-### 如何重构
-
-1. 删除无用字段，或补齐 `setAddress(address)`
-2. 增加配置完整性校验（`@PostConstruct`）
-3. 将 XXL-Job 配置集中在独立 properties 类（`@ConfigurationProperties`）
-
----
-
 ## 3.3 队列监控任务存在资源泄漏和异常处理问题
 
 ### 现状代码（需要重构）
@@ -266,28 +240,6 @@ helper.setText(text);
 2. 引入邮件发送结果埋点（成功/失败计数）
 3. 封装模板渲染（Thymeleaf/Freemarker 或轻量模板）
 
----
-
-## 3.8 `TestTask` 建议按环境开关
-
-### 现状代码（需要重构）
-
-文件：`beacon-monitor/src/main/java/com/cz/monitor/task/TestTask.java`
-
-`@XxlJob("test")` 在生产模块中常驻。
-
-### 原因
-
-1. 非业务任务长期存在，容易误触发
-2. 运行面噪声
-
-### 如何重构
-
-1. 增加 `@Profile("dev")`
-2. 或迁移到独立 demo 模块
-
----
-
 ## 4. 推荐重构顺序
 
 1. **第一阶段：安全与稳定兜底（优先）**
@@ -305,7 +257,6 @@ helper.setText(text);
 
 4. **第四阶段：可观测与治理**
 - 发送指标、任务耗时指标、失败重试指标
-- 配置校验与启动自检
 
 ---
 
@@ -325,12 +276,6 @@ helper.setText(text);
 3. `MailUtilTest`
 - HTML 与纯文本发送分支
 - 发件参数校验
-
-4. `XxlJobConfigTest`
-- 配置缺失时启动失败
-- 配置完整时 executor 正常注册
-
----
 
 ## 6. 交付物建议
 

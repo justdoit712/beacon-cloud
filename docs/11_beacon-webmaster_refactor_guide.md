@@ -40,7 +40,6 @@
 1. 跨模块 Feign 契约大量 `Map<String,Object>`
 2. 多个列表接口是“查全量 + 内存分页”
 3. 短信管理链路校验与 token 策略可用性高于稳健性
-4. 控制器返回模型风格不统一
 
 ### P2（持续优化）
 
@@ -408,37 +407,6 @@ public class SmsInternalProperties {
 }
 ```
 
----
-
-## 3.8 P1：接口返回风格不统一
-
-### 现状代码（需要重构）
-
-文件：`beacon-webmaster/src/main/java/com/cz/webmaster/controller/SystemRoleController.java:42`
-
-```java
-public Map<String, Object> list(...) { ... }
-```
-
-文件：`beacon-webmaster/src/main/java/com/cz/webmaster/controller/SysMenuController.java:37`
-
-```java
-public ResultVO list(...) { ... }
-```
-
-### 原因
-
-1. 前端需要兼容多种响应结构，增加联调复杂度。
-2. 错误码体系不统一，不利于监控告警聚合。
-
-### 如何重构
-
-1. 统一为 `ResultVO`（或统一 `ApiResponse<T>`）；
-2. 历史结构通过 adapter 过渡，给前端明确切换窗口；
-3. 统一异常处理，移除控制器中重复 try/catch。
-
----
-
 ## 3.9 P2：验证码与登录防护策略需要补齐
 
 ### 现状代码（需要重构）
@@ -499,7 +467,6 @@ boolean isTestKaptcha = StringUtils.hasText(testKaptcha) && testKaptcha.equals(u
 
 1. `SearchClient` 强类型化，去 `Map` 契约。
 2. 清理“全量查询 + subList”。
-3. 统一分页模型与返回模型。
 
 交付物：接口稳定性提升，列表性能可控。
 
