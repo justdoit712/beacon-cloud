@@ -17,6 +17,6 @@ public class WebMvcSecurityConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(cacheAuthInterceptor)
-                .addPathPatterns("/cache/**", "/test/**");
+                .addPathPatterns("/cache/**", "/v2/cache/**", "/test/**");
     }
 }

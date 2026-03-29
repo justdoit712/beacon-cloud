@@ -15,8 +15,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +77,7 @@ public class CacheFacade {
         redisClient.sAdd(physicalKey, value);
     }
 
-    public Map hGetAll(String key) {
+    public Map<String, Object> hGetAll(String key) {
         String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
         log.info("【缓存模块】 hGetAll方法，逻辑key ={}，物理key ={} ", key, physicalKey);
         Map<String, Object> value = redisClient.hGetAll(physicalKey);
@@ -91,12 +93,80 @@ public class CacheFacade {
         return value;
     }
 
-    public Set smember(String key) {
+    public Set<Object> smember(String key) {
         String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
         log.info("【缓存模块】 smember方法，逻辑key ={}，物理key ={}", key, physicalKey);
         Set<Object> values = redisClient.sMembers(physicalKey);
         log.info("【缓存模块】 smember方法，逻辑key ={} 的数据 value = {}", key, values);
         return values;
+    }
+
+    public Map<String, String> hGetAllString(String key) {
+        Map<String, Object> values = hGetAll(key);
+        if (values == null || values.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, String> converted = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : values.entrySet()) {
+            converted.put(entry.getKey(), valueToString(entry.getValue()));
+        }
+        return converted;
+    }
+
+    public String hGetString(String key, String field) {
+        Object value = hget(key, field);
+        return valueToString(value);
+    }
+
+    public Integer hGetInteger(String key, String field) {
+        Object value = hget(key, field);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number || (value instanceof String && StringUtils.hasText((String) value))) {
+            return valueToIntegerExact(key, field, value);
+        }
+        throw typeMismatch(key, field, value, "Integer");
+    }
+
+    public Long hGetLong(String key, String field) {
+        Object value = hget(key, field);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number || (value instanceof String && StringUtils.hasText((String) value))) {
+            return valueToLongExact(key, field, value);
+        }
+        throw typeMismatch(key, field, value, "Long");
+    }
+
+    public String getString(String key) {
+        Object value = get(key);
+        return valueToString(value);
+    }
+
+    public Set<String> sMembersString(String key) {
+        Set<Object> values = smember(key);
+        if (values == null || values.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<String> converted = new LinkedHashSet<>();
+        for (Object value : values) {
+            converted.add(valueToString(value));
+        }
+        return converted;
+    }
+
+    public Set<Map<String, Object>> sMembersMap(String key) {
+        Set<Object> values = smember(key);
+        if (values == null || values.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<Map<String, Object>> converted = new LinkedHashSet<>();
+        for (Object value : values) {
+            converted.add(valueToStringKeyMap(key, value));
+        }
+        return converted;
     }
 
     public void pipeline(Map<String, String> map) {
@@ -282,5 +352,53 @@ public class CacheFacade {
             normalized.add(key.trim());
         }
         return normalized;
+    }
+
+    private String valueToString(Object value) {
+        return value == null ? null : String.valueOf(value);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> valueToStringKeyMap(String key, Object value) {
+        if (!(value instanceof Map)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "cache value type mismatch for key [" + key + "], expected Map but found " + describeType(value)
+            );
+        }
+        Map<Object, Object> source = (Map<Object, Object>) value;
+        Map<String, Object> target = new LinkedHashMap<>();
+        for (Map.Entry<Object, Object> entry : source.entrySet()) {
+            target.put(String.valueOf(entry.getKey()), entry.getValue());
+        }
+        return target;
+    }
+
+    private ResponseStatusException typeMismatch(String key, String field, Object value, String expectedType) {
+        return new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "cache value type mismatch for key [" + key + "], field [" + field + "], expected "
+                        + expectedType + " but found " + describeType(value)
+        );
+    }
+
+    private String describeType(Object value) {
+        return value == null ? "null" : value.getClass().getSimpleName();
+    }
+
+    private Integer valueToIntegerExact(String key, String field, Object value) {
+        try {
+            return new BigDecimal(String.valueOf(value).trim()).intValueExact();
+        } catch (Exception ex) {
+            throw typeMismatch(key, field, value, "Integer");
+        }
+    }
+
+    private Long valueToLongExact(String key, String field, Object value) {
+        try {
+            return new BigDecimal(String.valueOf(value).trim()).longValueExact();
+        } catch (Exception ex) {
+            throw typeMismatch(key, field, value, "Long");
+        }
     }
 }

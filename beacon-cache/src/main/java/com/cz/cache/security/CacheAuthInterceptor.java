@@ -132,7 +132,7 @@ public class CacheAuthInterceptor implements HandlerInterceptor {
             }
             return CachePermission.TEST;
         }
-        if (uri.startsWith("/cache/keys")) {
+        if (uri.startsWith("/cache/keys") || uri.startsWith("/v2/cache/keys")) {
             return CachePermission.KEYS;
         }
         if ("GET".equalsIgnoreCase(request.getMethod())) {

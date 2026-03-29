@@ -1,6 +1,8 @@
 package com.cz.cache.controller;
 
 import com.cz.cache.application.CacheFacade;
+import com.cz.common.util.Result;
+import com.cz.common.vo.ResultVO;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -70,8 +72,14 @@ public class CacheController {
      * @return Hash 字段映射
      */
     @GetMapping("/cache/hgetall/{key}")
+    @Deprecated
     public Map hGetAll(@PathVariable(value = "key")String key){
         return cacheFacade.hGetAll(key);
+    }
+
+    @GetMapping("/v2/cache/hash/{key}")
+    public ResultVO<Map<String, String>> hGetAllString(@PathVariable(value = "key") String key) {
+        return Result.ok(cacheFacade.hGetAllString(key));
     }
 
     /**
@@ -82,8 +90,27 @@ public class CacheController {
      * @return 字段值；未命中时返回 {@code null}
      */
     @GetMapping("/cache/hget/{key}/{field}")
+    @Deprecated
     public Object hget(@PathVariable(value = "key")String key,@PathVariable(value = "field")String field){
         return cacheFacade.hget(key, field);
+    }
+
+    @GetMapping("/v2/cache/hash/{key}/string/{field}")
+    public ResultVO<String> hGetString(@PathVariable(value = "key") String key,
+                                       @PathVariable(value = "field") String field) {
+        return okData(cacheFacade.hGetString(key, field));
+    }
+
+    @GetMapping("/v2/cache/hash/{key}/int/{field}")
+    public ResultVO<Integer> hGetInteger(@PathVariable(value = "key") String key,
+                                         @PathVariable(value = "field") String field) {
+        return Result.ok(cacheFacade.hGetInteger(key, field));
+    }
+
+    @GetMapping("/v2/cache/hash/{key}/long/{field}")
+    public ResultVO<Long> hGetLong(@PathVariable(value = "key") String key,
+                                   @PathVariable(value = "field") String field) {
+        return Result.ok(cacheFacade.hGetLong(key, field));
     }
 
     /**
@@ -93,8 +120,19 @@ public class CacheController {
      * @return Set 成员集合
      */
     @GetMapping("/cache/smember/{key}")
+    @Deprecated
     public Set smember(@PathVariable(value = "key")String key){
         return cacheFacade.smember(key);
+    }
+
+    @GetMapping("/v2/cache/set/{key}/string-members")
+    public ResultVO<Set<String>> sMembersString(@PathVariable(value = "key") String key) {
+        return Result.ok(cacheFacade.sMembersString(key));
+    }
+
+    @GetMapping("/v2/cache/set/{key}/map-members")
+    public ResultVO<Set<Map<String, Object>>> sMembersMap(@PathVariable(value = "key") String key) {
+        return Result.ok(cacheFacade.sMembersMap(key));
     }
 
     /**
@@ -114,8 +152,14 @@ public class CacheController {
      * @return key 对应的值；未命中时返回 {@code null}
      */
     @GetMapping("/cache/get/{key}")
+    @Deprecated
     public Object get(@PathVariable(value = "key")String key){
         return cacheFacade.get(key);
+    }
+
+    @GetMapping("/v2/cache/string/{key}")
+    public ResultVO<String> getString(@PathVariable(value = "key") String key) {
+        return okData(cacheFacade.getString(key));
     }
 
     /**
@@ -277,5 +321,11 @@ public class CacheController {
     public Set<String> keys(@RequestParam("pattern") String pattern,
                             @RequestParam(value = "count", defaultValue = "1000") Integer count){
         return cacheFacade.keys(pattern, count);
+    }
+
+    private <T> ResultVO<T> okData(T data) {
+        ResultVO<T> result = new ResultVO<>(0, "");
+        result.setData(data);
+        return result;
     }
 }
