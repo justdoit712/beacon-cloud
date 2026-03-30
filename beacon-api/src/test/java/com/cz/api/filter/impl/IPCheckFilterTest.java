@@ -1,6 +1,6 @@
 package com.cz.api.filter.impl;
 
-import com.cz.api.client.BeaconCacheClient;
+import com.cz.api.client.CacheFacade;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.ApiException;
 import com.cz.common.model.StandardSubmit;
@@ -18,15 +18,15 @@ public class IPCheckFilterTest {
 
     @Test
     public void shouldParseCommaSeparatedWhiteListAndPassWhenMatched() {
-        BeaconCacheClient cacheClient = Mockito.mock(BeaconCacheClient.class);
+        CacheFacade cacheFacade = Mockito.mock(CacheFacade.class);
         IPCheckFilter filter = new IPCheckFilter();
-        ReflectionTestUtils.setField(filter, "cacheClient", cacheClient);
+        ReflectionTestUtils.setField(filter, "cacheFacade", cacheFacade);
 
         StandardSubmit submit = new StandardSubmit();
         submit.setApiKey("ak_001");
         submit.setRealIp("127.0.0.1");
 
-        when(cacheClient.hgetString("client_business:ak_001", "ipAddress"))
+        when(cacheFacade.hGetString("client_business:ak_001", "ipAddress"))
                 .thenReturn("22.220.124.110,127.0.0.1");
 
         filter.check(submit);
@@ -36,15 +36,15 @@ public class IPCheckFilterTest {
 
     @Test
     public void shouldPassWhenWhiteListBlank() {
-        BeaconCacheClient cacheClient = Mockito.mock(BeaconCacheClient.class);
+        CacheFacade cacheFacade = Mockito.mock(CacheFacade.class);
         IPCheckFilter filter = new IPCheckFilter();
-        ReflectionTestUtils.setField(filter, "cacheClient", cacheClient);
+        ReflectionTestUtils.setField(filter, "cacheFacade", cacheFacade);
 
         StandardSubmit submit = new StandardSubmit();
         submit.setApiKey("ak_001");
         submit.setRealIp("127.0.0.1");
 
-        when(cacheClient.hgetString("client_business:ak_001", "ipAddress"))
+        when(cacheFacade.hGetString("client_business:ak_001", "ipAddress"))
                 .thenReturn("   ");
 
         filter.check(submit);
@@ -54,15 +54,15 @@ public class IPCheckFilterTest {
 
     @Test
     public void shouldRejectWhenRealIpNotInWhiteList() {
-        BeaconCacheClient cacheClient = Mockito.mock(BeaconCacheClient.class);
+        CacheFacade cacheFacade = Mockito.mock(CacheFacade.class);
         IPCheckFilter filter = new IPCheckFilter();
-        ReflectionTestUtils.setField(filter, "cacheClient", cacheClient);
+        ReflectionTestUtils.setField(filter, "cacheFacade", cacheFacade);
 
         StandardSubmit submit = new StandardSubmit();
         submit.setApiKey("ak_001");
         submit.setRealIp("127.0.0.1");
 
-        when(cacheClient.hgetString("client_business:ak_001", "ipAddress"))
+        when(cacheFacade.hGetString("client_business:ak_001", "ipAddress"))
                 .thenReturn("22.220.124.110,10.0.0.1");
 
         try {

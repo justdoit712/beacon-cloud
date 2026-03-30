@@ -1,6 +1,6 @@
 package com.cz.api.filter.impl;
 
-import com.cz.api.client.BeaconCacheClient;
+import com.cz.api.client.CacheFacade;
 import com.cz.api.filter.CheckFilter;
 import com.cz.common.model.StandardSubmit;
 import com.cz.common.constant.CacheKeyConstants;
@@ -21,14 +21,14 @@ import java.util.Map;
 public class ApiKeyCheckFilter implements CheckFilter {
 
     @Autowired
-    private BeaconCacheClient cacheClient;
+    private CacheFacade cacheFacade;
 
 
     @Override
     public void check(StandardSubmit submit) {
         log.info("【接口模块-校验apikey】   校验ing…………");
         //1. 基于cacheClient查询客户信息
-        Map clientBusiness = cacheClient.hGetAll(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey());
+        Map<String, String> clientBusiness = cacheFacade.hGetAll(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey());
 
         //2. 如果为null，直接扔异常
         if(clientBusiness == null || clientBusiness.size() == 0){

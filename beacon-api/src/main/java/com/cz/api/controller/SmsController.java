@@ -1,6 +1,6 @@
 package com.cz.api.controller;
 
-import com.cz.api.client.BeaconCacheClient;
+import com.cz.api.client.CacheFacade;
 import com.cz.api.filter.CheckFilterContext;
 import com.cz.api.form.InternalSingleSendForm;
 import com.cz.api.form.SingleSendForm;
@@ -54,7 +54,7 @@ public class SmsController {
     private RabbitTemplate rabbitTemplate;
 
     @Autowired
-    private BeaconCacheClient cacheClient;
+    private CacheFacade cacheFacade;
 
     private static final String UNKNOWN = "unknown";
     private static final String X_FORWARDED_FOR = "x-forwarded-for";
@@ -134,7 +134,7 @@ public class SmsController {
     }
 
     private Long resolveClientId(String apiKey) {
-        Map clientBusiness = cacheClient.hGetAll(CacheKeyConstants.CLIENT_BUSINESS + apiKey);
+        Map<String, String> clientBusiness = cacheFacade.hGetAll(CacheKeyConstants.CLIENT_BUSINESS + apiKey);
         if (clientBusiness == null || clientBusiness.isEmpty()) {
             return null;
         }

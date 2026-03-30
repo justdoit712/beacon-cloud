@@ -1,6 +1,6 @@
 package com.cz.api.filter.impl;
 
-import com.cz.api.client.BeaconCacheClient;
+import com.cz.api.client.CacheFacade;
 import com.cz.api.filter.CheckFilter;
 import com.cz.common.model.StandardSubmit;
 import com.cz.common.constant.ApiConstant;
@@ -25,7 +25,7 @@ public class SignCheckFilter implements CheckFilter {
 
     private static final Object SIGN_ID = "id";
     @Autowired
-    private BeaconCacheClient cacheClient;
+    private CacheFacade cacheFacade;
 
     /**
      * 截取签名的开始索引
@@ -56,13 +56,13 @@ public class SignCheckFilter implements CheckFilter {
         }
 
         //3. 从缓存中查询出客户绑定的签名
-        Set<Map> set = cacheClient.smember(CacheKeyConstants.CLIENT_SIGN + submit.getClientId());
+        Set<Map<String, Object>> set = cacheFacade.sMembersMap(CacheKeyConstants.CLIENT_SIGN + submit.getClientId());
         if(set == null || set.size() == 0){
             log.info("【接口模块-校验签名】   无可用签名 text = {}",text);
             throw new ApiException(ExceptionEnums.ERROR_SIGN);
         }
         //4. 判断
-        for (Map map : set) {
+        for (Map<String, Object> map : set) {
             if(sign.equals(map.get(CLIENT_SIGN_INFO))){
                 // 走到这，说明匹配上了具体的签名信息
                 submit.setSign(sign);

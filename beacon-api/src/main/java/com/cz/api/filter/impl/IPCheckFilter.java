@@ -1,6 +1,6 @@
 package com.cz.api.filter.impl;
 
-import com.cz.api.client.BeaconCacheClient;
+import com.cz.api.client.CacheFacade;
 import com.cz.api.filter.CheckFilter;
 import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.enums.ExceptionEnums;
@@ -25,14 +25,14 @@ public class IPCheckFilter implements CheckFilter {
     private static final String IP_ADDRESS = "ipAddress";
 
     @Autowired
-    private BeaconCacheClient cacheClient;
+    private CacheFacade cacheFacade;
 
     @Override
     public void check(StandardSubmit submit) {
         log.info("【接口模块】校验ip 正在校验");
 
         List<String> ipWhiteList = parseIpWhiteList(
-                cacheClient.hgetString(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), IP_ADDRESS)
+                cacheFacade.hGetString(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), IP_ADDRESS)
         );
         submit.setIp(ipWhiteList);
 

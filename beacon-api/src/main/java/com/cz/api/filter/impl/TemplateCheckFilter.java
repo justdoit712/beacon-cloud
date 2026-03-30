@@ -1,6 +1,6 @@
 package com.cz.api.filter.impl;
 
-import com.cz.api.client.BeaconCacheClient;
+import com.cz.api.client.CacheFacade;
 import com.cz.api.filter.CheckFilter;
 import com.cz.common.model.StandardSubmit;
 import com.cz.common.constant.ApiConstant;
@@ -23,7 +23,7 @@ import java.util.Set;
 public class TemplateCheckFilter implements CheckFilter {
 
     @Autowired
-    private BeaconCacheClient cacheClient;
+    private CacheFacade cacheFacade;
 
     /**
      * 模板内容中的具体模板信息
@@ -43,10 +43,10 @@ public class TemplateCheckFilter implements CheckFilter {
 
         text = text.replace(ApiConstant.SIGN_PREFIX + sign + ApiConstant.SIGN_SUFFIX, "");
         // 3、从缓存中获取到签名id绑定的所有模板
-        Set<Map> templates = cacheClient.smember(CacheKeyConstants.CLIENT_TEMPLATE + signId);
+        Set<Map<String, Object>> templates = cacheFacade.sMembersMap(CacheKeyConstants.CLIENT_TEMPLATE + signId);
         // 4、在tempaltes不为null时，遍历签名绑定的所有模板信息
         if(templates != null && templates.size() > 0) {
-            for (Map template : templates) {
+            for (Map<String, Object> template : templates) {
                 // 4.1 将模板内容和短信具体内容做匹配-true-匹配成功
                 String templateText = (String) template.get(TEMPLATE_TEXT);
                 if(text.equals(templateText)){

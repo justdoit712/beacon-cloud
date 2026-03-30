@@ -1,6 +1,6 @@
 package com.cz.api.filter.impl;
 
-import com.cz.api.client.BeaconCacheClient;
+import com.cz.api.client.CacheFacade;
 import com.cz.api.filter.CheckFilter;
 import com.cz.common.model.StandardSubmit;
 import com.cz.common.constant.ApiConstant;
@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 public class FeeCheckFilter implements CheckFilter {
 
     @Autowired
-    private BeaconCacheClient cacheClient;
+    private CacheFacade cacheFacade;
 
     /**
      * 只要短信内容的文字长度小于等于70个字，按照一条计算
@@ -65,7 +65,7 @@ public class FeeCheckFilter implements CheckFilter {
         //3、从 Redis 中读取余额镜像
         // 约束说明：client_balance 的主口径为 MySQL，Redis 为派生缓存。
         // 此处读取的是缓存镜像，后续由运行时同步链路保障与 MySQL 一致。
-        Integer balanceValue = cacheClient.hgetInteger(CacheKeyConstants.CLIENT_BALANCE + submit.getClientId(), BALANCE);
+        Integer balanceValue = cacheFacade.hGetInteger(CacheKeyConstants.CLIENT_BALANCE + submit.getClientId(), BALANCE);
         Long balance = balanceValue == null ? 0L : balanceValue.longValue();
 
         //4、判断金额是否满足当前短信费用\
