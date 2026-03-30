@@ -63,42 +63,6 @@
 
 以下按优先级从高到低给出。
 
-## 3.4 P0：Feign 客户端弱类型，且同一路径定义多种返回类型
-
-### 现状代码（需要重构）
-
-文件：`beacon-api/src/main/java/com/cz/api/client/BeaconCacheClient.java`
-
-```java
-@GetMapping("/cache/hget/{key}/{field}")
-Object hget(...);
-
-@GetMapping("/cache/hget/{key}/{field}")
-String hgetString(...);
-```
-
-### 原因
-
-1. 同一路径在客户端映射为不同返回类型，依赖运行时反序列化行为，易出现类型漂移。
-2. `Map`、`Set<Map>`、`Object` 大量原始类型，调用端充满强转。
-3. 现有实现在 `FeeCheckFilter`、`IPCheckFilter` 中已经出现强制类型转换。
-
-### 如何重构
-
-1. 与 `beacon-cache` 联动新增 V2 typed 接口（如 string/long/list）。
-2. API 模块 Feign 只保留强类型方法，逐步废弃 V1 `Object` 接口。
-3. 在 API 侧新增 `CacheFacade` 做兼容转换，避免业务层分散强转逻辑。
-
-### 目标代码（建议）
-
-```java
-@GetMapping("/v2/cache/hash/{key}/string/{field}")
-String hgetString(@PathVariable("key") String key, @PathVariable("field") String field);
-
-@GetMapping("/v2/cache/hash/{key}/long/{field}")
-Long hgetLong(@PathVariable("key") String key, @PathVariable("field") String field);
-```
-
 ## 3.6 P1：内部发送接口认证能力需升级（防重放、可审计）
 
 ### 现状代码（需要重构）
@@ -262,10 +226,6 @@ return R.ok();
 ---
 
 ## 4. 建议重构顺序（执行路线）
-
-## 阶段一（P0，先稳住风险）
-
-1. Feign typed 化：联动 `beacon-cache` 发布 V2 typed API。
 
 ## 阶段二（P1，契约与治理）
 

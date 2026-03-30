@@ -112,42 +112,6 @@ public RedisSerializer<Object> redisSerializer() {
 
 ---
 
-## 3.2 对外接口类型过于宽泛（大量 `Object/Map/Set` 原始类型）
-
-### 现状代码（需要重构）
-
-文件：`beacon-cache/src/main/java/com/cz/cache/controller/CacheController.java`
-
-```java
-public Map hGetAll(...)
-public Object hget(...)
-public Set smember(...)
-```
-
-### 原因
-
-1. 编译期类型信息丢失，调用方大量强转
-2. Feign 客户端出现同一路径多返回类型映射（脆弱）
-3. 容易把缓存服务变成“弱类型 RPC 黑盒”
-
-### 如何重构
-
-1. 增加 V2 typed API（保留 V1 兼容）
-2. 对关键业务值定义 DTO（如 `ClientBusinessCacheDTO`）
-3. 统一响应包装与错误码（建议复用 `ResultVO`）
-
-### 目标代码（建议）
-
-```java
-@GetMapping("/v2/cache/hash/{key}")
-public ResultVO<Map<String, String>> hGetAllString(@PathVariable String key) {
-    Map<String, String> data = cacheFacade.hGetAllString(key);
-    return ResultVO.success(data);
-}
-```
-
----
-
 ## 3.3 同一路径在多客户端映射为多种返回类型
 
 ### 现状代码（需要重构）
@@ -176,9 +140,9 @@ String hgetString(...);
 ### 如何重构
 
 1. 在服务端拆分 typed endpoint：
-- `/v2/cache/hash/{key}/string/{field}`
-- `/v2/cache/hash/{key}/long/{field}`
-- `/v2/cache/hash/{key}/int/{field}`
+   - `/v2/cache/hash/{key}/string/{field}`
+   - `/v2/cache/hash/{key}/long/{field}`
+   - `/v2/cache/hash/{key}/int/{field}`
 2. 或统一返回 JSON 节点对象，调用方按 schema 解析
 
 ---

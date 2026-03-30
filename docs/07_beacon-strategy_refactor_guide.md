@@ -155,54 +155,7 @@ try {
 
 ---
 
-## 3.3 P0：路由策略存在排序与类型安全问题
-
-### 现状代码（需要重构）
-
-文件：`beacon-strategy/src/main/java/com/cz/strategy/filter/impl/RouteStrategyFilter.java:49`
-
-```java
-TreeSet<Map> clientWeightChannels = new TreeSet<>(new Comparator<Map>() {
-    public int compare(Map o1, Map o2) {
-        int o1Weight = Integer.parseInt(o1.get("clientChannelWeight") + "");
-        int o2Weight = Integer.parseInt(o2.get("clientChannelWeight") + "");
-        return o2Weight - o1Weight;
-    }
-});
-clientWeightChannels.addAll(clientChannels);
-```
-
-文件：`beacon-strategy/src/main/java/com/cz/strategy/filter/impl/RouteStrategyFilter.java:65`
-
-```java
-if((int)(clientWeightChannel.get("isAvailable")) != 0){ ... }
-```
-
-### 原因
-
-1. `TreeSet` 比较器只按权重比较；权重相等时返回 `0`，后插入元素会被“去重丢失”。
-2. `clientChannels` 可能为 `null`，`addAll` 直接 NPE。
-3. 多处 `Map` 强转 `int/Integer`，缓存类型漂移时容易 `ClassCastException`。
-4. `submit.getOperatorId()` 为空时参与比较有空指针风险。
-
-### 如何重构
-
-1. 引入强类型 DTO（`ClientChannelBinding`、`ChannelInfo`）。
-2. 排序改为 `List + Comparator`，并用 `channelId` 做二级排序防重复。
-3. 所有缓存字段统一类型转换工具（`toInt/toLong`），禁止直接强转。
-4. 路由前显式校验 `operatorId`。
-
-### 目标代码（建议）
-
-```java
-bindings.sort(Comparator
-    .comparingInt(ClientChannelBinding::getWeight).reversed()
-    .thenComparingLong(ClientChannelBinding::getChannelId));
-```
-
----
-
-## 3.4 P0：敏感词策略实现不一致，存在“检测到了但不拦截”
+## 3.3 P0：敏感词策略实现不一致，存在“检测到了但不拦截”
 
 ### 现状代码（需要重构）
 
@@ -246,7 +199,7 @@ throw new StrategyException(ExceptionEnums.ERROR_DIRTY_WORD);
 
 ---
 
-## 3.5 P0：敏感词工具类使用静态初始化读取 Spring Bean，启动阶段不稳定
+## 3.4 P0：敏感词工具类使用静态初始化读取 Spring Bean，启动阶段不稳定
 
 ### 现状代码（需要重构）
 
@@ -284,45 +237,7 @@ static {
 
 ---
 
-## 3.6 P1：`BeaconCacheClient` 弱类型 + 同路径多返回类型
-
-### 现状代码（需要重构）
-
-文件：`beacon-strategy/src/main/java/com/cz/strategy/client/BeaconCacheClient.java:12`
-
-```java
-@GetMapping("/cache/hget/{key}/{field}")
-String hget(...);
-
-@GetMapping("/cache/hget/{key}/{field}")
-Integer hgetInteger(...);
-```
-
-文件：`beacon-strategy/src/main/java/com/cz/strategy/client/BeaconCacheClient.java:24`
-
-```java
-@GetMapping("/cache/smember/{key}")
-Set smember(...);
-
-@GetMapping("/cache/smember/{key}")
-Set<Map> smemberMap(...);
-```
-
-### 原因
-
-1. 同一路径多返回类型，反序列化依赖运行时行为，稳定性差。
-2. 原始类型 `Set/Map` 扩散到业务层，强转点太多。
-3. 与 `beacon-cache` 契约不清晰，升级困难。
-
-### 如何重构
-
-1. 联动 `beacon-cache` 推出 V2 typed API。
-2. strategy 侧引入 `CacheFacade`，屏蔽 V1/V2 差异。
-3. 所有策略过滤器只依赖强类型 DTO。
-
----
-
-## 3.7 P1：扣费策略依赖硬编码透支阈值，且回滚逻辑脆弱
+## 3.5 P1：扣费策略依赖硬编码透支阈值，且回滚逻辑脆弱
 
 ### 现状代码（需要重构）
 
@@ -356,7 +271,7 @@ return -10000L;
 
 ---
 
-## 3.8 P1：限流策略硬编码严重，缺少可运营化能力
+## 3.6 P1：限流策略硬编码严重，缺少可运营化能力
 
 ### 现状代码（需要重构）
 
@@ -388,7 +303,7 @@ member = System.currentTimeMillis() + retry + 1;
 
 ---
 
-## 3.9 P1：号段补齐策略存在重复实现与兜底格式问题
+## 3.7 P1：号段补齐策略存在重复实现与兜底格式问题
 
 ### 现状代码（需要重构）
 
@@ -426,35 +341,7 @@ String[] areaAndOperator = mobileInfo.split(SEPARATE);
 
 ---
 
-## 3.10 P1：错误回传工具存在空指针与重复查询问题
-
-### 现状代码（需要重构）
-
-文件：`beacon-strategy/src/main/java/com/cz/strategy/util/ErrorSendMsgUtil.java:37`
-
-```java
-Integer isCallback = cacheClient.hgetInteger(..., "isCallback");
-if(isCallback == 1){
-    String callbackUrl = cacheClient.hget(..., "callbackUrl");
-    ...
-}
-```
-
-### 原因
-
-1. 当前代码里 `isCallback == 1` 这项风险仍然存在，文档判断保持有效。
-2. 每次失败都查询两次缓存，热点场景下放大依赖压力。
-3. 未体现幂等约束，重复失败上报可能重复推报告。
-
-### 如何重构
-
-1. 判空改为 `Integer.valueOf(1).equals(isCallback)`。
-2. 一次性获取客户配置快照 DTO，减少重复调用。
-3. 引入 `sid` 去重键控制重复推报告。
-
----
-
-## 3.11 P1：RabbitMQ 回调配置仍有缺口
+## 3.8 P1：RabbitMQ 回调配置仍有缺口
 
 ### 现状代码（需要重构）
 
@@ -474,7 +361,7 @@ rabbitTemplate.setReturnCallback(...);
 1. 补充 `rabbitTemplate.setMandatory(true)`。
 2. 升级到新式 `ReturnsCallback`/`ConfirmCallback` 用法并加集成测试。
 
-## 3.13 P2：测试覆盖仍有缺口
+## 3.9 P2：测试覆盖仍有缺口
 
 ### 现状
 
@@ -509,16 +396,13 @@ rabbitTemplate.setReturnCallback(...);
 
 1. 策略链 fail-open 改造：空链路、未知 filter 一律可控失败。
 2. 敏感词策略收敛：统一为一个实现，命中即拦截。
-3. 路由过滤器重构：去掉 `TreeSet<Map>` + 强转逻辑，修复权重相等丢通道问题。
-4. MQ 消费异常兜底：补全 `Exception` 处理路径和 ack/nack 策略。
+3. MQ 消费异常兜底：补全 `Exception` 处理路径和 ack/nack 策略。
 
 ## 阶段二（P1，做稳定性治理）
 
-1. 缓存契约 typed 化：联动 `beacon-cache` 发布 V2 接口。
-2. 扣费/限流配置化与原子化。
-3. 号段补齐策略 DTO 化，接入外部接口容错。
-4. `ErrorSendMsgUtil` 空值防御与幂等增强。
-5. RabbitMQ 配置语义与回调机制修正。
+1. 扣费/限流配置化与原子化。
+2. 号段补齐策略 DTO 化，接入外部接口容错。
+3. RabbitMQ 配置语义与回调机制修正。
 
 ## 阶段三（P2，做工程化）
 
@@ -532,8 +416,7 @@ rabbitTemplate.setReturnCallback(...);
 ## 5.1 单元测试
 
 1. `PhaseStrategyFilter`：外部号段接口异常、兜底格式与 `operatorId` 推导。
-2. `RouteStrategyFilter`：`clientChannels` 为空、权重相等、缓存类型漂移场景。
-3. `RabbitTemplateConfig`：`mandatory` 与 return/confirm 回调行为。
+2. `RabbitTemplateConfig`：`mandatory` 与 return/confirm 回调行为。
 
 ## 5.2 集成测试
 
