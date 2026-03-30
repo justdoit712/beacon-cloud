@@ -5,7 +5,8 @@ import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.constant.SmsConstant;
 import com.cz.common.model.StandardReport;
 import com.cz.common.model.StandardSubmit;
-import com.cz.strategy.client.BeaconCacheClient;
+import com.cz.strategy.client.CacheFacade;
+import com.cz.strategy.client.dto.ClientBusinessSnapshot;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -21,11 +22,11 @@ public class ErrorSendMsgUtilTest {
     @Test
     public void shouldSendWriteLogAndMarkSubmitFailed() {
         RabbitTemplate rabbitTemplate = Mockito.mock(RabbitTemplate.class);
-        BeaconCacheClient cacheClient = Mockito.mock(BeaconCacheClient.class);
+        CacheFacade cacheFacade = Mockito.mock(CacheFacade.class);
 
         ErrorSendMsgUtil util = new ErrorSendMsgUtil();
         ReflectionTestUtils.setField(util, "rabbitTemplate", rabbitTemplate);
-        ReflectionTestUtils.setField(util, "cacheClient", cacheClient);
+        ReflectionTestUtils.setField(util, "cacheFacade", cacheFacade);
 
         StandardSubmit submit = new StandardSubmit();
 
@@ -38,21 +39,20 @@ public class ErrorSendMsgUtilTest {
     @Test
     public void shouldSendPushReportWhenCallbackEnabledAndUrlPresent() {
         RabbitTemplate rabbitTemplate = Mockito.mock(RabbitTemplate.class);
-        BeaconCacheClient cacheClient = Mockito.mock(BeaconCacheClient.class);
+        CacheFacade cacheFacade = Mockito.mock(CacheFacade.class);
 
         ErrorSendMsgUtil util = new ErrorSendMsgUtil();
         ReflectionTestUtils.setField(util, "rabbitTemplate", rabbitTemplate);
-        ReflectionTestUtils.setField(util, "cacheClient", cacheClient);
+        ReflectionTestUtils.setField(util, "cacheFacade", cacheFacade);
 
         StandardSubmit submit = new StandardSubmit();
         submit.setApiKey("ak_001");
         submit.setSequenceId(1L);
         submit.setMobile("13800000000");
 
-        when(cacheClient.hgetInteger(CacheKeyConstants.CLIENT_BUSINESS + "ak_001", CacheKeyConstants.IS_CALLBACK))
-                .thenReturn(1);
-        when(cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + "ak_001", CacheKeyConstants.CALLBACK_URL))
-                .thenReturn("https://callback.example.com/report");
+        when(cacheFacade.getClientBusinessSnapshot("ak_001"))
+                .thenReturn(new ClientBusinessSnapshot("ak_001", 1, "https://callback.example.com/report", null));
+        when(cacheFacade.markPushReportDispatched(1L)).thenReturn(true);
 
         util.sendPushReport(submit);
 
@@ -63,5 +63,27 @@ public class ErrorSendMsgUtilTest {
         Assert.assertEquals(submit.getSequenceId(), report.getSequenceId());
         Assert.assertEquals(Integer.valueOf(1), report.getIsCallback());
         Assert.assertEquals("https://callback.example.com/report", report.getCallbackUrl());
+    }
+
+    @Test
+    public void shouldSkipPushReportWhenAlreadyDispatched() {
+        RabbitTemplate rabbitTemplate = Mockito.mock(RabbitTemplate.class);
+        CacheFacade cacheFacade = Mockito.mock(CacheFacade.class);
+
+        ErrorSendMsgUtil util = new ErrorSendMsgUtil();
+        ReflectionTestUtils.setField(util, "rabbitTemplate", rabbitTemplate);
+        ReflectionTestUtils.setField(util, "cacheFacade", cacheFacade);
+
+        StandardSubmit submit = new StandardSubmit();
+        submit.setApiKey("ak_001");
+        submit.setSequenceId(1L);
+
+        when(cacheFacade.getClientBusinessSnapshot("ak_001"))
+                .thenReturn(new ClientBusinessSnapshot("ak_001", 1, "https://callback.example.com/report", null));
+        when(cacheFacade.markPushReportDispatched(1L)).thenReturn(false);
+
+        util.sendPushReport(submit);
+
+        verify(rabbitTemplate, Mockito.never()).convertAndSend(Mockito.eq(RabbitMQConstants.SMS_PUSH_REPORT), Mockito.any(StandardReport.class));
     }
 }

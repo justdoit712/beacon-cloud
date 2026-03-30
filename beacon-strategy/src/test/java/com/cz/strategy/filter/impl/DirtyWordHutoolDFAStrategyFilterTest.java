@@ -5,7 +5,7 @@ import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.StrategyException;
 import com.cz.common.model.StandardSubmit;
-import com.cz.strategy.client.BeaconCacheClient;
+import com.cz.strategy.client.CacheFacade;
 import com.cz.strategy.util.ErrorSendMsgUtil;
 import com.cz.strategy.util.HutoolDFAUtil;
 import com.cz.strategy.util.SpringUtil;
@@ -30,7 +30,6 @@ public class DirtyWordHutoolDFAStrategyFilterTest {
         ErrorSendMsgUtil errorSendMsgUtil = Mockito.mock(ErrorSendMsgUtil.class);
         DirtyWordHutoolDFAStrategyFilter filter = new DirtyWordHutoolDFAStrategyFilter();
         ReflectionTestUtils.setField(filter, "errorSendMsgUtil", errorSendMsgUtil);
-        ReflectionTestUtils.setField(filter, "cacheClient", Mockito.mock(BeaconCacheClient.class));
         ReflectionTestUtils.setField(filter, "rabbitTemplate", Mockito.mock(org.springframework.amqp.rabbit.core.RabbitTemplate.class));
 
         StandardSubmit submit = new StandardSubmit();
@@ -55,7 +54,6 @@ public class DirtyWordHutoolDFAStrategyFilterTest {
         ErrorSendMsgUtil errorSendMsgUtil = Mockito.mock(ErrorSendMsgUtil.class);
         DirtyWordHutoolDFAStrategyFilter filter = new DirtyWordHutoolDFAStrategyFilter();
         ReflectionTestUtils.setField(filter, "errorSendMsgUtil", errorSendMsgUtil);
-        ReflectionTestUtils.setField(filter, "cacheClient", Mockito.mock(BeaconCacheClient.class));
         ReflectionTestUtils.setField(filter, "rabbitTemplate", Mockito.mock(org.springframework.amqp.rabbit.core.RabbitTemplate.class));
 
         StandardSubmit submit = new StandardSubmit();
@@ -69,9 +67,9 @@ public class DirtyWordHutoolDFAStrategyFilterTest {
 
     private static void initWordTree(java.util.Set<String> dirtyWords) {
         ApplicationContext applicationContext = Mockito.mock(ApplicationContext.class);
-        BeaconCacheClient cacheClient = Mockito.mock(BeaconCacheClient.class);
-        when(applicationContext.getBean(BeaconCacheClient.class)).thenReturn(cacheClient);
-        when(cacheClient.smember(CacheKeyConstants.DIRTY_WORD)).thenReturn(dirtyWords);
+        CacheFacade cacheFacade = Mockito.mock(CacheFacade.class);
+        when(applicationContext.getBean(CacheFacade.class)).thenReturn(cacheFacade);
+        when(cacheFacade.sMembersString(CacheKeyConstants.DIRTY_WORD)).thenReturn(dirtyWords);
 
         ReflectionTestUtils.setField(SpringUtil.class, "applicationContext", applicationContext);
 

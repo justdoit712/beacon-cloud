@@ -1,7 +1,7 @@
 package com.cz.strategy.util;
 
 import com.cz.common.constant.CacheKeyConstants;
-import com.cz.strategy.client.BeaconCacheClient;
+import com.cz.strategy.client.CacheFacade;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,10 +18,10 @@ public class DFAUtil {
      * 初始化敏感词树
      */
     static {
-        // 获取Spring容器中的cacheClient
-        BeaconCacheClient cacheClient = (BeaconCacheClient) SpringUtil.getBeanByClass(BeaconCacheClient.class);
+        // 获取Spring容器中的cacheFacade
+        CacheFacade cacheFacade = (CacheFacade) SpringUtil.getBeanByClass(CacheFacade.class);
         // 获取存储在Redis中的全部敏感词
-        Set<String> dirtyWords = cacheClient.smember(CacheKeyConstants.DIRTY_WORD);
+        Set<String> dirtyWords = cacheFacade.sMembersString(CacheKeyConstants.DIRTY_WORD);
         // 调用create，将dfaMap的敏感词树构建
         create(dirtyWords);
     }

@@ -52,32 +52,10 @@ public interface BeaconCacheClient {
     @GetMapping("/v2/cache/hash/{key}")
     ResultVO<Map<String, String>> hGetAllTyped(@PathVariable(value = "key")String key);
 
-    default String hget(@PathVariable(value = "key")String key, @PathVariable(value = "field")String field) {
-        return unwrap(hgetTyped(key, field));
-    }
-
-    default Integer hgetInteger(@PathVariable(value = "key")String key, @PathVariable(value = "field")String field) {
-        return unwrap(hgetIntegerTyped(key, field));
-    }
-
-    default String getString(@PathVariable(value = "key")String key) {
-        return unwrap(getStringTyped(key));
-    }
-
-    @SuppressWarnings("unchecked")
-    default Set smember(@PathVariable(value = "key")String key) {
-        return (Set) unwrap(smemberTyped(key));
-    }
-
-    @SuppressWarnings("unchecked")
-    default Set<Map> smemberMap(@PathVariable(value = "key")String key) {
-        return (Set<Map>) (Set<?>) unwrap(smemberMapTyped(key));
-    }
-
-    @SuppressWarnings("unchecked")
-    default Map hGetAll(@PathVariable(value = "key")String key) {
-        return unwrap(hGetAllTyped(key));
-    }
+    @PostMapping(value = "/cache/setnx/{key}")
+    Boolean setIfAbsent(@PathVariable("key") String key,
+                        @RequestParam("value") String value,
+                        @RequestParam(value = "ttlSeconds", defaultValue = "300") Long ttlSeconds);
 
     static <T> T unwrap(ResultVO<T> response) {
         if (response == null) {

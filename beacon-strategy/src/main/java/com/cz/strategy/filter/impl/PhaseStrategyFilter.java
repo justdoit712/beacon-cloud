@@ -5,7 +5,7 @@ import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.enums.MobileOperatorEnum;
 import com.cz.common.model.StandardSubmit;
-import com.cz.strategy.client.BeaconCacheClient;
+import com.cz.strategy.client.CacheFacade;
 import com.cz.strategy.filter.StrategyFilter;
 import com.cz.strategy.util.MobileOperatorUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ public class PhaseStrategyFilter implements StrategyFilter {
 
 
     @Autowired
-    private BeaconCacheClient beaconCacheClient;
+    private CacheFacade cacheFacade;
     @Autowired
     private MobileOperatorUtil mobileOperatorUtil;
     @Autowired
@@ -70,7 +70,7 @@ public class PhaseStrategyFilter implements StrategyFilter {
 
         // 1. 获取手机号前7位
         String mobile = submit.getMobile().substring(0, MOBILE_FRONT);
-        String mobileInfo = beaconCacheClient.getString(CacheKeyConstants.PHASE + mobile);
+        String mobileInfo = cacheFacade.getString(CacheKeyConstants.PHASE + mobile);
 
         // 2. 缓存未命中，调用第三方接口
         if (StringUtils.isEmpty(mobileInfo)) {

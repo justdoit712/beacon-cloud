@@ -4,7 +4,7 @@ import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.StrategyException;
 import com.cz.common.model.StandardSubmit;
-import com.cz.strategy.client.BeaconCacheClient;
+import com.cz.strategy.client.CacheFacade;
 import com.cz.strategy.filter.StrategyFilter;
 import com.cz.strategy.util.ErrorSendMsgUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ public class BlackGlobalStrategyFilter implements StrategyFilter {
     private ErrorSendMsgUtil sendMsgUtil;
 
     @Autowired
-    private BeaconCacheClient cacheClient;
+    private CacheFacade cacheFacade;
 
     // 黑名单的默认value
     private final String TRUE = "1";
@@ -30,7 +30,7 @@ public class BlackGlobalStrategyFilter implements StrategyFilter {
         String mobile = submit.getMobile();
 
         //2、调用Redis查询
-        String value = cacheClient.getString(CacheKeyConstants.BLACK + mobile);
+        String value = cacheFacade.getString(CacheKeyConstants.BLACK + mobile);
 
         //3、如果查询的结果为"1"，代表是黑名单
         if (TRUE.equals(value)) {

@@ -2,7 +2,7 @@ package com.cz.strategy.filter;
 
 import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.model.StandardSubmit;
-import com.cz.strategy.client.BeaconCacheClient;
+import com.cz.strategy.client.CacheFacade;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -17,7 +17,7 @@ public class StrategyFilterContext {
     private Map<String, StrategyFilter> stringStrategyFilterMap;
 
     @Autowired
-    private BeaconCacheClient cacheClient;
+    private CacheFacade cacheFacade;
 
     private static final String CLIENT_FILTERS = "clientFilters";
     private static final String BLACK = "black";
@@ -28,7 +28,7 @@ public class StrategyFilterContext {
      * Read strategy chain from redis and execute in configured order.
      */
     public void strategy(StandardSubmit submit) {
-        String filters = cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + submit.getApiKey(), CLIENT_FILTERS);
+        String filters = cacheFacade.getClientFilters(submit.getApiKey());
         if (filters == null) {
             return;
         }

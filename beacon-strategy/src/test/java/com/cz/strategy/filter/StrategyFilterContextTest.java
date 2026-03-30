@@ -2,7 +2,7 @@ package com.cz.strategy.filter;
 
 import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.model.StandardSubmit;
-import com.cz.strategy.client.BeaconCacheClient;
+import com.cz.strategy.client.CacheFacade;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
@@ -19,13 +19,13 @@ public class StrategyFilterContextTest {
 
     @Test
     public void shouldExpandLegacyBlackAliasAndKeepConfiguredOrder() {
-        BeaconCacheClient cacheClient = Mockito.mock(BeaconCacheClient.class);
+        CacheFacade cacheFacade = Mockito.mock(CacheFacade.class);
         StrategyFilter blackGlobal = Mockito.mock(StrategyFilter.class);
         StrategyFilter blackClient = Mockito.mock(StrategyFilter.class);
         StrategyFilter route = Mockito.mock(StrategyFilter.class);
 
         StrategyFilterContext context = new StrategyFilterContext();
-        ReflectionTestUtils.setField(context, "cacheClient", cacheClient);
+        ReflectionTestUtils.setField(context, "cacheFacade", cacheFacade);
 
         Map<String, StrategyFilter> filters = new HashMap<>();
         filters.put("blackGlobal", blackGlobal);
@@ -36,7 +36,7 @@ public class StrategyFilterContextTest {
         StandardSubmit submit = new StandardSubmit();
         submit.setApiKey("ak_001");
 
-        when(cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + "ak_001", "clientFilters"))
+        when(cacheFacade.getClientFilters("ak_001"))
                 .thenReturn("black,route");
 
         context.strategy(submit);
@@ -49,11 +49,11 @@ public class StrategyFilterContextTest {
 
     @Test
     public void shouldIgnoreBlankAndUnknownFiltersButStillRunKnownOnes() {
-        BeaconCacheClient cacheClient = Mockito.mock(BeaconCacheClient.class);
+        CacheFacade cacheFacade = Mockito.mock(CacheFacade.class);
         StrategyFilter route = Mockito.mock(StrategyFilter.class);
 
         StrategyFilterContext context = new StrategyFilterContext();
-        ReflectionTestUtils.setField(context, "cacheClient", cacheClient);
+        ReflectionTestUtils.setField(context, "cacheFacade", cacheFacade);
 
         Map<String, StrategyFilter> filters = new HashMap<>();
         filters.put("route", route);
@@ -62,7 +62,7 @@ public class StrategyFilterContextTest {
         StandardSubmit submit = new StandardSubmit();
         submit.setApiKey("ak_001");
 
-        when(cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + "ak_001", "clientFilters"))
+        when(cacheFacade.getClientFilters("ak_001"))
                 .thenReturn("  route  , ,missing ");
 
         context.strategy(submit);
@@ -72,11 +72,11 @@ public class StrategyFilterContextTest {
 
     @Test
     public void shouldDoNothingWhenClientFiltersMissing() {
-        BeaconCacheClient cacheClient = Mockito.mock(BeaconCacheClient.class);
+        CacheFacade cacheFacade = Mockito.mock(CacheFacade.class);
         StrategyFilter route = Mockito.mock(StrategyFilter.class);
 
         StrategyFilterContext context = new StrategyFilterContext();
-        ReflectionTestUtils.setField(context, "cacheClient", cacheClient);
+        ReflectionTestUtils.setField(context, "cacheFacade", cacheFacade);
 
         Map<String, StrategyFilter> filters = new HashMap<>();
         filters.put("route", route);
@@ -85,7 +85,7 @@ public class StrategyFilterContextTest {
         StandardSubmit submit = new StandardSubmit();
         submit.setApiKey("ak_001");
 
-        when(cacheClient.hget(CacheKeyConstants.CLIENT_BUSINESS + "ak_001", "clientFilters"))
+        when(cacheFacade.getClientFilters("ak_001"))
                 .thenReturn(null);
 
         context.strategy(submit);
