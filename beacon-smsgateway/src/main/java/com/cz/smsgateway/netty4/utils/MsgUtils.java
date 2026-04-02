@@ -34,7 +34,9 @@ public class MsgUtils {
     }
 
     /**
-     * 时间戳的明文,由客户端产生,格式为MMDDHHMMSS，即月日时分秒，10位数字的整型，右对齐 �?
+     * 生成 CMPP 鉴权使用的时间戳明文。
+     *
+     * <p>格式为 `MMDDHHMMSS`，即月日时分秒，共 10 位数字。</p>
      */
     public static String getTimestamp() {
         DateFormat format = new SimpleDateFormat("MMddhhmmss");
@@ -42,12 +44,11 @@ public class MsgUtils {
     }
 
     /**
-     * 用于鉴别源地�?。其值�?�过单向MD5 hash计算得出，表示如下：
-     * AuthenticatorSource =
-     * MD5（Source_Addr+9 字节�?0 +shared secret+timestamp�?
-     * Shared secret 由中国移动与源地�?实体事先商定，timestamp格式为：MMDDHHMMSS，即月日时分秒，10位�??
+     * 计算 CMPP Connect 请求中的 `AuthenticatorSource`。
      *
-     * @return
+     * <p>计算公式：`MD5(spId + 9字节0 + secret + timestamp)`。</p>
+     *
+     * @return 鉴权摘要字节数组
      */
     public static byte[] getAuthenticatorSource(String spId, String secret) {
         try {
@@ -63,9 +64,9 @@ public class MsgUtils {
     /**
      * 向流中写入指定字节长度的字符串，不足时补0
      *
-     * @param dous:要写入的流对�?
-     * @param s:要写入的字符�?
-     * @param len:写入长度,不足�?0
+     * @param dous 要写入的输出流
+     * @param s 要写入的字符串
+     * @param len 写入长度，不足时补 `0`
      */
     public static void writeString(DataOutputStream dous, String s, int len) {
 
@@ -109,9 +110,9 @@ public class MsgUtils {
     /**
      * 从流中读取指定长度的字节，转成字符串返回
      *
-     * @param ins:要读取的流对�?
-     * @param len:要读取的字符串长�?
-     * @return:读取到的字符�?
+     * @param ins 要读取的输入流
+     * @param len 要读取的字符串长度
+     * @return 读取到的字符串
      */
     public static String readString(java.io.DataInputStream ins, int len, String charset) {
         byte[] b = new byte[len];
@@ -151,7 +152,7 @@ public class MsgUtils {
      * UCS2解码
      *
      * @param src UCS2 源串
-     * @return 解码后的UTF-16BE字符�?
+     * @return 解码后的 UTF-16BE 字符串
      */
     public static String DecodeUCS2(String src) {
         byte[] bytes = new byte[src.length() / 2];
@@ -194,8 +195,8 @@ public class MsgUtils {
     /**
      * UCS2编码
      *
-     * @param src UTF-16BE编码的源�?
-     * @return 编码后的UCS2�?
+     * @param src UTF-16BE 编码源字符串
+     * @return 编码后的 UCS2 字符串
      */
     public static String EncodeUCS2(String src) {
         byte[] bytes;
