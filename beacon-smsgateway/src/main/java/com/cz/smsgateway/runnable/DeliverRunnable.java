@@ -4,8 +4,8 @@ import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.constant.SmsConstant;
 import com.cz.common.enums.CMPP2DeliverEnums;
 import com.cz.common.model.StandardReport;
-import com.cz.common.util.CMPPDeliverMapUtil;
 import com.cz.smsgateway.client.CacheFacade;
+import com.cz.smsgateway.client.CmppStateStore;
 import com.cz.smsgateway.util.SpringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -22,6 +22,8 @@ public class DeliverRunnable implements Runnable {
 
     private CacheFacade cacheFacade = SpringUtil.getBeanByClass(CacheFacade.class);
 
+    private CmppStateStore cmppStateStore = SpringUtil.getBeanByClass(CmppStateStore.class);
+
     private static final String DELIVRD = "DELIVRD";
 
     private long msgId;
@@ -36,10 +38,9 @@ public class DeliverRunnable implements Runnable {
     @Override
     public void run() {
         // 1) load report by msgId
-        StandardReport report = CMPPDeliverMapUtil.remove(msgId + "");
+        StandardReport report = cmppStateStore.takeDeliver(String.valueOf(msgId));
         if (report == null) {
-            log.warn("cmpp deliver repo miss, msgId={}, stat={}, deliverCacheSize={}",
-                    msgId, stat, CMPPDeliverMapUtil.size());
+            log.warn("cmpp deliver state miss, msgId={}, stat={}", msgId, stat);
             return;
         }
 

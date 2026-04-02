@@ -24,3 +24,8 @@ cache:
       caller: beacon-smsgateway
       secret: cache_smsgateway_secret
 
+cmpp:
+  state:
+    submit-ttl-seconds: 600
+    deliver-ttl-seconds: 86400
+

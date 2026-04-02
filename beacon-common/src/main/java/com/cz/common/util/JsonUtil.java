@@ -33,6 +33,17 @@ public final class JsonUtil {
         }
     }
 
+    public static <T> T fromJson(String json, Class<T> clazz) {
+        if (json == null || json.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return OBJECT_MAPPER.readValue(json, clazz);
+        } catch (JsonProcessingException e) {
+            throw new JsonSerializeException("deserialize json to object failed", e);
+        }
+    }
+
     public static Map<String, Object> toMap(Object obj) {
         try {
             return OBJECT_MAPPER.convertValue(obj, new TypeReference<Map<String, Object>>() { });

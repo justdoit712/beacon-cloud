@@ -5,8 +5,7 @@ import com.cz.common.constant.SmsConstant;
 import com.cz.common.enums.CMPP2ResultEnums;
 import com.cz.common.model.StandardReport;
 import com.cz.common.model.StandardSubmit;
-import com.cz.common.util.CMPPDeliverMapUtil;
-import com.cz.common.util.CMPPSubmitRepoMapUtil;
+import com.cz.smsgateway.client.CmppStateStore;
 import com.cz.smsgateway.netty4.entity.CmppSubmitResp;
 import com.cz.smsgateway.util.SpringUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +22,8 @@ public class SubmitRepoRunnable implements Runnable {
 
     private RabbitTemplate rabbitTemplate = SpringUtil.getBeanByClass(RabbitTemplate.class);
 
+    private CmppStateStore cmppStateStore = SpringUtil.getBeanByClass(CmppStateStore.class);
+
     private CmppSubmitResp submitResp;
 
     private final int OK = 0;
@@ -34,12 +35,11 @@ public class SubmitRepoRunnable implements Runnable {
     @Override
     public void run() {
         StandardReport report = null;
-        //1、拿到自增ID，并且从ConcurrentHashMap中获取到存储的submit
-        StandardSubmit submit = CMPPSubmitRepoMapUtil.remove(submitResp.getSequenceId());
+        //1、按 sequenceId 取回提交阶段暂存的 submit
+        StandardSubmit submit = cmppStateStore.takeSubmit(submitResp.getSequenceId());
         if (submit == null) {
-            log.warn("cmpp submit repo miss, sequenceId={}, msgId={}, result={}, submitCacheSize={}",
-                    submitResp.getSequenceId(), submitResp.getMsgId(), submitResp.getResult(),
-                    CMPPSubmitRepoMapUtil.size());
+            log.warn("cmpp submit state miss, sequenceId={}, msgId={}, result={}",
+                    submitResp.getSequenceId(), submitResp.getMsgId(), submitResp.getResult());
             return;
         }
 
@@ -52,10 +52,10 @@ public class SubmitRepoRunnable implements Runnable {
             submit.setErrorMsg(resultMessage);
         } else {
             // 如果没进到if中，说明运营商已经正常的接收了发送短信的任务
-            //3、将submit封装为Report，临时存储，以便运营商返回状态码时，可以再次获取到信息
+            //3、将submit封装为Report，并暂存到共享缓存，等待最终状态报告关联
             report = new StandardReport();
             BeanUtils.copyProperties(submit, report);
-            CMPPDeliverMapUtil.put(submitResp.getMsgId() + "",report);
+            cmppStateStore.saveDeliver(String.valueOf(submitResp.getMsgId()), report);
         }
         //4、将封装好的submit直接扔RabbitMQ中，让搜索模块记录信息
         rabbitTemplate.convertAndSend(RabbitMQConstants.SMS_WRITE_LOG,submit);

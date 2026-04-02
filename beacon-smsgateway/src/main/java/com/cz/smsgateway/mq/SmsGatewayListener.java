@@ -2,8 +2,7 @@ package com.cz.smsgateway.mq;
 
 
 import com.cz.common.model.StandardSubmit;
-
-import com.cz.common.util.CMPPSubmitRepoMapUtil;
+import com.cz.smsgateway.client.CmppStateStore;
 import com.cz.smsgateway.netty4.NettyClient;
 import com.cz.smsgateway.netty4.entity.CmppSubmit;
 import com.cz.smsgateway.netty4.utils.Command;
@@ -28,6 +27,9 @@ public class SmsGatewayListener {
     @Autowired
     private NettyClient nettyClient;
 
+    @Autowired
+    private CmppStateStore cmppStateStore;
+
     @RabbitListener(queues = "${gateway.sendtopic}")
     public void consume(StandardSubmit submit, Channel channel, Message message) throws IOException, InterruptedException {
         log.info("【短信网关模块】 接收到消息 submit = {}",submit);
@@ -40,8 +42,8 @@ public class SmsGatewayListener {
         int sequence = MsgUtils.getSequence();
         //2. 声明发送短信是，需要的CMPPSubmit对象
         CmppSubmit cmppSubmit = new CmppSubmit(Command.CMPP2_VERSION , srcNumber, sequence, mobile, text);
-        //3.将submit对象做一个临时存储，在运营商第一次响应的时候，可以获取到
-        CMPPSubmitRepoMapUtil.put(sequence,submit);
+        //3.将submit对象暂存到共享缓存，在运营商第一次响应时再关联取回
+        cmppStateStore.saveSubmit(sequence, submit);
         //4.和运营商进行交互发送信息
         nettyClient.submit(cmppSubmit);
 
