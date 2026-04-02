@@ -13,7 +13,7 @@
 当前仓库保留 4 类文档：
 
 1. 系统总览：1 份
-2. 模块总文档：10 份
+2. 模块总文档：9 份
 3. 专题方案：2 份
 4. 路线图：1 份
 
@@ -40,7 +40,6 @@
 7. `10_beacon-push_refactor_guide.md`
 8. `11_beacon-webmaster_refactor_guide.md`
 9. `12_beacon-monitor_refactor_guide.md`
-10. `13_beacon-test_refactor_guide.md`
 
 ### 2.3 想看跨模块专题
 
@@ -67,7 +66,6 @@
 7. `10_beacon-push_refactor_guide.md`
 8. `11_beacon-webmaster_refactor_guide.md`
 9. `12_beacon-monitor_refactor_guide.md`
-10. `13_beacon-test_refactor_guide.md`
 
 ### 3.3 专题方案
 

@@ -237,19 +237,9 @@ static {
 
 ---
 
-## 3.5 P1：扣费策略依赖硬编码透支阈值，且回滚逻辑脆弱
+## 3.5 P1：扣费策略透支阈值仍是硬编码
 
 ### 现状代码（需要重构）
-
-文件：`beacon-strategy/src/main/java/com/cz/strategy/filter/impl/FeeStrategyFilter.java:37`
-
-```java
-Long amountLimit = ClientBalanceUtil.getClientAmountLimit(submit.getClientId());
-if(amount < amountLimit) {
-    cacheClient.hIncrBy(..., fee);
-    throw new StrategyException(...);
-}
-```
 
 文件：`beacon-strategy/src/main/java/com/cz/strategy/util/ClientBalanceUtil.java:12`
 
@@ -257,17 +247,23 @@ if(amount < amountLimit) {
 return -10000L;
 ```
 
+文件：`beacon-strategy/src/main/java/com/cz/strategy/filter/impl/FeeStrategyFilter.java`
+
+```java
+Long amountLimit = ClientBalanceUtil.getClientAmountLimit(clientId);
+```
+
 ### 原因
 
 1. 透支阈值写死，无法按客户/产品配置。
-2. “扣减后判定再回滚”在高并发下易产生边界问题。
-3. 该规则应是策略配置，不应固化在工具类。
+2. 不同客户等级/业务线无法差异化阈值治理。
+3. 阈值规则固化在工具类，不利于配置审计和统一变更。
 
 ### 如何重构
 
 1. 阈值改为客户配置化（缓存读取 + 本地短期缓存）。
-2. 扣费与阈值校验收敛为缓存侧原子脚本（Lua）或单接口事务语义。
-3. 失败回滚写入审计事件，避免“静默回滚”。
+2. 明确阈值来源优先级（配置中心 > 默认值），并增加缺失时 fail-safe 策略。
+3. 扣费接口补充阈值命中原因与审计字段，便于联调排障。
 
 ---
 
@@ -435,7 +431,7 @@ rabbitTemplate.setReturnCallback(...);
 
 1. 与 `beacon-cache`：先发 V2 typed 接口，再迁移 strategy Feign 客户端。
 2. 与 `beacon-common`：统一异常码与错误语义，减少模块侧重复判定。
-3. 与 `beacon-monitor`：新增策略层监控指标（策略失败率、路由失败率、扣费回滚率）。
+3. 与 `beacon-monitor`：新增策略层监控指标（策略失败率、路由失败率、扣费失败率）。
 
 建议采用“新增兼容 -> 灰度切流 -> 清理旧逻辑”的三步推进，避免一次性大改导致生产风险。
 
