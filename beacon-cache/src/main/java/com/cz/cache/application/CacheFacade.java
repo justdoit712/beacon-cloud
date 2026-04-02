@@ -71,6 +71,13 @@ public class CacheFacade {
         redisClient.set(physicalKey, value);
     }
 
+    public void set(String key, String value, Long ttlSeconds) {
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 setStringWithTtl方法，逻辑key = {}，物理key = {}，ttlSeconds = {}，存储value = {}",
+                key, physicalKey, ttlSeconds, value);
+        redisClient.set(physicalKey, value, ttlSeconds == null ? 0L : ttlSeconds);
+    }
+
     public void sadd(String key, Map<String, Object>... value) {
         String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
         log.info("【缓存模块】 sadd方法，逻辑key = {}，物理key = {}，存储value = {}", key, physicalKey, value);
@@ -198,6 +205,13 @@ public class CacheFacade {
         String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
         log.info("【缓存模块】 pop方法，逻辑key = {}，物理key = {}", key, physicalKey);
         return redisClient.getAndDelete(physicalKey);
+    }
+
+    public String popString(String key) {
+        String physicalKey = namespaceKeyResolver.toPhysicalKey(key);
+        log.info("【缓存模块】 popString方法，逻辑key = {}，物理key = {}", key, physicalKey);
+        Object value = redisClient.getAndDelete(physicalKey);
+        return valueToString(value);
     }
 
     public Boolean deleteIfValueMatches(String key, String value) {

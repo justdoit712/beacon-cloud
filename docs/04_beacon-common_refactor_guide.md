@@ -26,11 +26,6 @@
 
 ## 2. 当前问题总览（按优先级）
 
-### P0
-
-1. 雪花算法实现存在可读性和健壮性问题  
-    文件：`beacon-common/src/main/java/com/cz/common/util/SnowFlakeUtil.java`
-
 ### P1
 
 1. `CMPP*MapUtil` 仍仅限进程内缓存，缺少跨实例共享与重启恢复能力
@@ -42,63 +37,7 @@
 
 ---
 
-## 3.1 SnowFlakeUtil：收敛剩余运行时风险
-
-### 现状代码（需要重构）
-
-文件：`beacon-common/src/main/java/com/cz/common/util/SnowFlakeUtil.java`
-
-```java
-private static final long TIME_START = 1668096000000L;
-
-private long tilNextMillis(long lastTimestamp) {
-    long timestamp = timeGen();
-    while (timestamp <= lastTimestamp) {
-        timestamp = timeGen();
-    }
-    return timestamp;
-}
-
-public synchronized long nextId() { ... }
-```
-
-### 原因
-
-1. 参数越界校验、日志替换和位运算括号问题已经修复，但仍有剩余运行时风险。
-2. `TIME_START` 仍然是硬编码，跨环境调整和长期演进不够灵活。
-3. `tilNextMillis(...)` 采用忙等，自增序列在同一毫秒耗尽时会空转占用 CPU。
-4. `nextId()` 为 `synchronized`，单实例高峰下吞吐会被串行化。
-
-### 如何重构
-
-1. 保留现有越界校验、时间回拨校验和测试覆盖。
-2. 将 `TIME_START` 改为可配置项，保留当前默认值作为兜底。
-3. 在等待下一毫秒时增加轻量让步策略，避免纯忙等。
-4. 在压测结果支持的前提下，再评估是否需要进一步拆分实例维度或引入独立 ID 服务。
-
-### 目标代码（建议）
-
-```java
-@Value("${snowflake.timeStart:1668096000000}")
-private long timeStart;
-
-private long tilNextMillis(long lastTimestamp) {
-    long timestamp = timeGen();
-    while (timestamp <= lastTimestamp) {
-        LockSupport.parkNanos(100_000L);
-        timestamp = timeGen();
-    }
-    return timestamp;
-}
-
-long id = ((timestamp - timeStart) << TIMESTAMP_SHIFT)
-        | (machineId << machineIdShift)
-        | (serviceId << serviceIdShift)
-        | sequence;
-return id & Long.MAX_VALUE;
-```
-
-## 3.2 CMPP 临时缓存：避免进程内状态成为长期瓶颈
+## 3.1 CMPP 临时缓存：避免进程内状态成为长期瓶颈
 
 ### 现状代码（需要重构）
 
@@ -129,23 +68,19 @@ return id & Long.MAX_VALUE;
 
 ## 4. 分阶段重构顺序（建议）
 
-## Phase 1（低风险，先做）
-
-1. `SnowFlakeUtil` 参数校验和日志改造
-
-## Phase 2（兼容迁移）
+## Phase 1（兼容迁移）
 
 1. `StandardSubmit` 字段标准化（保留兼容方法）
 2. 常量类新旧并行（新类 + 旧类 `@Deprecated`）
 3. enum 查询能力内聚，util 委托过渡
 
-## Phase 3（结构收敛）
+## Phase 2（结构收敛）
 
 1. 抽象 `BizException`
 2. 三类异常迁移继承
 3. 为 `CMPP*MapUtil` 补监控指标并评估外部化方案
 
-## Phase 4（清理）
+## Phase 3（清理）
 
 1. 删除兼容层（旧字段访问器、旧常量类、旧 util 逻辑）
 2. 全仓替换引用
@@ -158,13 +93,10 @@ return id & Long.MAX_VALUE;
 1. `StandardSubmitCompatTest`  
 验证关键契约字段和兼容命名的序列化/反序列化行为。
 
-2. `SnowFlakeUtilTest`  
-验证并发唯一性、递增趋势、回拨异常。
-
-3. `ExceptionMappingTest`  
+2. `ExceptionMappingTest`  
 验证 `ExceptionEnums -> 异常 -> ResultVO` 映射一致性。
 
-4. `CmppStoreExpiryTest`  
+3. `CmppStoreExpiryTest`  
 验证缓存条目生命周期、容量约束与未匹配回执场景。
 
 ---

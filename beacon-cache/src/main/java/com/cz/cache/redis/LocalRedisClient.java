@@ -59,6 +59,21 @@ public class LocalRedisClient {
         redisTemplate.opsForValue().set(key, value);
     }
 
+    /**
+     * 覆盖写入字符串值，并可选设置过期时间。
+     *
+     * @param key Redis key
+     * @param value 需要写入的值
+     * @param ttlSeconds 过期时间（秒）；小于等于 0 时表示不额外设置 TTL
+     */
+    public void set(String key, Object value, long ttlSeconds) {
+        if (ttlSeconds <= 0) {
+            set(key, value);
+            return;
+        }
+        redisTemplate.opsForValue().set(key, value, ttlSeconds, TimeUnit.SECONDS);
+    }
+
 
 
     /**

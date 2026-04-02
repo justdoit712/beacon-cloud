@@ -21,6 +21,7 @@ import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class CacheFacadeTypedReadTest {
@@ -132,5 +133,21 @@ public class CacheFacadeTypedReadTest {
         } catch (ResponseStatusException ex) {
             Assert.assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         }
+    }
+
+    @Test
+    public void shouldWriteStringWithTtl() {
+        cacheFacade.set("cmpp:submit:1", "{\"sequenceId\":1}", 600L);
+
+        verify(redisClient).set("ns:cmpp:submit:1", "{\"sequenceId\":1}", 600L);
+    }
+
+    @Test
+    public void shouldPopStringValue() {
+        when(redisClient.getAndDelete("ns:cmpp:deliver:1")).thenReturn("{\"msgId\":\"1\"}");
+
+        String result = cacheFacade.popString("cmpp:deliver:1");
+
+        Assert.assertEquals("{\"msgId\":\"1\"}", result);
     }
 }

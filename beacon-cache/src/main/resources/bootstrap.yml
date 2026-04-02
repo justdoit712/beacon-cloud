@@ -49,3 +49,4 @@ cache:
         - KEYS
       beacon-smsgateway:
         - READ
+        - WRITE
