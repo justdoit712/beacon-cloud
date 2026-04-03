@@ -5,7 +5,7 @@ import com.cz.api.filter.CheckFilterContext;
 import com.cz.api.form.InternalSingleSendForm;
 import com.cz.api.form.SingleSendForm;
 import com.cz.api.utils.Result;
-import com.cz.api.vo.ResultVO;
+import com.cz.api.vo.SmsSendResultVO;
 import com.cz.common.constant.CacheKeyConstants;
 import com.cz.common.constant.RabbitMQConstants;
 import com.cz.common.enums.ExceptionEnums;
@@ -29,17 +29,27 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+/**
+ * 短信发送入口控制器。
+ *
+ * <p>负责受理外部短信发送请求与内部短信发送请求，完成参数校验、
+ * `StandardSubmit` 组装、基础校验链执行以及 MQ 投递。</p>
+ */
 @RestController
 @RequestMapping("/sms")
 @Slf4j
 public class SmsController {
 
+    /**
+     * 真实 IP 提取时使用的请求头列表，多个头以逗号分隔。
+     */
     @Value("${headers:}")
     private String headers;
 
     /**
-     * When configured, calls to internal send endpoint must provide the same token
-     * in header `X-Internal-Token`.
+     * 内部发送接口使用的调用令牌。
+     *
+     * <p>当配置了该值时，请求头 `X-Internal-Token` 必须与之匹配。</p>
      */
     @Value("${internal.sms.token:}")
     private String internalSmsToken;
@@ -59,10 +69,20 @@ public class SmsController {
     private static final String UNKNOWN = "unknown";
     private static final String X_FORWARDED_FOR = "x-forwarded-for";
 
+    /**
+     * 处理外部短信发送请求。
+     *
+     * <p>该入口会先执行公开接口所需的基础校验链，再将短信请求异步投递到预发送队列。</p>
+     *
+     * @param singleSendForm 外部发送请求体
+     * @param bindingResult 参数校验结果
+     * @param req 当前 HTTP 请求
+     * @return 受理结果，包含 `uid` 和 `sid`
+     */
     @PostMapping(value = "/single_send", produces = "application/json;charset=utf-8")
-    public ResultVO singleSend(@RequestBody @Validated SingleSendForm singleSendForm,
-                               BindingResult bindingResult,
-                               HttpServletRequest req) {
+    public SmsSendResultVO singleSend(@RequestBody @Validated SingleSendForm singleSendForm,
+                                      BindingResult bindingResult,
+                                      HttpServletRequest req) {
         if (bindingResult.hasErrors()) {
             return Result.error(ExceptionEnums.PARAMETER_ERROR.getCode(), firstError(bindingResult));
         }
@@ -71,16 +91,27 @@ public class SmsController {
         StandardSubmit submit = buildSubmit(singleSendForm.getApikey(), null, singleSendForm.getMobile(),
                 singleSendForm.getText(), singleSendForm.getState(), singleSendForm.getUid(), realIp);
 
-        // Keep original external checks for public API.
+        // 外部公开接口保留完整校验链。
         checkFilterContext.check(submit);
         return enqueue(submit);
     }
 
+    /**
+     * 处理内部短信发送请求。
+     *
+     * <p>该入口主要供平台内部系统调用，会校验内部调用令牌并补齐客户 ID 后入队。</p>
+     *
+     * @param form 内部发送请求体
+     * @param bindingResult 参数校验结果
+     * @param req 当前 HTTP 请求
+     * @param requestToken 请求头中的内部调用令牌
+     * @return 受理结果，包含 `uid` 和 `sid`
+     */
     @PostMapping(value = "/internal/single_send", produces = "application/json;charset=utf-8")
-    public ResultVO internalSingleSend(@RequestBody @Validated InternalSingleSendForm form,
-                                       BindingResult bindingResult,
-                                       HttpServletRequest req,
-                                       @RequestHeader(value = "X-Internal-Token", required = false) String requestToken) {
+    public SmsSendResultVO internalSingleSend(@RequestBody @Validated InternalSingleSendForm form,
+                                              BindingResult bindingResult,
+                                              HttpServletRequest req,
+                                              @RequestHeader(value = "X-Internal-Token", required = false) String requestToken) {
         if (bindingResult.hasErrors()) {
             return Result.error(ExceptionEnums.PARAMETER_ERROR.getCode(), firstError(bindingResult));
         }
@@ -99,19 +130,37 @@ public class SmsController {
         return enqueue(submit);
     }
 
-    private ResultVO enqueue(StandardSubmit submit) {
+    /**
+     * 为短信请求补齐流水号和发送时间，并投递到预发送队列。
+     *
+     * @param submit 待投递的统一短信提交对象
+     * @return 受理结果，包含业务侧 `uid` 与平台侧 `sid`
+     */
+    private SmsSendResultVO enqueue(StandardSubmit submit) {
         submit.setSequenceId(snowFlakeUtil.nextId());
         submit.setSendTime(LocalDateTime.now());
 
         rabbitTemplate.convertAndSend(RabbitMQConstants.SMS_PRE_SEND, submit,
                 new CorrelationData(submit.getSequenceId().toString()));
 
-        ResultVO result = Result.ok();
+        SmsSendResultVO result = Result.ok();
         result.setUid(submit.getUid());
         result.setSid(String.valueOf(submit.getSequenceId()));
         return result;
     }
 
+    /**
+     * 构建统一的短信提交对象。
+     *
+     * @param apiKey 客户 apiKey
+     * @param clientId 客户 ID；外部发送入口可为空
+     * @param mobile 目标手机号
+     * @param text 短信内容
+     * @param state 短信类型
+     * @param uid 客户侧请求 ID
+     * @param realIp 真实请求 IP
+     * @return 组装后的 `StandardSubmit`
+     */
     private StandardSubmit buildSubmit(String apiKey,
                                        Long clientId,
                                        String mobile,
@@ -133,6 +182,12 @@ public class SmsController {
         return submit;
     }
 
+    /**
+     * 根据 apiKey 从缓存中解析客户 ID。
+     *
+     * @param apiKey 客户 apiKey
+     * @return 客户 ID；缓存未命中或格式非法时返回 {@code null}
+     */
     private Long resolveClientId(String apiKey) {
         Map<String, String> clientBusiness = cacheFacade.hGetAll(CacheKeyConstants.CLIENT_BUSINESS + apiKey);
         if (clientBusiness == null || clientBusiness.isEmpty()) {
@@ -150,6 +205,12 @@ public class SmsController {
         }
     }
 
+    /**
+     * 提取首个参数校验错误信息。
+     *
+     * @param bindingResult 参数校验结果
+     * @return 首个字段错误信息；未命中时返回通用参数错误描述
+     */
     private String firstError(BindingResult bindingResult) {
         if (bindingResult.getFieldError() == null) {
             return ExceptionEnums.PARAMETER_ERROR.getMsg();
@@ -158,7 +219,10 @@ public class SmsController {
     }
 
     /**
-     * Get the real request IP from configured headers, fallback to remote address.
+     * 从配置的请求头中提取真实请求 IP，未命中时回退到远端地址。
+     *
+     * @param req 当前 HTTP 请求
+     * @return 解析得到的真实 IP
      */
     private String getRealIp(HttpServletRequest req) {
         if (!StringUtils.hasText(headers)) {
