@@ -7,6 +7,7 @@ import com.cz.webmaster.entity.ClientBusiness;
 import com.cz.webmaster.entity.SmsUser;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ public class EchartsQueryService {
 
     public Map<String, Integer> queryStateCountWithPermission(Map<String, Object> params) {
         Map<String, Object> queryParams = params == null ? new HashMap<String, Object>() : new HashMap<>(params);
+        normalizeTimeParams(queryParams);
 
         Object principal = SecurityUtils.getSubject().getPrincipal();
         if (!(principal instanceof SmsUser)) {
@@ -73,6 +75,18 @@ public class EchartsQueryService {
         result.put("success", stateCount.getOrDefault("success", 0));
         result.put("fail", stateCount.getOrDefault("fail", 0));
         return result;
+    }
+
+    private void normalizeTimeParams(Map<String, Object> queryParams) {
+        Object starttime = queryParams.get("starttime");
+        if (ObjectUtils.isEmpty(starttime) && !ObjectUtils.isEmpty(queryParams.get("startTime"))) {
+            queryParams.put("starttime", queryParams.get("startTime"));
+        }
+
+        Object stoptime = queryParams.get("stoptime");
+        if (ObjectUtils.isEmpty(stoptime) && !ObjectUtils.isEmpty(queryParams.get("endTime"))) {
+            queryParams.put("stoptime", queryParams.get("endTime"));
+        }
     }
 
     private Map<String, Integer> emptyStateCount() {

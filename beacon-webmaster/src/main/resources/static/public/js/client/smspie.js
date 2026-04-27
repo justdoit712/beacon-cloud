@@ -33,8 +33,8 @@
             this.chartMessage = '正在加载统计结果，请稍候...';
 
             var temp = {
-                startTime: $("#start").val() === '' ? null : Date.parse($("#start").val()),
-                endTime: $("#end").val() === '' ? null : Date.parse($("#end").val()),
+                starttime: $("#start").val() === '' ? null : Date.parse($("#start").val()),
+                stoptime: $("#end").val() === '' ? null : Date.parse($("#end").val()),
                 clientID: $("#clientID").val()
             };
             $.ajax({

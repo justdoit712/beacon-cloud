@@ -2,12 +2,18 @@ package com.cz.search.service.impl;
 
 import com.cz.common.enums.ExceptionEnums;
 import com.cz.common.exception.SearchException;
+import com.cz.search.utils.SearchUtils;
+import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Assert;
 import org.junit.Test;
@@ -103,6 +109,38 @@ public class ElasticsearchServiceImplTest {
     }
 
     @Test
+    public void shouldBuildQueryWithIntegerClientIdListWithoutArrayStoreException() {
+        ElasticsearchServiceImpl service = buildService(
+                Mockito.mock(RestHighLevelClient.class),
+                Mockito.mock(RabbitTemplate.class)
+        );
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("clientID", Arrays.asList(1001, 1002));
+
+        BoolQueryBuilder boolQuery = ReflectionTestUtils.invokeMethod(service, "buildBoolQuery", params, null);
+
+        Assert.assertNotNull(boolQuery);
+        Assert.assertEquals(1, boolQuery.must().size());
+    }
+
+    @Test
+    public void shouldBuildQueryWithNumericScalarClientId() {
+        ElasticsearchServiceImpl service = buildService(
+                Mockito.mock(RestHighLevelClient.class),
+                Mockito.mock(RabbitTemplate.class)
+        );
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("clientID", 1001);
+
+        BoolQueryBuilder boolQuery = ReflectionTestUtils.invokeMethod(service, "buildBoolQuery", params, null);
+
+        Assert.assertNotNull(boolQuery);
+        Assert.assertEquals(1, boolQuery.must().size());
+    }
+
+    @Test
     public void shouldBuildQueryWithoutClientConditionWhenClientIdMissing() {
         ElasticsearchServiceImpl service = buildService(
                 Mockito.mock(RestHighLevelClient.class),
@@ -118,6 +156,44 @@ public class ElasticsearchServiceImplTest {
         Assert.assertNotNull(boolQuery);
         Assert.assertEquals(1, boolQuery.must().size());
         Assert.assertNotNull(sourceBuilder.highlighter());
+    }
+
+    @Test
+    public void shouldUseSingleValidIndexForListQuery() throws Exception {
+        RestHighLevelClient client = Mockito.mock(RestHighLevelClient.class);
+        ElasticsearchServiceImpl service = buildService(client, Mockito.mock(RabbitTemplate.class));
+
+        SearchResponse searchResponse = Mockito.mock(SearchResponse.class);
+        SearchHits searchHits = Mockito.mock(SearchHits.class);
+        when(searchResponse.getHits()).thenReturn(searchHits);
+        when(searchHits.getTotalHits()).thenReturn(new TotalHits(0, TotalHits.Relation.EQUAL_TO));
+        when(searchHits.getHits()).thenReturn(new org.elasticsearch.search.SearchHit[0]);
+        when(client.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT))).thenReturn(searchResponse);
+
+        service.findSmsByParameters(new HashMap<String, Object>());
+
+        ArgumentCaptor<SearchRequest> requestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+        Mockito.verify(client).search(requestCaptor.capture(), eq(RequestOptions.DEFAULT));
+        SearchRequest request = requestCaptor.getValue();
+        Assert.assertArrayEquals(new String[] {SearchUtils.getCurrYearIndex()}, request.indices());
+    }
+
+    @Test
+    public void shouldUseSingleValidIndexForCountQuery() throws Exception {
+        RestHighLevelClient client = Mockito.mock(RestHighLevelClient.class);
+        ElasticsearchServiceImpl service = buildService(client, Mockito.mock(RabbitTemplate.class));
+
+        SearchResponse searchResponse = Mockito.mock(SearchResponse.class);
+        Aggregations aggregations = Mockito.mock(Aggregations.class);
+        when(searchResponse.getAggregations()).thenReturn(aggregations);
+        when(client.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT))).thenReturn(searchResponse);
+
+        service.countSmsState(new HashMap<String, Object>());
+
+        ArgumentCaptor<SearchRequest> requestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+        Mockito.verify(client).search(requestCaptor.capture(), eq(RequestOptions.DEFAULT));
+        SearchRequest request = requestCaptor.getValue();
+        Assert.assertArrayEquals(new String[] {SearchUtils.getCurrYearIndex()}, request.indices());
     }
 
     private static ElasticsearchServiceImpl buildService(RestHighLevelClient client, RabbitTemplate rabbitTemplate) {

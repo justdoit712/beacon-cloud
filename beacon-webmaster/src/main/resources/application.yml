@@ -49,7 +49,7 @@ internal:
 
 sync:
   # 同步总开关：关闭后 runtime/manual/boot 子开关均不生效
-  enabled: true
+  enabled: false
   redis:
     # 统一命名空间完整前缀，应与 cache.namespace.fullPrefix 保持一致
     namespace: "beacon:dev:beacon-cloud:cz:"

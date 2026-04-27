@@ -134,7 +134,7 @@ public class ElasticsearchServiceImpl implements SearchService {
 
     @Override
     public Map<String, Object> findSmsByParameters(Map<String, Object> parameters) throws IOException {
-        SearchRequest request = new SearchRequest(SearchUtils.getCurrYearIndex(), "");
+        SearchRequest request = new SearchRequest(SearchUtils.getCurrYearIndex());
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 
         // 1. 构建通用查询条件
@@ -182,7 +182,7 @@ public class ElasticsearchServiceImpl implements SearchService {
      * 专门用于饼图的聚合统计方法
      */
     public Map<String, Integer> countSmsState(Map<String, Object> parameters) throws IOException {
-        SearchRequest request = new SearchRequest(SearchUtils.getCurrYearIndex(), "");
+        SearchRequest request = new SearchRequest(SearchUtils.getCurrYearIndex());
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 
         // 1. 构建通用查询条件 (不需要高亮，所以传 null)
@@ -236,12 +236,7 @@ public class ElasticsearchServiceImpl implements SearchService {
         Object stopTimeObj = parameters.get("stoptime");
         Object clientIDObj = parameters.get("clientID");
 
-        List<Long> clientIDList = null;
-        if (clientIDObj instanceof List) {
-            clientIDList = (List) clientIDObj;
-        } else if (!ObjectUtils.isEmpty(clientIDObj)) {
-            clientIDList = Collections.singletonList(Long.parseLong(clientIDObj + ""));
-        }
+        List<Long> clientIDList = parseClientIdList(clientIDObj);
 
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
@@ -278,10 +273,45 @@ public class ElasticsearchServiceImpl implements SearchService {
 
         // 客户id
         if (clientIDList != null) {
-            boolQuery.must(QueryBuilders.termsQuery("clientId", clientIDList.toArray(new Long[] {})));
+            boolQuery.must(QueryBuilders.termsQuery("clientId", clientIDList));
         }
 
         return boolQuery;
+    }
+
+    private List<Long> parseClientIdList(Object clientIDObj) {
+        if (ObjectUtils.isEmpty(clientIDObj)) {
+            return null;
+        }
+
+        if (clientIDObj instanceof List) {
+            List<?> rawClientIdList = (List<?>) clientIDObj;
+            List<Long> parsedClientIdList = new ArrayList<>(rawClientIdList.size());
+            for (Object clientId : rawClientIdList) {
+                Long parsedClientId = parseClientId(clientId);
+                if (parsedClientId != null) {
+                    parsedClientIdList.add(parsedClientId);
+                }
+            }
+            return parsedClientIdList.isEmpty() ? null : parsedClientIdList;
+        }
+
+        Long parsedClientId = parseClientId(clientIDObj);
+        return parsedClientId == null ? null : Collections.singletonList(parsedClientId);
+    }
+
+    private Long parseClientId(Object clientIdObj) {
+        if (clientIdObj == null) {
+            return null;
+        }
+        if (clientIdObj instanceof Number) {
+            return ((Number) clientIdObj).longValue();
+        }
+        String text = clientIdObj.toString().trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+        return Long.parseLong(text);
     }
 
     private String listToDateString(List sendTime) {

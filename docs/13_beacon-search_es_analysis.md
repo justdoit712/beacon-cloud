@@ -1,11 +1,5 @@
 # beacon-search 模块 ES 作用与交互分析
 
-文档类型：专题分析  
-适用对象：开发 / 重构 / 排障 / 架构梳理  
-验证基线：代码静态核对  
-关联模块：`beacon-search` / `beacon-smsgateway` / `beacon-webmaster`  
-最后核对日期：2026-04-02
-
 ---
 
 ## 1. 结论先行
