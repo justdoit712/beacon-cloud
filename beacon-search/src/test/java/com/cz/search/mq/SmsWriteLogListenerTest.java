@@ -47,6 +47,7 @@ public class SmsWriteLogListenerTest {
 
         Map<?, ?> doc = new ObjectMapper().readValue(jsonCaptor.getValue(), Map.class);
         long expectedMillis = submit.getSendTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        Assert.assertEquals(expectedMillis, ((Number) doc.get("sendTime")).longValue());
         Assert.assertEquals(expectedMillis, ((Number) doc.get("sendTimeMillis")).longValue());
 
         verify(channel).basicAck(101L, false);

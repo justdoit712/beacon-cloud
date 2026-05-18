@@ -35,11 +35,17 @@ import org.springframework.util.ObjectUtils;
 import org.elasticsearch.action.DocWriteResponse.Result;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
 @Slf4j
 public class ElasticsearchServiceImpl implements SearchService {
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     /**
      * 添加成功的result
      */
@@ -159,9 +165,7 @@ public class ElasticsearchServiceImpl implements SearchService {
         List<Map<String, Object>> rows = new ArrayList<>();
         for (SearchHit hit : resp.getHits().getHits()) {
             Map<String, Object> row = hit.getSourceAsMap();
-            List sendTime = (List) row.get("sendTime");
-            String sendTimeStr = listToDateString(sendTime);
-            row.put("sendTimeStr", sendTimeStr);
+            row.put("sendTimeStr", resolveSendTimeStr(row));
             row.put("corpname", row.get("sign"));
             HighlightField highlightField = hit.getHighlightFields().get("text");
             if (highlightField != null) {
@@ -314,7 +318,56 @@ public class ElasticsearchServiceImpl implements SearchService {
         return Long.parseLong(text);
     }
 
-    private String listToDateString(List sendTime) {
+    private String resolveSendTimeStr(Map<String, Object> row) {
+        if (row == null || row.isEmpty()) {
+            return "";
+        }
+
+        String millisText = epochMillisToDateString(row.get("sendTimeMillis"));
+        if (!millisText.isEmpty()) {
+            return millisText;
+        }
+
+        String sendTimeText = epochMillisToDateString(row.get("sendTime"));
+        if (!sendTimeText.isEmpty()) {
+            return sendTimeText;
+        }
+
+        Object legacySendTime = row.get("sendTime");
+        if (legacySendTime instanceof List) {
+            return listToDateString((List<?>) legacySendTime);
+        }
+        return "";
+    }
+
+    private String epochMillisToDateString(Object epochMillisObj) {
+        if (epochMillisObj == null) {
+            return "";
+        }
+        if (epochMillisObj instanceof Collection || epochMillisObj instanceof Map) {
+            return "";
+        }
+
+        try {
+            long epochMillis;
+            if (epochMillisObj instanceof Number) {
+                epochMillis = ((Number) epochMillisObj).longValue();
+            } else {
+                String text = epochMillisObj.toString().trim();
+                if (text.isEmpty()) {
+                    return "";
+                }
+                epochMillis = Long.parseLong(text);
+            }
+            LocalDateTime sendTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
+            return sendTime.format(DATE_TIME_FORMATTER);
+        } catch (Exception e) {
+            log.warn("parse sendTime millis failed: {}", epochMillisObj, e);
+            return "";
+        }
+    }
+
+    private String listToDateString(List<?> sendTime) {
         if (sendTime == null || sendTime.size() < 6) {
             return "";
         }

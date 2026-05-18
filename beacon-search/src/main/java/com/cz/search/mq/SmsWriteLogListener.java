@@ -35,6 +35,7 @@ public class SmsWriteLogListener {
                     .atZone(ZoneId.systemDefault())
                     .toInstant()
                     .toEpochMilli();
+            doc.put("sendTime", sendTimeMillis);
             doc.put("sendTimeMillis", sendTimeMillis);
         }
         searchService.index(INDEX + getYear(), submit.getSequenceId().toString(), JsonUtil.toJson(doc));

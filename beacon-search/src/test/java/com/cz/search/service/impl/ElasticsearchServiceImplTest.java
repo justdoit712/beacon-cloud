@@ -22,6 +22,8 @@ import org.mockito.Mockito;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -194,6 +196,39 @@ public class ElasticsearchServiceImplTest {
         Mockito.verify(client).search(requestCaptor.capture(), eq(RequestOptions.DEFAULT));
         SearchRequest request = requestCaptor.getValue();
         Assert.assertArrayEquals(new String[] {SearchUtils.getCurrYearIndex()}, request.indices());
+    }
+
+    @Test
+    public void shouldResolveSendTimeFromMillisFirst() {
+        ElasticsearchServiceImpl service = buildService(
+                Mockito.mock(RestHighLevelClient.class),
+                Mockito.mock(RabbitTemplate.class)
+        );
+
+        LocalDateTime sendTime = LocalDateTime.of(2026, 4, 23, 14, 2, 47);
+        long epochMillis = sendTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        Map<String, Object> row = new HashMap<>();
+        row.put("sendTime", Arrays.asList(2026, 4, 23, 14, 2, 40));
+        row.put("sendTimeMillis", epochMillis);
+
+        String sendTimeStr = ReflectionTestUtils.invokeMethod(service, "resolveSendTimeStr", row);
+
+        Assert.assertEquals("2026-04-23 14:02:47", sendTimeStr);
+    }
+
+    @Test
+    public void shouldFallbackToLegacySendTimeListWhenMillisMissing() {
+        ElasticsearchServiceImpl service = buildService(
+                Mockito.mock(RestHighLevelClient.class),
+                Mockito.mock(RabbitTemplate.class)
+        );
+
+        Map<String, Object> row = new HashMap<>();
+        row.put("sendTime", Arrays.asList(2026, 4, 23, 14, 2, 47));
+
+        String sendTimeStr = ReflectionTestUtils.invokeMethod(service, "resolveSendTimeStr", row);
+
+        Assert.assertEquals("2026-04-23 14:02:47", sendTimeStr);
     }
 
     private static ElasticsearchServiceImpl buildService(RestHighLevelClient client, RabbitTemplate rabbitTemplate) {
