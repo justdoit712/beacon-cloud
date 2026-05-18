@@ -20,7 +20,7 @@ spring:
 cache:
   client:
     auth:
-      enabled: true
+      enabled: false
       caller: beacon-smsgateway
       secret: cache_smsgateway_secret
 
