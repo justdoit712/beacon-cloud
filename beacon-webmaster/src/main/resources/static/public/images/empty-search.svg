@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" fill="none">
+  <!-- Background ellipse -->
+  <ellipse cx="120" cy="155" rx="80" ry="12" fill="#f0f5fa" opacity="0.8"/>
+  <!-- Large magnifying glass -->
+  <circle cx="108" cy="80" r="40" stroke="#d9dee5" stroke-width="3" fill="#f8fafc"/>
+  <circle cx="108" cy="80" r="32" stroke="#edf1f5" stroke-width="1.5" fill="#ffffff"/>
+  <line x1="136" y1="108" x2="162" y2="134" stroke="#d9dee5" stroke-width="5" stroke-linecap="round"/>
+  <line x1="136" y1="108" x2="158" y2="130" stroke="#c5ced8" stroke-width="3" stroke-linecap="round"/>
+  <!-- Cross mark inside glass -->
+  <line x1="96" y1="68" x2="120" y2="92" stroke="#dd4b39" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
+  <line x1="120" y1="68" x2="96" y2="92" stroke="#dd4b39" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
+  <!-- Small decorative elements -->
+  <circle cx="172" cy="58" r="4" fill="#3c8dbc" opacity="0.12"/>
+  <circle cx="184" cy="72" r="2.5" fill="#f39c12" opacity="0.15"/>
+  <circle cx="56" cy="52" r="3" fill="#00a65a" opacity="0.12"/>
+  <rect x="44" y="110" width="12" height="3" rx="1.5" fill="#d9dee5" opacity="0.5"/>
+  <rect x="176" cy="100" width="16" height="3" rx="1.5" fill="#d9dee5" opacity="0.5" y="100"/>
+</svg>

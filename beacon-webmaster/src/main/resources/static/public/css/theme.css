@@ -1676,3 +1676,119 @@ button[id='chongzhi']:focus {
 
 @media (max-width: 576px) {
 }
+
+/* ========== Brand Logo ========== */
+.brand-logo-img {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.brand-logo-img--login {
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--space-3);
+    filter: drop-shadow(0 4px 12px rgba(47, 111, 146, 0.18));
+}
+
+.brand-logo-img--sidebar {
+    width: 28px;
+    height: 28px;
+    margin-right: var(--space-2);
+    vertical-align: middle;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.25));
+}
+
+.brand-logo-img--sidebar-mini {
+    width: 24px;
+    height: 24px;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.25));
+}
+
+/* ========== Empty State ========== */
+.ops-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-10) var(--space-6);
+    text-align: center;
+}
+
+.ops-empty-state-img {
+    width: 160px;
+    height: auto;
+    margin-bottom: var(--space-5);
+    opacity: 0.85;
+}
+
+.ops-empty-state-title {
+    margin: 0 0 var(--space-2);
+    color: var(--color-text-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.ops-empty-state-desc {
+    margin: 0 0 var(--space-5);
+    color: var(--color-text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 320px;
+}
+
+.ops-empty-state .btn {
+    min-width: 120px;
+}
+
+/* Bootstrap-table no-records override with illustration */
+.fixed-table-container .no-records-found td {
+    padding: 0 !important;
+    border: none !important;
+}
+
+.ops-bt-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8) var(--space-4);
+    background: linear-gradient(180deg, #fbfdff 0%, #f7fbff 100%);
+}
+
+.ops-bt-empty-img {
+    width: 120px;
+    height: auto;
+    margin-bottom: var(--space-4);
+    opacity: 0.8;
+}
+
+.ops-bt-empty-text {
+    margin: 0 0 var(--space-1);
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.ops-bt-empty-hint {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+@media (max-width: 576px) {
+    .ops-empty-state {
+        padding: var(--space-6) var(--space-4);
+    }
+
+    .ops-empty-state-img {
+        width: 120px;
+    }
+
+    .ops-bt-empty {
+        padding: var(--space-6) var(--space-3);
+    }
+
+    .ops-bt-empty-img {
+        width: 90px;
+    }
+}

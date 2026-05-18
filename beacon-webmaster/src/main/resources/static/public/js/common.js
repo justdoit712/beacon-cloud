@@ -47,6 +47,40 @@ function hasPermission(permission) {
     return p.indexOf(permission) > -1;
 }
 
+// bootstrap-table 全局空状态增强
+$(function () {
+    if ($.fn.bootstrapTable) {
+        var _defaults = $.fn.bootstrapTable.defaults;
+        var _origNoMatches = _defaults.formatNoMatches;
+        _defaults.formatNoMatches = function () {
+            return '<div class="ops-bt-empty">'
+                + '<img class="ops-bt-empty-img" src="../public/images/empty-table.svg" alt="暂无数据">'
+                + '<p class="ops-bt-empty-text">暂无数据</p>'
+                + '<p class="ops-bt-empty-hint">当前列表为空，请新增记录或调整筛选条件</p>'
+                + '</div>';
+        };
+    }
+});
+
+function renderEmptyState(opts) {
+    opts = opts || {};
+    var img = opts.img || '../public/images/empty-table.svg';
+    var title = opts.title || '暂无数据';
+    var desc = opts.desc || '当前暂无相关记录';
+    var btnText = opts.btnText || '';
+    var btnClick = opts.btnClick || '';
+    var html = '<div class="ops-empty-state">'
+        + '<img class="ops-empty-state-img" src="' + img + '" alt="' + title + '">'
+        + '<p class="ops-empty-state-title">' + title + '</p>'
+        + '<p class="ops-empty-state-desc">' + desc + '</p>';
+    if (btnText && btnClick) {
+        html += '<button type="button" class="btn btn-primary" onclick="' + btnClick + '">'
+            + '<i class="fa fa-plus"></i>&nbsp;&nbsp;' + btnText + '</button>';
+    }
+    html += '</div>';
+    return html;
+}
+
 function doTask(id, msg, url) {
     var rows = getSelectedRows();
     if (rows == null) {
