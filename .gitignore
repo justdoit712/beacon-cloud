@@ -7,3 +7,4 @@ target/
 
 # 忽略日志文件（如果有）
 *.log
+/initial_draft_text.txt

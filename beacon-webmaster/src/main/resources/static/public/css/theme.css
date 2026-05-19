@@ -552,15 +552,23 @@ textarea:focus-visible,
 }
 
 .login-remember-row input[type="checkbox"] {
-    margin: 0 var(--space-2) 0 0;
+    position: static !important;
+    margin: 0 6px 0 0 !important;
     vertical-align: middle;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    float: none !important;
 }
 
 .login-remember-row label {
     margin: 0;
+    padding-left: 0 !important;
     cursor: pointer;
     font-weight: 500;
     vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
 }
 
 .login-action-row {
