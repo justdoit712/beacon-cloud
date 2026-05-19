@@ -1,0 +1,9 @@
+﻿{
+    "index":  "sms_submit_log_2026",
+    "backupTime":  "2026-05-19 14:53:36",
+    "documentCount":  366,
+    "purpose":  "before adding display data for selected company list",
+    "mappingFile":  "D:\\Code\\Java\\springcloud\\beacon-cloud\\beacon-cloud\\backups\\es\\sms_submit_log_2026_20260519_145323_before_company_seed_mapping.json",
+    "docsFile":  "D:\\Code\\Java\\springcloud\\beacon-cloud\\beacon-cloud\\backups\\es\\sms_submit_log_2026_20260519_145323_before_company_seed_docs.ndjson",
+    "restoreBulkFile":  "D:\\Code\\Java\\springcloud\\beacon-cloud\\beacon-cloud\\backups\\es\\sms_submit_log_2026_20260519_145323_before_company_seed_restore_bulk.ndjson"
+}

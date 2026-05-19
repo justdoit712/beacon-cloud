@@ -1,0 +1,9 @@
+﻿{
+    "index":  "sms_submit_log_2026",
+    "backupTime":  "2026-05-19 14:42:23",
+    "documentCount":  6,
+    "mappingFile":  "D:\\Code\\Java\\springcloud\\beacon-cloud\\beacon-cloud\\backups\\es\\sms_submit_log_2026_20260519_144222_mapping.json",
+    "docsFile":  "D:\\Code\\Java\\springcloud\\beacon-cloud\\beacon-cloud\\backups\\es\\sms_submit_log_2026_20260519_144222_docs.ndjson",
+    "restoreBulkFile":  "D:\\Code\\Java\\springcloud\\beacon-cloud\\beacon-cloud\\backups\\es\\sms_submit_log_2026_20260519_144222_restore_bulk.ndjson",
+    "note":  "Backup before inserting display mock data. Restore by recreating index from mapping and bulk importing restoreBulkFile if needed."
+}

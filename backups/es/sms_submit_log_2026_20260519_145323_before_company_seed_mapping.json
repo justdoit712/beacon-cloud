@@ -1,0 +1,161 @@
+﻿{
+    "sms_submit_log_2026":  {
+                                "mappings":  {
+                                                 "properties":  {
+                                                                    "apiKey":  {
+                                                                                   "type":  "text",
+                                                                                   "fields":  {
+                                                                                                  "keyword":  {
+                                                                                                                  "type":  "keyword",
+                                                                                                                  "ignore_above":  256
+                                                                                                              }
+                                                                                              }
+                                                                               },
+                                                                    "channelId":  {
+                                                                                      "type":  "long"
+                                                                                  },
+                                                                    "clientId":  {
+                                                                                     "type":  "long"
+                                                                                 },
+                                                                    "corpname":  {
+                                                                                     "type":  "text",
+                                                                                     "fields":  {
+                                                                                                    "keyword":  {
+                                                                                                                    "type":  "keyword",
+                                                                                                                    "ignore_above":  256
+                                                                                                                }
+                                                                                                }
+                                                                                 },
+                                                                    "errorMsg":  {
+                                                                                     "type":  "text",
+                                                                                     "fields":  {
+                                                                                                    "keyword":  {
+                                                                                                                    "type":  "keyword",
+                                                                                                                    "ignore_above":  256
+                                                                                                                }
+                                                                                                }
+                                                                                 },
+                                                                    "fee":  {
+                                                                                "type":  "long"
+                                                                            },
+                                                                    "ip":  {
+                                                                               "type":  "text",
+                                                                               "fields":  {
+                                                                                              "keyword":  {
+                                                                                                              "type":  "keyword",
+                                                                                                              "ignore_above":  256
+                                                                                                          }
+                                                                                          }
+                                                                           },
+                                                                    "isTransfer":  {
+                                                                                       "type":  "boolean"
+                                                                                   },
+                                                                    "mobile":  {
+                                                                                   "type":  "text",
+                                                                                   "fields":  {
+                                                                                                  "keyword":  {
+                                                                                                                  "type":  "keyword",
+                                                                                                                  "ignore_above":  256
+                                                                                                              }
+                                                                                              }
+                                                                               },
+                                                                    "mockBatchId":  {
+                                                                                        "type":  "text",
+                                                                                        "fields":  {
+                                                                                                       "keyword":  {
+                                                                                                                       "type":  "keyword",
+                                                                                                                       "ignore_above":  256
+                                                                                                                   }
+                                                                                                   }
+                                                                                    },
+                                                                    "mockCreatedAt":  {
+                                                                                          "type":  "text",
+                                                                                          "fields":  {
+                                                                                                         "keyword":  {
+                                                                                                                         "type":  "keyword",
+                                                                                                                         "ignore_above":  256
+                                                                                                                     }
+                                                                                                     }
+                                                                                      },
+                                                                    "mockData":  {
+                                                                                     "type":  "boolean"
+                                                                                 },
+                                                                    "mockPurpose":  {
+                                                                                        "type":  "text",
+                                                                                        "fields":  {
+                                                                                                       "keyword":  {
+                                                                                                                       "type":  "keyword",
+                                                                                                                       "ignore_above":  256
+                                                                                                                   }
+                                                                                                   }
+                                                                                    },
+                                                                    "operatorId":  {
+                                                                                       "type":  "long"
+                                                                                   },
+                                                                    "realIp":  {
+                                                                                   "type":  "text",
+                                                                                   "fields":  {
+                                                                                                  "keyword":  {
+                                                                                                                  "type":  "keyword",
+                                                                                                                  "ignore_above":  256
+                                                                                                              }
+                                                                                              }
+                                                                               },
+                                                                    "reportState":  {
+                                                                                        "type":  "long"
+                                                                                    },
+                                                                    "sendTime":  {
+                                                                                     "type":  "long"
+                                                                                 },
+                                                                    "sendTimeMillis":  {
+                                                                                           "type":  "long"
+                                                                                       },
+                                                                    "sequenceId":  {
+                                                                                       "type":  "long"
+                                                                                   },
+                                                                    "sign":  {
+                                                                                 "type":  "text",
+                                                                                 "fields":  {
+                                                                                                "keyword":  {
+                                                                                                                "type":  "keyword",
+                                                                                                                "ignore_above":  256
+                                                                                                            }
+                                                                                            }
+                                                                             },
+                                                                    "signId":  {
+                                                                                   "type":  "long"
+                                                                               },
+                                                                    "srcNumber":  {
+                                                                                      "type":  "text",
+                                                                                      "fields":  {
+                                                                                                     "keyword":  {
+                                                                                                                     "type":  "keyword",
+                                                                                                                     "ignore_above":  256
+                                                                                                                 }
+                                                                                                 }
+                                                                                  },
+                                                                    "state":  {
+                                                                                  "type":  "long"
+                                                                              },
+                                                                    "text":  {
+                                                                                 "type":  "text",
+                                                                                 "fields":  {
+                                                                                                "keyword":  {
+                                                                                                                "type":  "keyword",
+                                                                                                                "ignore_above":  256
+                                                                                                            }
+                                                                                            }
+                                                                             },
+                                                                    "uid":  {
+                                                                                "type":  "text",
+                                                                                "fields":  {
+                                                                                               "keyword":  {
+                                                                                                               "type":  "keyword",
+                                                                                                               "ignore_above":  256
+                                                                                                           }
+                                                                                           }
+                                                                            }
+                                                                }
+                                             }
+                            }
+}
