@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.cz.webmaster.mapper.MobileDirtyWordMapper">
+<mapper namespace="com.cz.webmaster.mapper.CodeLimitMapper">
 
-    <resultMap id="BaseResultMap" type="com.cz.webmaster.entity.MobileDirtyWord">
+    <resultMap id="BaseResultMap" type="com.cz.webmaster.entity.CodeLimit">
         <id column="id" jdbcType="BIGINT" property="id"/>
-        <result column="dirtyword" jdbcType="VARCHAR" property="dirtyword"/>
+        <result column="limitTime" jdbcType="INTEGER" property="limitTime"/>
+        <result column="limitCount" jdbcType="INTEGER" property="limitCount"/>
+        <result column="description" jdbcType="VARCHAR" property="description"/>
         <result column="created" jdbcType="TIMESTAMP" property="created"/>
         <result column="createId" jdbcType="BIGINT" property="createId"/>
         <result column="updated" jdbcType="TIMESTAMP" property="updated"/>
@@ -18,7 +20,9 @@
 
     <sql id="Base_Column_List">
         id,
-        dirtyword,
+        limit_time as limitTime,
+        limit_count as limitCount,
+        description,
         created,
         create_id as createId,
         updated,
@@ -32,14 +36,18 @@
 
     <sql id="Search_Condition">
         <if test="keyword != null and keyword != ''">
-            and dirtyword like concat('%', #{keyword}, '%')
+            and (
+                description like concat('%', #{keyword}, '%')
+                or cast(limit_time as char) like concat('%', #{keyword}, '%')
+                or cast(limit_count as char) like concat('%', #{keyword}, '%')
+            )
         </if>
     </sql>
 
     <select id="findListByPage" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
-        from mobile_dirtyword
+        from code_limit
         where is_delete = 0
         <include refid="Search_Condition"/>
         order by id desc
@@ -48,7 +56,7 @@
 
     <select id="countByKeyword" resultType="java.lang.Long">
         select count(1)
-        from mobile_dirtyword
+        from code_limit
         where is_delete = 0
         <include refid="Search_Condition"/>
     </select>
@@ -56,7 +64,7 @@
     <select id="findById" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
-        from mobile_dirtyword
+        from code_limit
         where id = #{id}
         and is_delete = 0
     </select>
@@ -64,7 +72,7 @@
     <select id="findByIds" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
-        from mobile_dirtyword
+        from code_limit
         where is_delete = 0
         and id in
         <foreach collection="ids" item="id" open="(" separator="," close=")">
@@ -72,19 +80,13 @@
         </foreach>
     </select>
 
-    <select id="findAllActive" resultMap="BaseResultMap">
-        select
-        <include refid="Base_Column_List"/>
-        from mobile_dirtyword
-        where is_delete = 0
-        order by id asc
-    </select>
-
-    <insert id="insertSelective" parameterType="com.cz.webmaster.entity.MobileDirtyWord">
-        insert into mobile_dirtyword
+    <insert id="insertSelective" parameterType="com.cz.webmaster.entity.CodeLimit">
+        insert into code_limit
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
-            <if test="dirtyword != null">dirtyword,</if>
+            <if test="limitTime != null">limit_time,</if>
+            <if test="limitCount != null">limit_count,</if>
+            <if test="description != null">description,</if>
             <if test="created != null">created,</if>
             <if test="createId != null">create_id,</if>
             <if test="updated != null">updated,</if>
@@ -97,7 +99,9 @@
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
-            <if test="dirtyword != null">#{dirtyword},</if>
+            <if test="limitTime != null">#{limitTime},</if>
+            <if test="limitCount != null">#{limitCount},</if>
+            <if test="description != null">#{description},</if>
             <if test="created != null">#{created},</if>
             <if test="createId != null">#{createId},</if>
             <if test="updated != null">#{updated},</if>
@@ -110,10 +114,12 @@
         </trim>
     </insert>
 
-    <update id="updateById" parameterType="com.cz.webmaster.entity.MobileDirtyWord">
-        update mobile_dirtyword
+    <update id="updateById" parameterType="com.cz.webmaster.entity.CodeLimit">
+        update code_limit
         <set>
-            <if test="dirtyword != null">dirtyword = #{dirtyword},</if>
+            <if test="limitTime != null">limit_time = #{limitTime},</if>
+            <if test="limitCount != null">limit_count = #{limitCount},</if>
+            <if test="description != null">description = #{description},</if>
             <if test="updated != null">updated = #{updated},</if>
             <if test="updateId != null">update_id = #{updateId},</if>
             <if test="extend1 != null">extend1 = #{extend1},</if>
@@ -126,7 +132,7 @@
     </update>
 
     <update id="deleteBatch">
-        update mobile_dirtyword
+        update code_limit
         set is_delete = 1,
             updated = #{updated},
             update_id = #{updateId}

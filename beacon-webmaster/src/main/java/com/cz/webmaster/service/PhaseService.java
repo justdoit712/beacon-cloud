@@ -35,10 +35,9 @@ public interface PhaseService {
 
     boolean update(Map<String, Object> body, Long operatorId);
 
-    boolean deleteBatch(List<Long> ids);
+    boolean deleteBatch(List<Long> ids, Long operatorId);
 
     List<Map<String, Object>> allProvinces();
 
-    List<Map<String, Object>> allCities(Long provId);
+    List<Map<String, Object>> allCities(String provId);
 }
-

@@ -34,6 +34,51 @@
         extend4
     </sql>
 
+    <sql id="Search_Condition">
+        <if test="keyword != null and keyword != ''">
+            and (
+                black_number like concat('%', #{keyword}, '%')
+                or cast(client_id as char) like concat('%', #{keyword}, '%')
+            )
+        </if>
+    </sql>
+
+    <select id="findListByPage" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from mobile_black
+        where is_delete = 0
+        <include refid="Search_Condition"/>
+        order by id desc
+        limit #{offset}, #{limit}
+    </select>
+
+    <select id="countByKeyword" resultType="java.lang.Long">
+        select count(1)
+        from mobile_black
+        where is_delete = 0
+        <include refid="Search_Condition"/>
+    </select>
+
+    <select id="findById" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from mobile_black
+        where id = #{id}
+        and is_delete = 0
+    </select>
+
+    <select id="findByIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from mobile_black
+        where is_delete = 0
+        and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
     <select id="findAllActive" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
@@ -41,5 +86,68 @@
         where is_delete = 0
         order by id asc
     </select>
+
+    <insert id="insertSelective" parameterType="com.cz.webmaster.entity.MobileBlack">
+        insert into mobile_black
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="blackNumber != null">black_number,</if>
+            <if test="blackType != null">black_type,</if>
+            <if test="clientId != null">client_id,</if>
+            <if test="created != null">created,</if>
+            <if test="createId != null">create_id,</if>
+            <if test="updated != null">updated,</if>
+            <if test="updateId != null">update_id,</if>
+            <if test="isDelete != null">is_delete,</if>
+            <if test="extend1 != null">extend1,</if>
+            <if test="extend2 != null">extend2,</if>
+            <if test="extend3 != null">extend3,</if>
+            <if test="extend4 != null">extend4,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="blackNumber != null">#{blackNumber},</if>
+            <if test="blackType != null">#{blackType},</if>
+            <if test="clientId != null">#{clientId},</if>
+            <if test="created != null">#{created},</if>
+            <if test="createId != null">#{createId},</if>
+            <if test="updated != null">#{updated},</if>
+            <if test="updateId != null">#{updateId},</if>
+            <if test="isDelete != null">#{isDelete},</if>
+            <if test="extend1 != null">#{extend1},</if>
+            <if test="extend2 != null">#{extend2},</if>
+            <if test="extend3 != null">#{extend3},</if>
+            <if test="extend4 != null">#{extend4},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.cz.webmaster.entity.MobileBlack">
+        update mobile_black
+        <set>
+            <if test="blackNumber != null">black_number = #{blackNumber},</if>
+            <if test="blackType != null">black_type = #{blackType},</if>
+            <if test="clientId != null">client_id = #{clientId},</if>
+            <if test="updated != null">updated = #{updated},</if>
+            <if test="updateId != null">update_id = #{updateId},</if>
+            <if test="extend1 != null">extend1 = #{extend1},</if>
+            <if test="extend2 != null">extend2 = #{extend2},</if>
+            <if test="extend3 != null">extend3 = #{extend3},</if>
+            <if test="extend4 != null">extend4 = #{extend4},</if>
+        </set>
+        where id = #{id}
+        and is_delete = 0
+    </update>
+
+    <update id="deleteBatch">
+        update mobile_black
+        set is_delete = 1,
+            updated = #{updated},
+            update_id = #{updateId}
+        where is_delete = 0
+        and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
 
 </mapper>

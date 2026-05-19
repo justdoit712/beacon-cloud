@@ -90,7 +90,7 @@ var vm = new Vue({
             $.get("../sys/phase/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.phase = (r && r.data) ? (r.data.phase || r.data) : {};
+                vm.phase = (r && r.data) ? r.data : {};
                 $.get("../sys/provinces/all", function (r1) {
                     vm.sites = r1.data;
                     $.get("../sys/cities/all/" + vm.phase.provId, function (r2) {

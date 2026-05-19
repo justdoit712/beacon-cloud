@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.cz.webmaster.mapper.MobileDirtyWordMapper">
+<mapper namespace="com.cz.webmaster.mapper.MobileAreaMapper">
 
-    <resultMap id="BaseResultMap" type="com.cz.webmaster.entity.MobileDirtyWord">
+    <resultMap id="BaseResultMap" type="com.cz.webmaster.entity.MobileArea">
         <id column="id" jdbcType="BIGINT" property="id"/>
-        <result column="dirtyword" jdbcType="VARCHAR" property="dirtyword"/>
+        <result column="mobileNumber" jdbcType="VARCHAR" property="mobileNumber"/>
+        <result column="mobileArea" jdbcType="VARCHAR" property="mobileArea"/>
+        <result column="mobileType" jdbcType="VARCHAR" property="mobileType"/>
+        <result column="areaCode" jdbcType="VARCHAR" property="areaCode"/>
+        <result column="postCode" jdbcType="VARCHAR" property="postCode"/>
+        <result column="provinceCode" jdbcType="VARCHAR" property="provinceCode"/>
         <result column="created" jdbcType="TIMESTAMP" property="created"/>
         <result column="createId" jdbcType="BIGINT" property="createId"/>
         <result column="updated" jdbcType="TIMESTAMP" property="updated"/>
@@ -18,7 +23,12 @@
 
     <sql id="Base_Column_List">
         id,
-        dirtyword,
+        mobile_number as mobileNumber,
+        mobile_area as mobileArea,
+        mobile_type as mobileType,
+        area_code as areaCode,
+        post_code as postCode,
+        province_code as provinceCode,
         created,
         create_id as createId,
         updated,
@@ -32,14 +42,20 @@
 
     <sql id="Search_Condition">
         <if test="keyword != null and keyword != ''">
-            and dirtyword like concat('%', #{keyword}, '%')
+            and (
+                mobile_number like concat('%', #{keyword}, '%')
+                or mobile_area like concat('%', #{keyword}, '%')
+                or mobile_type like concat('%', #{keyword}, '%')
+                or province_code like concat('%', #{keyword}, '%')
+                or post_code like concat('%', #{keyword}, '%')
+            )
         </if>
     </sql>
 
     <select id="findListByPage" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
-        from mobile_dirtyword
+        from mobile_area
         where is_delete = 0
         <include refid="Search_Condition"/>
         order by id desc
@@ -48,7 +64,7 @@
 
     <select id="countByKeyword" resultType="java.lang.Long">
         select count(1)
-        from mobile_dirtyword
+        from mobile_area
         where is_delete = 0
         <include refid="Search_Condition"/>
     </select>
@@ -56,7 +72,7 @@
     <select id="findById" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
-        from mobile_dirtyword
+        from mobile_area
         where id = #{id}
         and is_delete = 0
     </select>
@@ -64,7 +80,7 @@
     <select id="findByIds" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
-        from mobile_dirtyword
+        from mobile_area
         where is_delete = 0
         and id in
         <foreach collection="ids" item="id" open="(" separator="," close=")">
@@ -72,19 +88,62 @@
         </foreach>
     </select>
 
-    <select id="findAllActive" resultMap="BaseResultMap">
+    <select id="allProvinces" resultType="java.util.Map">
         select
-        <include refid="Base_Column_List"/>
-        from mobile_dirtyword
+            substring_index(mobile_area, ' ', 1) as id,
+            substring_index(mobile_area, ' ', 1) as areaname,
+            substring_index(mobile_area, ' ', 1) as provName
+        from mobile_area
         where is_delete = 0
-        order by id asc
+        and mobile_area is not null
+        and mobile_area != ''
+        group by substring_index(mobile_area, ' ', 1)
+        order by substring_index(mobile_area, ' ', 1) asc
     </select>
 
-    <insert id="insertSelective" parameterType="com.cz.webmaster.entity.MobileDirtyWord">
-        insert into mobile_dirtyword
+    <select id="allCities" resultType="java.util.Map">
+        select
+            mobile_area as id,
+            case
+                when locate(' ', mobile_area) > 0 then substring_index(mobile_area, ' ', -1)
+                else mobile_area
+            end as areaname,
+            case
+                when locate(' ', mobile_area) > 0 then substring_index(mobile_area, ' ', -1)
+                else mobile_area
+            end as cityName,
+            mobile_area as mobileArea,
+            min(area_code) as areaCode,
+            min(post_code) as postCode,
+            min(province_code) as provinceCode
+        from mobile_area
+        where is_delete = 0
+        and substring_index(mobile_area, ' ', 1) = #{provinceCode}
+        group by mobile_area
+        order by mobile_area asc
+    </select>
+
+    <select id="findCitySample" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from mobile_area
+        where is_delete = 0
+        and substring_index(mobile_area, ' ', 1) = #{provinceCode}
+        and mobile_area = #{mobileArea}
+        order by id asc
+        limit 1
+    </select>
+
+    <insert id="insertSelective" parameterType="com.cz.webmaster.entity.MobileArea">
+        insert into mobile_area
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
-            <if test="dirtyword != null">dirtyword,</if>
+            <if test="mobileNumber != null">mobile_number,</if>
+            <if test="mobileArea != null">mobile_area,</if>
+            <if test="mobileType != null">mobile_type,</if>
+            <if test="areaCode != null">area_code,</if>
+            <if test="postCode != null">post_code,</if>
+            <if test="provinceCode != null">province_code,</if>
             <if test="created != null">created,</if>
             <if test="createId != null">create_id,</if>
             <if test="updated != null">updated,</if>
@@ -97,7 +156,12 @@
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
-            <if test="dirtyword != null">#{dirtyword},</if>
+            <if test="mobileNumber != null">#{mobileNumber},</if>
+            <if test="mobileArea != null">#{mobileArea},</if>
+            <if test="mobileType != null">#{mobileType},</if>
+            <if test="areaCode != null">#{areaCode},</if>
+            <if test="postCode != null">#{postCode},</if>
+            <if test="provinceCode != null">#{provinceCode},</if>
             <if test="created != null">#{created},</if>
             <if test="createId != null">#{createId},</if>
             <if test="updated != null">#{updated},</if>
@@ -110,10 +174,15 @@
         </trim>
     </insert>
 
-    <update id="updateById" parameterType="com.cz.webmaster.entity.MobileDirtyWord">
-        update mobile_dirtyword
+    <update id="updateById" parameterType="com.cz.webmaster.entity.MobileArea">
+        update mobile_area
         <set>
-            <if test="dirtyword != null">dirtyword = #{dirtyword},</if>
+            <if test="mobileNumber != null">mobile_number = #{mobileNumber},</if>
+            <if test="mobileArea != null">mobile_area = #{mobileArea},</if>
+            <if test="mobileType != null">mobile_type = #{mobileType},</if>
+            <if test="areaCode != null">area_code = #{areaCode},</if>
+            <if test="postCode != null">post_code = #{postCode},</if>
+            <if test="provinceCode != null">province_code = #{provinceCode},</if>
             <if test="updated != null">updated = #{updated},</if>
             <if test="updateId != null">update_id = #{updateId},</if>
             <if test="extend1 != null">extend1 = #{extend1},</if>
@@ -126,7 +195,7 @@
     </update>
 
     <update id="deleteBatch">
-        update mobile_dirtyword
+        update mobile_area
         set is_delete = 1,
             updated = #{updated},
             update_id = #{updateId}

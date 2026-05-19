@@ -1,75 +1,47 @@
 package com.cz.webmaster.service.impl;
 
 import cn.hutool.core.util.IdUtil;
+import com.cz.webmaster.entity.MobileArea;
+import com.cz.webmaster.mapper.MobileAreaMapper;
 import com.cz.webmaster.service.PhaseService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.Date;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class PhaseServiceImpl implements PhaseService {
 
-    private static final List<Map<String, Object>> PROVINCES;
-    private static final Map<Long, List<Map<String, Object>>> PROV_CITY_MAP;
+    private final MobileAreaMapper mobileAreaMapper;
 
-    static {
-        List<Map<String, Object>> provs = new LinkedList<>();
-        provs.add(prov(11L, "鍖椾含"));
-        provs.add(prov(31L, "涓婃捣"));
-        provs.add(prov(44L, "骞夸笢"));
-        PROVINCES = Collections.unmodifiableList(provs);
-
-        Map<Long, List<Map<String, Object>>> cityMap = new LinkedHashMap<>();
-        cityMap.put(11L, cityList(city(1101L, 11L, "鍖椾含甯?")));
-        cityMap.put(31L, cityList(city(3101L, 31L, "涓婃捣甯?")));
-        cityMap.put(44L, cityList(
-                city(4401L, 44L, "骞垮窞甯?"),
-                city(4403L, 44L, "娣卞湷甯?")
-        ));
-        PROV_CITY_MAP = Collections.unmodifiableMap(cityMap);
+    public PhaseServiceImpl(MobileAreaMapper mobileAreaMapper) {
+        this.mobileAreaMapper = mobileAreaMapper;
     }
-
-    private final ConcurrentMap<Long, Map<String, Object>> dataStore = new ConcurrentHashMap<>();
 
     @Override
     public PageResult list(String keyword, int offset, int limit) {
-        List<Map<String, Object>> all = new ArrayList<>(dataStore.values());
-        String normalizedKeyword = keyword == null ? null : keyword.trim().toLowerCase(Locale.ROOT);
+        String query = keyword == null ? null : keyword.trim();
+        long total = mobileAreaMapper.countByKeyword(query);
+        List<MobileArea> list = mobileAreaMapper.findListByPage(query, offset, limit);
 
-        List<Map<String, Object>> filtered = new ArrayList<>();
-        for (Map<String, Object> row : all) {
-            if (matches(row, normalizedKeyword)) {
-                filtered.add(copy(row));
+        List<Map<String, Object>> rows = new ArrayList<>();
+        if (list != null) {
+            for (MobileArea item : list) {
+                rows.add(rowToMap(item));
             }
         }
-        filtered.sort(Comparator.comparingLong(this::idOf).reversed());
-
-        int safeOffset = Math.max(offset, 0);
-        int safeLimit = Math.max(limit, 0);
-        int fromIndex = Math.min(safeOffset, filtered.size());
-        int toIndex = Math.min(fromIndex + safeLimit, filtered.size());
-
-        List<Map<String, Object>> rows = safeLimit == 0 ? new ArrayList<>() : filtered.subList(fromIndex, toIndex);
-        return new PageResult(filtered.size(), rows);
+        return new PageResult(total, rows);
     }
 
     @Override
     public Map<String, Object> info(Long id) {
-        if (id == null) {
-            return new LinkedHashMap<>();
-        }
-        Map<String, Object> row = dataStore.get(id);
-        return row == null ? new LinkedHashMap<>() : copy(row);
+        MobileArea mobileArea = id == null ? null : mobileAreaMapper.findById(id);
+        return mobileArea == null ? new LinkedHashMap<>() : rowToMap(mobileArea);
     }
 
     @Override
@@ -80,18 +52,15 @@ public class PhaseServiceImpl implements PhaseService {
         if (!StringUtils.hasText(toStr(body.get("phase")))) {
             return "phase is required";
         }
-        Long provId = toLong(body.get("provId"));
-        Long cityId = toLong(body.get("cityId"));
-        if (provId == null) {
+        String provId = toTrimmedText(body.get("provId"));
+        String cityId = toTrimmedText(body.get("cityId"));
+        if (!StringUtils.hasText(provId)) {
             return "provId is required";
         }
-        if (cityId == null) {
+        if (!StringUtils.hasText(cityId)) {
             return "cityId is required";
         }
-        if (findProvinceName(provId) == null) {
-            return "provId not found";
-        }
-        if (findCity(provId, cityId) == null) {
+        if (mobileAreaMapper.findCitySample(provId, cityId) == null) {
             return "cityId not found";
         }
         return null;
@@ -110,171 +79,121 @@ public class PhaseServiceImpl implements PhaseService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean save(Map<String, Object> body, Long operatorId) {
-        Long provId = toLong(body.get("provId"));
-        Long cityId = toLong(body.get("cityId"));
-        if (provId == null || cityId == null) {
+        MobileArea entity = buildEntity(body, null, operatorId, true);
+        if (entity == null) {
             return false;
         }
-        Map<String, Object> city = findCity(provId, cityId);
-        String provName = findProvinceName(provId);
-        if (city == null || provName == null) {
-            return false;
-        }
-
-        Long id = toLong(body.get("id"));
-        if (id == null) {
-            id = IdUtil.getSnowflakeNextId();
-        }
-        long now = System.currentTimeMillis();
-
-        Map<String, Object> row = new LinkedHashMap<>(body);
-        row.put("id", id);
-        row.put("provId", provId);
-        row.put("cityId", cityId);
-        row.put("provName", provName);
-        row.put("cityName", city.get("cityName"));
-        row.put("created", valueOrDefault(row.get("created"), now));
-        row.put("updated", now);
-        if (operatorId != null) {
-            row.put("createId", valueOrDefault(row.get("createId"), operatorId));
-            row.put("updateId", operatorId);
-        }
-        dataStore.put(id, row);
-        return true;
+        return mobileAreaMapper.insertSelective(entity) > 0;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean update(Map<String, Object> body, Long operatorId) {
-        Long id = toLong(body.get("id"));
+        Long id = toLong(body == null ? null : body.get("id"));
         if (id == null) {
             return false;
         }
-        Map<String, Object> current = dataStore.get(id);
+        MobileArea current = mobileAreaMapper.findById(id);
         if (current == null) {
             return false;
         }
-        Long provId = toLong(body.get("provId"));
-        Long cityId = toLong(body.get("cityId"));
-        if (provId == null || cityId == null) {
+        MobileArea entity = buildEntity(body, current, operatorId, false);
+        if (entity == null) {
             return false;
         }
-        Map<String, Object> city = findCity(provId, cityId);
-        String provName = findProvinceName(provId);
-        if (city == null || provName == null) {
-            return false;
-        }
-
-        Map<String, Object> merged = new LinkedHashMap<>(current);
-        merged.putAll(body);
-        merged.put("id", id);
-        merged.put("provId", provId);
-        merged.put("cityId", cityId);
-        merged.put("provName", provName);
-        merged.put("cityName", city.get("cityName"));
-        merged.put("updated", System.currentTimeMillis());
-        if (operatorId != null) {
-            merged.put("updateId", operatorId);
-        }
-        dataStore.put(id, merged);
-        return true;
+        entity.setId(id);
+        return mobileAreaMapper.updateById(entity) > 0;
     }
 
     @Override
-    public boolean deleteBatch(List<Long> ids) {
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteBatch(List<Long> ids, Long operatorId) {
         if (ids == null || ids.isEmpty()) {
             return false;
         }
-        boolean removed = false;
-        for (Long id : ids) {
-            if (id != null && dataStore.remove(id) != null) {
-                removed = true;
-            }
-        }
-        return removed;
+        return mobileAreaMapper.deleteBatch(ids, new Date(), operatorId) > 0;
     }
 
     @Override
     public List<Map<String, Object>> allProvinces() {
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Map<String, Object> prov : PROVINCES) {
-            result.add(copy(prov));
-        }
-        return result;
+        List<Map<String, Object>> rows = mobileAreaMapper.allProvinces();
+        return rows == null ? new ArrayList<>() : rows;
     }
 
     @Override
-    public List<Map<String, Object>> allCities(Long provId) {
-        List<Map<String, Object>> cities = PROV_CITY_MAP.get(provId);
-        if (cities == null) {
+    public List<Map<String, Object>> allCities(String provId) {
+        if (!StringUtils.hasText(provId)) {
             return new ArrayList<>();
         }
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Map<String, Object> city : cities) {
-            result.add(copy(city));
-        }
-        return result;
+        List<Map<String, Object>> rows = mobileAreaMapper.allCities(provId.trim());
+        return rows == null ? new ArrayList<>() : rows;
     }
 
-    private static Map<String, Object> prov(Long id, String name) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("id", id);
-        map.put("provName", name);
-        return map;
-    }
-
-    private static Map<String, Object> city(Long id, Long provId, String cityName) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("id", id);
-        map.put("provId", provId);
-        map.put("cityName", cityName);
-        return map;
-    }
-
-    @SafeVarargs
-    private static List<Map<String, Object>> cityList(Map<String, Object>... cities) {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Collections.addAll(list, cities);
-        return Collections.unmodifiableList(list);
-    }
-
-    private String findProvinceName(Long provId) {
-        for (Map<String, Object> prov : PROVINCES) {
-            if (provId.equals(toLong(prov.get("id")))) {
-                return toStr(prov.get("provName"));
-            }
-        }
-        return null;
-    }
-
-    private Map<String, Object> findCity(Long provId, Long cityId) {
-        List<Map<String, Object>> cities = PROV_CITY_MAP.get(provId);
-        if (cities == null) {
+    private MobileArea buildEntity(Map<String, Object> body, MobileArea current, Long operatorId, boolean create) {
+        String mobileNumber = toTrimmedText(body.get("phase"));
+        String provId = toTrimmedText(body.get("provId"));
+        String cityId = toTrimmedText(body.get("cityId"));
+        if (!StringUtils.hasText(mobileNumber)
+                || !StringUtils.hasText(provId)
+                || !StringUtils.hasText(cityId)) {
             return null;
         }
-        for (Map<String, Object> city : cities) {
-            if (cityId.equals(toLong(city.get("id")))) {
-                return city;
-            }
+
+        MobileArea sample = mobileAreaMapper.findCitySample(provId, cityId);
+        if (sample == null) {
+            return null;
         }
-        return null;
+
+        MobileArea entity = new MobileArea();
+        entity.setId(create ? resolveId(body.get("id")) : current.getId());
+        entity.setMobileNumber(mobileNumber);
+        entity.setProvinceCode(valueOrDefault(sample.getProvinceCode(), current == null ? null : current.getProvinceCode()));
+        entity.setMobileArea(cityId);
+        entity.setMobileType(valueOrDefault(toTrimmedText(body.get("mobileType")),
+                valueOrDefault(sample.getMobileType(), current == null ? null : current.getMobileType())));
+        entity.setAreaCode(valueOrDefault(toTrimmedText(body.get("areaCode")),
+                valueOrDefault(sample.getAreaCode(), current == null ? null : current.getAreaCode())));
+        entity.setPostCode(valueOrDefault(toTrimmedText(body.get("postCode")),
+                valueOrDefault(sample.getPostCode(), current == null ? null : current.getPostCode())));
+        entity.setUpdated(new Date());
+        if (operatorId != null) {
+            entity.setUpdateId(operatorId);
+        }
+
+        if (create) {
+            entity.setCreated(entity.getUpdated());
+            entity.setCreateId(operatorId);
+            entity.setIsDelete((byte) 0);
+        }
+        return entity;
     }
 
-    private boolean matches(Map<String, Object> row, String keyword) {
-        if (!StringUtils.hasText(keyword)) {
-            return true;
+    private Map<String, Object> rowToMap(MobileArea row) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        if (row == null) {
+            return map;
         }
-        for (Object value : row.values()) {
-            if (value != null && value.toString().toLowerCase(Locale.ROOT).contains(keyword)) {
-                return true;
-            }
-        }
-        return false;
+        String provinceName = provinceName(row.getMobileArea());
+        String cityName = cityName(row.getMobileArea());
+        map.put("id", row.getId());
+        map.put("phase", row.getMobileNumber());
+        map.put("provId", provinceName);
+        map.put("cityId", row.getMobileArea());
+        map.put("provName", provinceName);
+        map.put("cityName", cityName);
+        map.put("mobileArea", row.getMobileArea());
+        map.put("mobileType", row.getMobileType());
+        map.put("areaCode", row.getAreaCode());
+        map.put("postCode", row.getPostCode());
+        map.put("provinceCode", row.getProvinceCode());
+        return map;
     }
 
-    private long idOf(Map<String, Object> row) {
-        Long id = toLong(row.get("id"));
-        return id == null ? 0L : id;
+    private Long resolveId(Object value) {
+        Long id = toLong(value);
+        return id == null ? IdUtil.getSnowflakeNextId() : id;
     }
 
     private Long toLong(Object value) {
@@ -285,7 +204,8 @@ public class PhaseServiceImpl implements PhaseService {
             return ((Number) value).longValue();
         }
         try {
-            return Long.parseLong(value.toString());
+            String text = value.toString().trim();
+            return text.isEmpty() ? null : Long.parseLong(text);
         } catch (Exception ignore) {
             return null;
         }
@@ -295,12 +215,31 @@ public class PhaseServiceImpl implements PhaseService {
         return value == null ? null : value.toString();
     }
 
-    private Object valueOrDefault(Object value, Object defaultValue) {
-        return value == null ? defaultValue : value;
+    private String toTrimmedText(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = value.toString().trim();
+        return text.isEmpty() ? null : text;
     }
 
-    private Map<String, Object> copy(Map<String, Object> source) {
-        return new LinkedHashMap<>(source);
+    private String provinceName(String mobileArea) {
+        if (!StringUtils.hasText(mobileArea)) {
+            return null;
+        }
+        String[] parts = mobileArea.trim().split("\\s+", 2);
+        return parts.length == 0 ? mobileArea.trim() : parts[0];
+    }
+
+    private String cityName(String mobileArea) {
+        if (!StringUtils.hasText(mobileArea)) {
+            return null;
+        }
+        String[] parts = mobileArea.trim().split("\\s+", 2);
+        return parts.length < 2 ? mobileArea.trim() : parts[1];
+    }
+
+    private String valueOrDefault(String value, String defaultValue) {
+        return StringUtils.hasText(value) ? value : defaultValue;
     }
 }
-
