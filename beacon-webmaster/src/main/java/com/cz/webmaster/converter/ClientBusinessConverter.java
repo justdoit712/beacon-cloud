@@ -26,6 +26,7 @@ public final class ClientBusinessConverter {
         cb.setIsCallback(form.getIsreturnstatus());
         cb.setCallbackUrl(form.getReceivestatusurl());
         cb.setClientPhone(form.getMobile());
+        cb.setClientFilters(form.getClientFilters());
         cb.setExtend1(form.getPriority());
         cb.setExtend2(form.getUsertype());
         cb.setExtend3(form.getState());
@@ -45,6 +46,7 @@ public final class ClientBusinessConverter {
         vo.setIsreturnstatus(cb.getIsCallback());
         vo.setReceivestatusurl(cb.getCallbackUrl());
         vo.setMobile(cb.getClientPhone());
+        vo.setClientFilters(cb.getClientFilters());
         vo.setPriority(cb.getExtend1());
         vo.setUsertype(cb.getExtend2());
         vo.setState(cb.getExtend3());

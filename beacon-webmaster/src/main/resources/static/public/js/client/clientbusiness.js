@@ -54,6 +54,7 @@
                     }
                 }
             },
+            {title: '策略链', field: 'clientFilters'},
             {title: '手机号', field: 'mobile'},
             {title: '余额', field: 'money',formatter: function (v, r, i) {
                    return (v/1000.0)+'元';

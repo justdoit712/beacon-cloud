@@ -24,6 +24,8 @@ public class ClientBusinessForm {
 
     private String mobile;
 
+    private String clientFilters;
+
     private String priority;
 
     private String usertype;
