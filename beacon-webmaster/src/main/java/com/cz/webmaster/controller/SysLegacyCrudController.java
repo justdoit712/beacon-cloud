@@ -22,7 +22,7 @@ import java.util.Map;
 @RequestMapping("/sys")
 public class SysLegacyCrudController {
 
-    private static final String FAMILY_PATTERN = "activity|apimapping|api-mapping|grayrelease|gray-release|publicparams|public-params|notify|searchparams|search-params|clientsign|client-sign|clienttemplate|client-template|apigatewayfilter|api-gateway-filter|smstemp|sms-template";
+    private static final String FAMILY_PATTERN = "activity|apimapping|api-mapping|grayrelease|gray-release|publicparams|public-params|notify|searchparams|search-params|clientsign|client-sign|clienttemplate|client-template|smstemp|sms-template";
     private static final Map<String, String> FAMILY_ALIASES = createFamilyAliases();
 
     private final LegacyCrudService legacyCrudService;
@@ -91,7 +91,6 @@ public class SysLegacyCrudController {
         aliases.put("search-params", "searchparams");
         aliases.put("client-sign", "clientsign");
         aliases.put("client-template", "clienttemplate");
-        aliases.put("api-gateway-filter", "apigatewayfilter");
         aliases.put("sms-template", "smstemp");
         return Collections.unmodifiableMap(aliases);
     }
