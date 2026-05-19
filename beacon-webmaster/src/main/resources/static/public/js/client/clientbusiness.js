@@ -162,11 +162,9 @@ var vm = new Vue({
 });
 
 /**
- * 支付
- * @param id 要支付的客户的id
+ * 充值
+ * @param id 要充值的客户业务 id
  */
 function pay(id) {
-    //打开一个页面 userpay.html
-    //
-    window.location.href="/client/userpay.html"
+    window.location.href = "userpay.html?clientId=" + id;
 }
