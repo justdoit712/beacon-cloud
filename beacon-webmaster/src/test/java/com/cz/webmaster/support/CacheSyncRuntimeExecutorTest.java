@@ -101,4 +101,17 @@ public class CacheSyncRuntimeExecutorTest {
         Mockito.verify(support, Mockito.times(1))
                 .markDirty(Mockito.eq("client_business"), Mockito.contains("syncUpsert.immediate|1001|"));
     }
+
+    @Test
+    public void shouldContinueWhenRebuildGuardCheckFails() {
+        CacheRebuildCoordinationSupport support = Mockito.mock(CacheRebuildCoordinationSupport.class);
+        CacheSyncRuntimeExecutor guardedExecutor = new CacheSyncRuntimeExecutor(support);
+        Mockito.when(support.isRebuildRunning("client_template")).thenThrow(new RuntimeException("cache unavailable"));
+
+        AtomicInteger counter = new AtomicInteger(0);
+        guardedExecutor.runAfterCommitOrNow(counter::incrementAndGet, "client_template", "syncUpsert", "7001");
+
+        Assert.assertEquals(1, counter.get());
+        Mockito.verify(support, Mockito.never()).markDirty(Mockito.anyString(), Mockito.anyString());
+    }
 }

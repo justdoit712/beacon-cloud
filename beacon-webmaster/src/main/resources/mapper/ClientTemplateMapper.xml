@@ -2,8 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cz.webmaster.mapper.ClientTemplateMapper">
 
-    <select id="findAllActive" resultType="java.util.LinkedHashMap">
-        select
+    <sql id="Page_Column_List">
         id,
         sign_id as signId,
         template_text as templateText,
@@ -20,9 +19,137 @@
         extend2,
         extend3,
         extend4
+    </sql>
+
+    <sql id="Active_Keyword_Where">
+        where is_delete = 0
+        <if test="keyword != null and keyword != ''">
+            and (
+                cast(id as char) like concat('%', #{keyword}, '%')
+                or cast(sign_id as char) like concat('%', #{keyword}, '%')
+                or template_text like concat('%', #{keyword}, '%')
+                or use_web like concat('%', #{keyword}, '%')
+            )
+        </if>
+    </sql>
+
+    <select id="findAllActive" resultType="java.util.LinkedHashMap">
+        select
+        <include refid="Page_Column_List" />
         from client_template
         where is_delete = 0
         order by sign_id asc, id asc
     </select>
+
+    <select id="countByKeyword" resultType="long">
+        select count(1)
+        from client_template
+        <include refid="Active_Keyword_Where" />
+    </select>
+
+    <select id="findPage" resultType="java.util.LinkedHashMap">
+        select
+        <include refid="Page_Column_List" />
+        from client_template
+        <include refid="Active_Keyword_Where" />
+        order by id desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="findById" resultType="java.util.LinkedHashMap">
+        select
+        <include refid="Page_Column_List" />
+        from client_template
+        where id = #{id}
+          and is_delete = 0
+    </select>
+
+    <select id="findActiveMembersBySignId" resultType="java.util.LinkedHashMap">
+        select
+        id,
+        template_text as templateText,
+        template_type as templateType,
+        template_state as templateState,
+        use_id as useId,
+        use_web as useWeb,
+        created,
+        create_id as createId,
+        updated,
+        update_id as updateId,
+        is_delete as isDelete,
+        extend1,
+        extend2,
+        extend3,
+        extend4
+        from client_template
+        where is_delete = 0
+          and sign_id = #{signId}
+        order by id asc
+    </select>
+
+    <insert id="insert" parameterType="java.util.Map">
+        insert into client_template (
+            id,
+            sign_id,
+            template_text,
+            template_type,
+            template_state,
+            use_id,
+            use_web,
+            create_id,
+            update_id,
+            is_delete,
+            extend1,
+            extend2,
+            extend3,
+            extend4
+        ) values (
+            #{id,jdbcType=BIGINT},
+            #{signId,jdbcType=BIGINT},
+            #{templateText,jdbcType=VARCHAR},
+            #{templateType,jdbcType=INTEGER},
+            #{templateState,jdbcType=INTEGER},
+            #{useId,jdbcType=INTEGER},
+            #{useWeb,jdbcType=VARCHAR},
+            #{createId,jdbcType=BIGINT},
+            #{updateId,jdbcType=BIGINT},
+            #{isDelete,jdbcType=TINYINT},
+            #{extend1,jdbcType=VARCHAR},
+            #{extend2,jdbcType=VARCHAR},
+            #{extend3,jdbcType=VARCHAR},
+            #{extend4,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <update id="update" parameterType="java.util.Map">
+        update client_template
+        <set>
+            <if test="signId != null">sign_id = #{signId,jdbcType=BIGINT},</if>
+            <if test="templateText != null">template_text = #{templateText,jdbcType=VARCHAR},</if>
+            <if test="templateType != null">template_type = #{templateType,jdbcType=INTEGER},</if>
+            <if test="templateState != null">template_state = #{templateState,jdbcType=INTEGER},</if>
+            <if test="useId != null">use_id = #{useId,jdbcType=INTEGER},</if>
+            <if test="useWeb != null">use_web = #{useWeb,jdbcType=VARCHAR},</if>
+            <if test="updateId != null">update_id = #{updateId,jdbcType=BIGINT},</if>
+            <if test="extend1 != null">extend1 = #{extend1,jdbcType=VARCHAR},</if>
+            <if test="extend2 != null">extend2 = #{extend2,jdbcType=VARCHAR},</if>
+            <if test="extend3 != null">extend3 = #{extend3,jdbcType=VARCHAR},</if>
+            <if test="extend4 != null">extend4 = #{extend4,jdbcType=VARCHAR},</if>
+            updated = now()
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+          and is_delete = 0
+    </update>
+
+    <update id="logicalDelete">
+        update client_template
+        <set>
+            is_delete = 1,
+            updated = now(),
+            <if test="operatorId != null">update_id = #{operatorId,jdbcType=BIGINT},</if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+          and is_delete = 0
+    </update>
 
 </mapper>

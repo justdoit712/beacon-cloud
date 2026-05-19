@@ -43,7 +43,6 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
     private static final String API_GATEWAY_FILTER = "apigatewayfilter";
     private static final String STRAGETY_FILTER = "stragetyfilter";
     private static final String LIMIT = "limit";
-    private static final String SMS_TEMP = "smstemp";
 
     private static final Set<String> SUPPORTED_FAMILIES = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(
@@ -59,8 +58,7 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
                     CLIENT_TEMPLATE,
                     API_GATEWAY_FILTER,
                     STRAGETY_FILTER,
-                    LIMIT,
-                    SMS_TEMP
+                    LIMIT
             ))
     );
 
@@ -79,7 +77,6 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
         requiredFieldMap.put(API_GATEWAY_FILTER, Collections.singletonList("filters"));
         requiredFieldMap.put(STRAGETY_FILTER, Collections.singletonList("filters"));
         requiredFieldMap.put(LIMIT, Arrays.asList("limitTime", "limitCount"));
-        requiredFieldMap.put(SMS_TEMP, Collections.singletonList("template"));
         REQUIRED_FIELDS = Collections.unmodifiableMap(requiredFieldMap);
     }
 
@@ -618,7 +615,7 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
             }
         }
 
-        if (isCreate && row.get("owntype") == null && (BLACK.equals(family) || MESSAGE.equals(family) || SMS_TEMP.equals(family))) {
+        if (isCreate && row.get("owntype") == null && (BLACK.equals(family) || MESSAGE.equals(family))) {
             row.put("owntype", 1);
         }
 
@@ -662,10 +659,6 @@ public class LegacyCrudServiceImpl implements LegacyCrudService {
         } else if (LIMIT.equals(family)) {
             if (row.get("limitState") == null) {
                 row.put("limitState", 1);
-            }
-        } else if (SMS_TEMP.equals(family)) {
-            if (row.get("status") == null) {
-                row.put("status", 1);
             }
         }
     }

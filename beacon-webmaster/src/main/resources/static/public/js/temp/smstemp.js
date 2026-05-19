@@ -21,25 +21,40 @@ $(function () {
             },
             {checkbox: true},
             {title: 'id', field: 'id', sortable: true},
-            {title: '模板', field: 'template'},
-            {title: '参数', field: 'paramter'},
-            {title: '创建者', field: 'creater'},
-            {title: '创建者类型', field: 'owntype', formatter: function (v, r, i) {
-                    if (v == 1) {
-                        return "管理员";
+            {title: '签名ID', field: 'signId', sortable: true},
+            {title: '模板内容', field: 'templateText'},
+            {title: '模板类型', field: 'templateType', formatter: function (v, r, i) {
+                    if (v == 0) {
+                        return "验证码类";
+                    } else if (v == 1) {
+                        return "通知类";
                     } else if (v == 2) {
-                        return "普通用户";
+                        return "营销类";
                     }
                 }
             },
-            {title: '启用状态', field: 'status', formatter: function (v, r, i) {
+            {title: '审核状态', field: 'templateState', formatter: function (v, r, i) {
                     if (v == 0) {
-                        return "停用";
+                        return "审核中";
                     } else if (v == 1) {
-                        return "启用";
+                        return "审核不通过";
+                    } else if (v == 2) {
+                        return "审核通过";
                     }
                 }
-            }
+            },
+            {title: '使用场景', field: 'useId', formatter: function (v, r, i) {
+                    if (v == 0) {
+                        return "网站";
+                    } else if (v == 1) {
+                        return "APP";
+                    } else if (v == 2) {
+                        return "微信";
+                    }
+                }
+            },
+            {title: '使用地址', field: 'useWeb'},
+            {title: '更新时间', field: 'updated'}
         ]
     };
     $('#table').bootstrapTable(option);
@@ -90,7 +105,11 @@ var vm = new Vue({
         add: function () {
             vm.showList = false;
             vm.title = "新增";
-            vm.smstemplate = {};
+            vm.smstemplate = {
+                templateType: 0,
+                templateState: 0,
+                useId: 0
+            };
         },
         update: function (event) {
             var id = 'id';
@@ -102,7 +121,7 @@ var vm = new Vue({
             $.get("../sys/sms-template/info/" + id, function (r) {
                 vm.showList = false;
                 vm.title = "修改";
-                vm.smstemplate = (r && r.data) ? (r.data.smstemplate || r.data) : (r && r.smstemplate ? r.smstemplate : {});
+                vm.smstemplate = (r && r.data) ? r.data : {};
             });
         },
         saveOrUpdate: function (event) {

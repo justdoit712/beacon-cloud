@@ -179,7 +179,24 @@ public class CacheSyncRuntimeExecutor {
         if (cacheRebuildCoordinationSupport == null || !StringUtils.hasText(domain)) {
             return false;
         }
-        if (!cacheRebuildCoordinationSupport.isRebuildRunning(domain)) {
+        boolean rebuildRunning;
+        try {
+            rebuildRunning = cacheRebuildCoordinationSupport.isRebuildRunning(domain);
+        } catch (Exception ex) {
+            CacheSyncLogHelper.warn(
+                    log,
+                    safe(domain),
+                    safe(entityId),
+                    "-",
+                    safe(operation) + ".rebuildGuardFailedContinue",
+                    0L,
+                    resolveErrorCode(operation),
+                    "rebuild guard check failed; runtime sync will continue",
+                    ex
+            );
+            return false;
+        }
+        if (!rebuildRunning) {
             return false;
         }
         try {
