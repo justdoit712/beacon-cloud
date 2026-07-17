@@ -46,6 +46,11 @@ export function getClientBusinessAll() {
   return request.get('/sys/client-business/all')
 }
 
+// 账户余额充值
+export function payClient(params: { jine: number | string; clientId: number | string }) {
+  return request.get('/sys/client-business/pay', { params })
+}
+
 // =================== 客户通道 (clientchannel) ===================
 export function getClientChannelList(params: any) {
   return request.get('/sys/client-channel/list', { params })
