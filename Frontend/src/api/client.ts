@@ -42,7 +42,7 @@ export function deleteClientBusinesses(ids: any[]) {
   return request.post('/sys/client-business/del', ids)
 }
 
-export function getClientBusinessAll() {
+export function getClientBusinessAll(): Promise<any> {
   return request.get('/sys/client-business/all')
 }
 
