@@ -1,13 +1,13 @@
 <template>
   <template v-if="menu.type === 0 || (menu.list && menu.list.length > 0)">
-    <el-sub-menu :index="String(menu.menuId)">
+    <el-sub-menu :index="String(menu.id)">
       <template #title>
         <el-icon v-if="menu.icon"><component :is="getIconComponent(menu.icon)" /></el-icon>
         <span>{{ menu.name }}</span>
       </template>
       <sidebar-item
         v-for="child in menu.list"
-        :key="child.menuId"
+        :key="child.id"
         :menu="child"
       />
     </el-sub-menu>
@@ -29,7 +29,7 @@ import * as Icons from '@element-plus/icons-vue'
 
 defineProps<{
   menu: {
-    menuId: number
+    id: number
     parentId: number
     name: string
     url: string | null
@@ -38,6 +38,7 @@ defineProps<{
     list: any[] | null
   }
 }>()
+
 
 function getRoutePath(url: string | null): string {
   if (!url) return ''
