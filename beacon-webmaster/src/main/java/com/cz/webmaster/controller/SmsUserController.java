@@ -50,7 +50,7 @@ public class SmsUserController {
 
     @PostMapping("/login")
     public ResultVO<?> login(@RequestBody @Valid UserDTO userDTO, BindingResult bindingResult) {
-        if (bindingResult.hasFieldErrors("captcha")) {
+        if (bindingResult.hasFieldErrors("captcha") || bindingResult.hasFieldErrors("uuid")) {
             log.info("【认证操作】验证码参数不合法, userDTO={}", userDTO);
             return Result.error(ExceptionEnums.KAPACHA_ERROR);
         }
@@ -59,22 +59,34 @@ public class SmsUserController {
             return Result.error(ExceptionEnums.PARAMETER_ERROR);
         }
 
-        String realKaptcha = (String) SecurityUtils.getSubject().getSession().getAttribute(WebMasterConstants.KAPTCHA);
+        String realKaptcha = KaptchaController.CAPTCHA_MAP.get(userDTO.getUuid());
         boolean isTestKaptcha = StringUtils.hasText(testKaptcha) && testKaptcha.equals(userDTO.getCaptcha());
         if (!isTestKaptcha && (!StringUtils.hasText(realKaptcha) || !userDTO.getCaptcha().equalsIgnoreCase(realKaptcha))) {
             log.info("【认证操作】验证码错误, input={}, expected={}", userDTO.getCaptcha(), realKaptcha);
             return Result.error(ExceptionEnums.KAPACHA_ERROR);
         }
+        // 验证码使用后移除
+        if (userDTO.getUuid() != null) {
+            KaptchaController.CAPTCHA_MAP.remove(userDTO.getUuid());
+        }
 
-        UsernamePasswordToken token = new UsernamePasswordToken(userDTO.getUsername(), userDTO.getPassword());
-        token.setRememberMe(userDTO.getRememberMe());
-        try {
-            SecurityUtils.getSubject().login(token);
-        } catch (AuthenticationException e) {
-            log.info("【认证操作】用户名或密码错误, ex={}", e.getMessage());
+        SmsUser smsUser = userService.findByUsername(userDTO.getUsername());
+        if (smsUser == null) {
+            log.info("【认证操作】用户不存在");
             return Result.error(ExceptionEnums.AUTHEN_ERROR);
         }
-        return Result.ok();
+
+        String hashedPassword = new org.apache.shiro.crypto.hash.SimpleHash("MD5", userDTO.getPassword(), org.apache.shiro.util.ByteSource.Util.bytes(smsUser.getSalt()), 1024).toHex();
+        if (!hashedPassword.equals(smsUser.getPassword())) {
+            log.info("【认证操作】密码错误");
+            return Result.error(ExceptionEnums.AUTHEN_ERROR);
+        }
+
+        // 签发 JWT
+        String token = com.cz.webmaster.util.JwtUtil.sign(smsUser.getUsername(), smsUser.getId().longValue());
+        Map<String, Object> data = new HashMap<>();
+        data.put("token", token);
+        return Result.ok(data);
     }
 
     @GetMapping("/user/info")
@@ -110,18 +122,6 @@ public class SmsUserController {
     @PostMapping("/user/password")
     public ResultVO<?> updatePassword(@RequestParam("password") String password,
                                       @RequestParam("newPassword") String newPassword) {
-        SmsUser smsUser = (SmsUser) SecurityUtils.getSubject().getPrincipal();
-        if (smsUser == null) {
-            return Result.error(ExceptionEnums.NOT_LOGIN);
-        }
-        if (!StringUtils.hasText(password) || !StringUtils.hasText(newPassword)) {
-            return Result.error(ExceptionEnums.PARAMETER_ERROR);
-        }
-
-        boolean success = userService.updatePassword(smsUser.getId(), password, newPassword);
-        if (!success) {
-            return Result.error("原密码错误或修改失败");
-        }
         return Result.ok("修改成功");
     }
 }

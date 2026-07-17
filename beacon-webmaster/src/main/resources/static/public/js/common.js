@@ -2,10 +2,26 @@
 $.ajaxSetup({
     dataType: "json",
     contentType: "application/json",
-    cache: false
+    cache: false,
+    complete: function(xhr, textStatus) {
+        if (xhr.status == 401) {
+            localStorage.removeItem("Auth-Token");
+            top.location.href = '/login.html';
+        }
+    }
 });
 
-//选择多条记录
+// 使用 ajaxPrefilter 强制在所有 jQuery 请求发出去前拦截并注入 Token，
+// 这样即使某些插件（如 Bootstrap Table）覆盖了 beforeSend，Token 也绝不会丢失。
+$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+    var token = localStorage.getItem("Auth-Token");
+    if (token && !options.url.match(/sys\/login/)) {
+        jqXHR.setRequestHeader("Authorization", "Bearer " + token);
+    }
+});
+
+// bootstrap-table 全局空状态增强
+$(function () {
 function getSelectedRows() {
     //返回所有选择的行，当没有选择的记录时，返回一个空数组
     var rows = $("#table").bootstrapTable('getSelections');
@@ -47,10 +63,19 @@ function hasPermission(permission) {
     return p.indexOf(permission) > -1;
 }
 
-// bootstrap-table 全局空状态增强
+// bootstrap-table 全局空状态增强与 JWT 拦截
 $(function () {
     if ($.fn.bootstrapTable) {
         var _defaults = $.fn.bootstrapTable.defaults;
+        
+        // 追加全局 ajaxOptions，确保发送 JWT
+        var origAjaxOptions = _defaults.ajaxOptions || {};
+        _defaults.ajaxOptions = $.extend(true, {}, origAjaxOptions, {
+            headers: {
+                "Authorization": "Bearer " + localStorage.getItem("Auth-Token")
+            }
+        });
+
         var _origNoMatches = _defaults.formatNoMatches;
         _defaults.formatNoMatches = function () {
             return '<div class="ops-bt-empty">'

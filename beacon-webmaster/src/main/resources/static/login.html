@@ -80,10 +80,13 @@
     var vm = new Vue({
         el: '#rrapp',
         data: {
-            user: {},
+            user: { uuid: '' },
             error: false,
             errorMsg: '',
-            src: '/sys/auth/captcha.jpg'
+            src: ''
+        },
+        created: function() {
+            this.refreshCode();
         },
         beforeCreate: function () {
             if (self != top) {
@@ -91,8 +94,20 @@
             }
         },
         methods: {
+            generateUUID: function() {
+                var d = new Date().getTime();
+                var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = (d + Math.random()*16)%16 | 0;
+                    d = Math.floor(d/16);
+                    return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+                });
+                return uuid;
+            },
             refreshCode: function () {
-                this.src = "/sys/auth/captcha.jpg?t=" + $.now();
+                if (!this.user.uuid) {
+                    this.user.uuid = this.generateUUID();
+                }
+                this.src = "sys/auth/captcha.jpg?uuid=" + this.user.uuid + "&t=" + $.now();
             },
             login: function (event) {
 
@@ -105,6 +120,7 @@
                     cache: false,
                     success: function (result) {
                         if (result.code == 0) {//登录成功
+                            localStorage.setItem("Auth-Token", result.data.token);
                             parent.location.href = 'index.html';
                         } else {
                             vm.error = true;

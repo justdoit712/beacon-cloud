@@ -17,6 +17,8 @@ public class UserDTO {
     private String password;
     @NotBlank
     private String captcha;
+    @NotBlank
+    private String uuid;
 
     private Boolean rememberMe = false;
 

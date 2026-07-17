@@ -1,50 +1,75 @@
 package com.cz.webmaster.config;
 
 import com.cz.webmaster.relam.ShiroRealm;
+import com.cz.webmaster.shiro.JwtFilter;
+import org.apache.shiro.mgt.DefaultSessionStorageEvaluator;
+import org.apache.shiro.mgt.DefaultSubjectDAO;
+import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.spring.web.config.DefaultShiroFilterChainDefinition;
 import org.apache.shiro.spring.web.config.ShiroFilterChainDefinition;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
-import org.apache.shiro.web.servlet.ShiroFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.servlet.Filter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Configuration
 public class ShiroConfig {
 
-
     @Bean
     public DefaultWebSecurityManager securityManager(ShiroRealm shiroRealm){
-        //1、构建安全管理器
         DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
-
-        //2、设置Realm进去
         securityManager.setRealm(shiroRealm);
 
-        //3、返回安全管理器
+        // 关闭Shiro自带的session
+        DefaultSubjectDAO subjectDAO = new DefaultSubjectDAO();
+        DefaultSessionStorageEvaluator defaultSessionStorageEvaluator = new DefaultSessionStorageEvaluator();
+        defaultSessionStorageEvaluator.setSessionStorageEnabled(false);
+        subjectDAO.setSessionStorageEvaluator(defaultSessionStorageEvaluator);
+        securityManager.setSubjectDAO(subjectDAO);
+
         return securityManager;
     }
+
     @Bean
     public ShiroFilterChainDefinition shiroFilterChainDefinition(){
-        // 1, 构建shiroFilterChainDefinition实现类
         DefaultShiroFilterChainDefinition shiroFilter = new DefaultShiroFilterChainDefinition();
-        // 2.配置上过滤器
         Map<String,String> filterChainDefinitionMap = new LinkedHashMap<>();
-        // anon代表放行，使用的是AnonymousFilter
-        filterChainDefinitionMap.put("/public/**","anon");
-        filterChainDefinitionMap.put("/sys/auth/captcha.jpg","anon");
-        filterChainDefinitionMap.put("/sys/login","anon");
-        filterChainDefinitionMap.put("/internal/balance/debit","anon");
-        filterChainDefinitionMap.put("/index.html","anon");
-        filterChainDefinitionMap.put("/login.html","anon");
-        filterChainDefinitionMap.put("/logout","logout");
-        filterChainDefinitionMap.put("/**","authc");
-        // 设置
+        
+        filterChainDefinitionMap.put("/public/**", "anon");
+        filterChainDefinitionMap.put("/**/*.html", "anon");
+        filterChainDefinitionMap.put("/**/*.js", "anon");
+        filterChainDefinitionMap.put("/**/*.css", "anon");
+        filterChainDefinitionMap.put("/**/*.png", "anon");
+        filterChainDefinitionMap.put("/**/*.svg", "anon");
+        filterChainDefinitionMap.put("/**/*.jpg", "anon");
+        filterChainDefinitionMap.put("/**/*.ico", "anon");
+        filterChainDefinitionMap.put("/**/*.woff", "anon");
+        filterChainDefinitionMap.put("/**/*.woff2", "anon");
+        filterChainDefinitionMap.put("/**/*.ttf", "anon");
+        
+        filterChainDefinitionMap.put("/sys/auth/captcha.jpg", "anon");
+        filterChainDefinitionMap.put("/sys/login", "anon");
+        filterChainDefinitionMap.put("/internal/balance/debit", "anon");
+        filterChainDefinitionMap.put("/logout", "logout");
+        filterChainDefinitionMap.put("/**", "jwt");
+        
         shiroFilter.addPathDefinitions(filterChainDefinitionMap);
-        //3、返回配置好的过滤器链
         return shiroFilter;
+    }
 
+    @Bean
+    public ShiroFilterFactoryBean shiroFilterFactoryBean(DefaultWebSecurityManager securityManager, ShiroFilterChainDefinition shiroFilterChainDefinition) {
+        ShiroFilterFactoryBean shiroFilter = new ShiroFilterFactoryBean();
+        shiroFilter.setSecurityManager(securityManager);
+        
+        Map<String, Filter> filters = new LinkedHashMap<>();
+        filters.put("jwt", new JwtFilter());
+        shiroFilter.setFilters(filters);
+        
+        shiroFilter.setFilterChainDefinitionMap(shiroFilterChainDefinition.getFilterChainMap());
+        return shiroFilter;
     }
 }
