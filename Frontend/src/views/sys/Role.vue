@@ -281,11 +281,8 @@ function buildTree(list: any[]): any[] {
   })
   
   list.forEach(item => {
-    if (item.parentId === -1 || item.parentId === '-1' || item.id === 0) {
-      if (item.id === 0) {
-        roots.push(item)
-      }
-
+    if (item.parentId === -1 || item.parentId === '-1' || item.parentId === 0 || item.parentId === '0' || item.parentId === null) {
+      roots.push(item)
     } else {
       const parent = map[item.parentId]
       if (parent) {

@@ -9,9 +9,4 @@ target/
 *.log
 /initial_draft_text.txt
 /backups/mysql/user_role_permission_seed_20260519_152530.sql
-/docs/Vue3_阶段一基建详细实施手册.md
-/docs/Vue3前端改造落地方案.md
-/docs/Vue3_阶段四割接上线实施手册.md
-/docs/Vue3_阶段三业务重构实施手册.md
-/docs/Vue3_阶段二公用模块实施手册.md
-/docs/Vue3_页面_API_盘点表.md
+
