@@ -1,5 +1,11 @@
 <template>
   <div class="dirtyword-management">
+    <page-header title="敏感词管理">
+      <template #actions>
+        <el-button type="primary" :icon="Plus" @click="handleAdd">新增敏感词</el-button>
+      </template>
+    </page-header>
+
     <!-- Search Form -->
     <pro-search
       v-model="searchParam"
@@ -9,10 +15,9 @@
     />
 
     <!-- Action Bar -->
-    <div class="table-actions">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增</el-button>
-      <el-button type="warning" :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改</el-button>
-      <el-button type="danger" :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">删除</el-button>
+    <div class="table-actions flex space-x-2 mb-4">
+      <el-button type="warning" plain :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改</el-button>
+      <el-button type="danger" plain :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">删除</el-button>
     </div>
 
     <!-- Data Table -->
@@ -25,18 +30,23 @@
     >
       <!-- Custom Type Render -->
       <template #typeSlot="scope">
-        <el-tag :type="scope.row.owntype === 1 ? 'danger' : 'info'">
-          {{ scope.row.owntype === 1 ? '管理员' : '普通用户' }}
-        </el-tag>
+        <status-tag :status="scope.row.owntype === 1 ? 'danger' : 'info'" :text="scope.row.owntype === 1 ? '管理员' : '普通用户'" />
+      </template>
+
+      <!-- Custom Actions -->
+      <template #action="{ row }">
+        <action-buttons :actions="getRowActions(row)" />
       </template>
     </pro-table>
 
     <!-- Add/Edit Dialog -->
-    <el-dialog
+    <form-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="500px"
-      destroy-on-close
+      size="small"
+      :loading="saving"
+      @confirm="handleSubmit"
+      @cancel="dialogVisible = false"
     >
       <el-form
         ref="formRef"
@@ -48,11 +58,7 @@
           <el-input v-model="formModel.dirtyword" placeholder="请输入敏感词" />
         </el-form-item>
       </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
+    </form-dialog>
   </div>
 </template>
 
@@ -77,8 +83,9 @@ const columns = [
   { type: 'selection', width: 60 },
   { prop: 'id', label: '编号', width: 80, sortable: true },
   { prop: 'dirtyword', label: '敏感词' },
-  { prop: 'owntype', label: '创建者类型', slot: 'typeSlot' },
-  { prop: 'creater', label: '创建者' }
+  { prop: 'owntype', label: '创建者类型', slot: 'typeSlot', align: 'center' },
+  { prop: 'creater', label: '创建者' },
+  { label: '操作', slot: 'action', width: 120, fixed: 'right', align: 'center' }
 ] as any[]
 
 const selectedIds = ref<number[]>([])
@@ -124,6 +131,36 @@ async function handleEdit() {
   } catch (error: any) {
     ElMessage.error(error.message || '获取敏感词详情失败')
   }
+}
+
+function handleEditRow(row: any) {
+  dialogTitle.value = '修改'
+  formModel.value = { ...row }
+  dialogVisible.value = true
+}
+
+function getRowActions(row: any) {
+  return [
+    { text: '编辑', onClick: () => handleEditRow(row) },
+    { 
+      text: '删除', 
+      danger: true, 
+      confirmText: '确定删除该敏感词吗？',
+      onClick: async () => {
+        try {
+          const res: any = await deleteDirtyWords([row.id])
+          if (res && res.code === 0) {
+            ElMessage.success('删除成功')
+            tableRef.value?.reload()
+          } else {
+            ElMessage.error(res.msg || '删除失败')
+          }
+        } catch (error: any) {
+          ElMessage.error(error.message || '网络错误')
+        }
+      }
+    }
+  ]
 }
 
 function handleSubmit() {
@@ -173,9 +210,6 @@ function handleBatchDelete() {
 
 <style scoped>
 .dirtyword-management {
-  padding: 10px 0;
-}
-.table-actions {
-  margin-bottom: 16px;
+  /* Use layout spacing */
 }
 </style>

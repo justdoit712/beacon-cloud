@@ -1,5 +1,11 @@
 <template>
   <div class="menu-management">
+    <page-header title="菜单管理">
+      <template #actions>
+        <el-button type="primary" :icon="Plus" @click="handleAdd">新增菜单</el-button>
+      </template>
+    </page-header>
+
     <!-- Search Form -->
     <pro-search
       v-model="searchParam"
@@ -9,10 +15,9 @@
     />
 
     <!-- Action Bar -->
-    <div class="table-actions">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增</el-button>
-      <el-button type="warning" :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改</el-button>
-      <el-button type="danger" :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">删除</el-button>
+    <div class="table-actions flex space-x-2 mb-4">
+      <el-button type="warning" plain :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改</el-button>
+      <el-button type="danger" plain :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">删除</el-button>
     </div>
 
     <!-- Data Table -->
@@ -31,18 +36,25 @@
 
       <!-- Custom Type Render -->
       <template #typeSlot="scope">
-        <el-tag v-if="scope.row.type === 0" type="primary">目录</el-tag>
-        <el-tag v-else-if="scope.row.type === 1" type="success">菜单</el-tag>
-        <el-tag v-else-if="scope.row.type === 2" type="info">按钮</el-tag>
+        <status-tag v-if="scope.row.type === 0" status="primary" text="目录" />
+        <status-tag v-else-if="scope.row.type === 1" status="success" text="菜单" />
+        <status-tag v-else-if="scope.row.type === 2" status="info" text="按钮" />
+      </template>
+
+      <!-- Custom Actions -->
+      <template #action="{ row }">
+        <action-buttons :actions="getRowActions(row)" />
       </template>
     </pro-table>
 
     <!-- Add/Edit Dialog -->
-    <el-dialog
+    <form-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="600px"
-      destroy-on-close
+      size="medium"
+      :loading="saving"
+      @confirm="handleSubmit"
+      @cancel="dialogVisible = false"
     >
       <el-form
         ref="formRef"
@@ -82,11 +94,7 @@
           <el-input-number v-model="formModel.orderNum" :min="0" style="width: 100%" />
         </el-form-item>
       </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
+    </form-dialog>
   </div>
 </template>
 
@@ -116,8 +124,9 @@ const columns = [
   { prop: 'icon', label: '图标', width: 80, align: 'center', slot: 'iconSlot' },
   { prop: 'url', label: '菜单URL' },
   { prop: 'perms', label: '授权标识' },
-  { prop: 'type', label: '类型', width: 90, slot: 'typeSlot' },
-  { prop: 'orderNum', label: '排序', width: 80, align: 'center' }
+  { prop: 'type', label: '类型', width: 90, slot: 'typeSlot', align: 'center' },
+  { prop: 'orderNum', label: '排序', width: 80, align: 'center' },
+  { label: '操作', slot: 'action', width: 120, fixed: 'right', align: 'center' }
 ] as any[]
 
 const selectedIds = ref<number[]>([])
@@ -217,6 +226,44 @@ async function handleEdit() {
   }
 }
 
+async function handleEditRow(row: any) {
+  dialogTitle.value = '修改'
+  try {
+    await loadMenuOptions()
+    const res: any = await getMenuInfo(row.id)
+    if (res && res.code === 0) {
+      formModel.value = res.data.menu || res.data
+      dialogVisible.value = true
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '获取菜单信息失败')
+  }
+}
+
+function getRowActions(row: any) {
+  return [
+    { text: '编辑', onClick: () => handleEditRow(row) },
+    { 
+      text: '删除', 
+      danger: true, 
+      confirmText: '确定删除该菜单吗？',
+      onClick: async () => {
+        try {
+          const res: any = await deleteMenus([row.id])
+          if (res && res.code === 0) {
+            ElMessage.success('删除成功')
+            tableRef.value?.reload()
+          } else {
+            ElMessage.error(res.msg || '删除失败')
+          }
+        } catch (error: any) {
+          ElMessage.error(error.message || '网络错误')
+        }
+      }
+    }
+  ]
+}
+
 function handleSubmit() {
   formRef.value?.validate(async (valid) => {
     if (valid) {
@@ -280,9 +327,6 @@ function getIconComponent(iconStr: string | null) {
 
 <style scoped>
 .menu-management {
-  padding: 10px 0;
-}
-.table-actions {
-  margin-bottom: 16px;
+  /* Use layout spacing */
 }
 </style>

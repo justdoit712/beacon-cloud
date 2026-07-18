@@ -1,5 +1,7 @@
 <template>
   <div class="apigatewayfilter-management">
+    <page-header title="API 网关过滤器" />
+
     <!-- Read-Only Notice -->
     <el-alert
       title="配置读取说明"
@@ -18,9 +20,7 @@
     >
       <!-- Custom render for Read State -->
       <template #stateSlot="scope">
-        <el-tag :type="scope.row.readState === 1 ? 'success' : 'danger'">
-          {{ scope.row.readStateText }}
-        </el-tag>
+        <status-tag :status="scope.row.readState === 1 ? 'success' : 'danger'" :text="scope.row.readStateText" />
       </template>
     </pro-table>
   </div>
@@ -42,6 +42,6 @@ const columns = [
 
 <style scoped>
 .apigatewayfilter-management {
-  padding: 10px 0;
+  /* Use layout spacing */
 }
 </style>

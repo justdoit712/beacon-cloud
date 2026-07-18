@@ -1,18 +1,19 @@
 <template>
-  <div class="app-wrapper" :class="{ sidebarCollapsed: isCollapsed }">
+  <div class="app-wrapper flex h-screen w-screen overflow-hidden bg-[var(--app-bg)] text-[var(--text-primary)]" :class="{ sidebarCollapsed: isCollapsed }">
     <!-- Sidebar -->
-    <div class="sidebar-container">
-      <div class="logo-area">
-        <h1 v-if="!isCollapsed">Beacon Cloud</h1>
-        <h1 v-else>BC</h1>
+    <div class="sidebar-container bg-[var(--panel-bg)] border-r border-[var(--border-light)] flex flex-col h-full shrink-0 transition-all duration-300 z-10" :class="isCollapsed ? 'w-[64px]' : 'w-[220px]'">
+      <div class="logo-area h-[56px] flex items-center justify-center border-b border-[var(--border-light)] font-bold tracking-wider text-[var(--brand-primary)]">
+        <h1 v-if="!isCollapsed" class="text-xl">Beacon Cloud</h1>
+        <h1 v-else class="text-xl">BC</h1>
       </div>
-      <el-scrollbar>
+      <el-scrollbar class="flex-1">
         <el-menu
           :default-active="route.path"
           :collapse="isCollapsed"
-          background-color="#1f2d3d"
-          text-color="#bfcbd9"
-          active-text-color="#409eff"
+          background-color="transparent"
+          text-color="var(--text-regular)"
+          active-text-color="var(--brand-primary)"
+          class="border-r-0"
           unique-opened
           router
         >
@@ -26,25 +27,25 @@
     </div>
 
     <!-- Main Container -->
-    <div class="main-container">
+    <div class="main-container flex-1 flex flex-col h-full overflow-hidden relative z-0">
       <!-- Header -->
-      <div class="header-navbar">
-        <div class="left-panel">
-          <el-icon class="collapse-btn" @click="toggleSidebar">
+      <div class="header-navbar h-[56px] bg-[var(--panel-bg)] border-b border-[var(--border-light)] px-6 flex items-center justify-between shrink-0 z-10">
+        <div class="left-panel flex items-center">
+          <el-icon class="collapse-btn text-xl cursor-pointer mr-4 text-[var(--text-regular)] hover:text-[var(--brand-primary)] transition-colors" @click="toggleSidebar">
             <component :is="isCollapsed ? Expand : Fold" />
           </el-icon>
           <el-breadcrumb class="breadcrumb-container" separator="/">
-            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-            <el-breadcrumb-item v-if="route.meta.title">{{ route.meta.title }}</el-breadcrumb-item>
+            <el-breadcrumb-item :to="{ path: '/' }"><span class="text-[var(--text-regular)]">首页</span></el-breadcrumb-item>
+            <el-breadcrumb-item v-if="route.meta.title"><span class="text-[var(--text-primary)]">{{ route.meta.title }}</span></el-breadcrumb-item>
           </el-breadcrumb>
         </div>
 
-        <div class="right-panel">
+        <div class="right-panel flex items-center">
           <el-dropdown trigger="click" @command="handleCommand">
-            <div class="user-profile">
-              <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
-              <span class="username">{{ username }}</span>
-              <el-icon><CaretBottom /></el-icon>
+            <div class="user-profile flex items-center cursor-pointer hover:bg-[var(--app-bg)] px-3 py-1.5 rounded-lg transition-colors">
+              <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" class="border border-[var(--border-light)]" />
+              <span class="username mx-2 text-sm text-[var(--text-regular)]">{{ username }}</span>
+              <el-icon class="text-[var(--text-regular)]"><CaretBottom /></el-icon>
             </div>
             <template #dropdown>
               <el-dropdown-menu>
@@ -58,7 +59,7 @@
       </div>
 
       <!-- App Main Content -->
-      <div class="app-main">
+      <div class="app-main flex-1 p-6 overflow-y-auto box-border">
         <router-view v-slot="{ Component }">
           <transition name="fade-transform" mode="out-in">
             <component :is="Component" />
@@ -99,111 +100,32 @@ function handleCommand(command: string) {
 </script>
 
 <style scoped>
-.app-wrapper {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-}
-
-.sidebar-container {
-  width: 240px;
-  background-color: #1f2d3d;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  transition: width 0.3s ease;
-  flex-shrink: 0;
-}
-
-.sidebarCollapsed .sidebar-container {
-  width: 64px;
-}
-
-.logo-area {
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #1a252f;
-  color: #fff;
-  border-bottom: 1px solid #111a24;
-}
-
-.logo-area h1 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.main-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: #f0f2f5;
-}
-
-.header-navbar {
-  height: 60px;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  flex-shrink: 0;
-}
-
-.left-panel {
-  display: flex;
-  align-items: center;
-}
-
-.collapse-btn {
-  font-size: 20px;
-  cursor: pointer;
-  margin-right: 16px;
-}
-
-.right-panel {
-  display: flex;
-  align-items: center;
-}
-
-.user-profile {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.username {
-  margin: 0 8px;
-  font-size: 14px;
-  color: #303133;
-}
-
-.app-main {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  box-sizing: border-box;
-}
-
 /* fade-transform transition */
 .fade-transform-enter-active,
 .fade-transform-leave-active {
-  transition: all 0.3s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-transform-enter-from {
   opacity: 0;
-  transform: translateX(-30px);
+  transform: translateX(-20px) scale(0.98);
 }
 
 .fade-transform-leave-to {
   opacity: 0;
-  transform: translateX(30px);
+  transform: translateX(20px) scale(0.98);
+}
+
+/* 覆盖 Element Plus 样式 */
+:deep(.el-breadcrumb__inner) {
+  color: inherit !important;
+}
+:deep(.el-menu) {
+  border-right: none !important;
+  background-color: transparent !important;
+}
+:deep(.el-sub-menu__title:hover),
+:deep(.el-menu-item:hover) {
+  background-color: var(--brand-primary-light) !important;
 }
 </style>

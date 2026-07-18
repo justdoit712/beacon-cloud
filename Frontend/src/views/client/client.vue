@@ -1,5 +1,11 @@
 <template>
   <div class="client-management">
+    <page-header title="客户管理">
+      <template #actions>
+        <el-button type="primary" :icon="Plus" @click="handleAdd">新增客户</el-button>
+      </template>
+    </page-header>
+
     <!-- Search Form -->
     <pro-search
       v-model="searchParam"
@@ -9,10 +15,9 @@
     />
 
     <!-- Action Bar -->
-    <div class="table-actions">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增</el-button>
-      <el-button type="warning" :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改</el-button>
-      <el-button type="danger" :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">删除</el-button>
+    <div class="table-actions flex space-x-2 mb-4">
+      <el-button type="warning" plain :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改</el-button>
+      <el-button type="danger" plain :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">删除</el-button>
     </div>
 
     <!-- Data Table -->
@@ -22,14 +27,20 @@
       :request-api="getClientList"
       :init-param="searchParam"
       @selection-change="handleSelectionChange"
-    />
+    >
+      <template #action="{ row }">
+        <action-buttons :actions="getRowActions(row)" />
+      </template>
+    </pro-table>
 
     <!-- Add/Edit Dialog -->
-    <el-dialog
+    <form-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="600px"
-      destroy-on-close
+      size="medium"
+      :loading="saving"
+      @confirm="handleSubmit"
+      @cancel="dialogVisible = false"
     >
       <el-form
         ref="formRef"
@@ -56,11 +67,7 @@
           <el-input v-model="formModel.email" placeholder="请输入邮箱 (name@example.com)" />
         </el-form-item>
       </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
+    </form-dialog>
   </div>
 </template>
 
@@ -89,7 +96,8 @@ const columns = [
   { prop: 'customermanager', label: '客户经理' },
   { prop: 'linkman', label: '联系人' },
   { prop: 'mobile', label: '手机号' },
-  { prop: 'email', label: '邮箱' }
+  { prop: 'email', label: '邮箱' },
+  { label: '操作', slot: 'action', width: 120, fixed: 'right', align: 'center' }
 ] as any[]
 
 const selectedIds = ref<number[]>([])
@@ -145,6 +153,36 @@ async function handleEdit() {
   }
 }
 
+function handleEditRow(row: any) {
+  dialogTitle.value = '修改'
+  formModel.value = { ...row }
+  dialogVisible.value = true
+}
+
+function getRowActions(row: any) {
+  return [
+    { text: '编辑', onClick: () => handleEditRow(row) },
+    { 
+      text: '删除', 
+      danger: true, 
+      confirmText: '确定删除该客户吗？',
+      onClick: async () => {
+        try {
+          const res: any = await deleteClients([row.id])
+          if (res && res.code === 0) {
+            ElMessage.success('删除成功')
+            tableRef.value?.reload()
+          } else {
+            ElMessage.error(res.msg || '删除失败')
+          }
+        } catch (error: any) {
+          ElMessage.error(error.message || '网络错误')
+        }
+      }
+    }
+  ]
+}
+
 function handleSubmit() {
   formRef.value?.validate(async (valid) => {
     if (valid) {
@@ -192,9 +230,6 @@ function handleBatchDelete() {
 
 <style scoped>
 .client-management {
-  padding: 10px 0;
-}
-.table-actions {
-  margin-bottom: 16px;
+  /* removed padding to respect layout padding */
 }
 </style>

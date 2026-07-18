@@ -1,5 +1,11 @@
 <template>
   <div class="role-management">
+    <page-header title="角色管理">
+      <template #actions>
+        <el-button type="primary" :icon="Plus" @click="handleAdd">新增角色</el-button>
+      </template>
+    </page-header>
+
     <!-- Search Form -->
     <pro-search
       v-model="searchParam"
@@ -9,10 +15,9 @@
     />
 
     <!-- Action Bar -->
-    <div class="table-actions">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增</el-button>
-      <el-button type="warning" :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改</el-button>
-      <el-button type="danger" :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">删除</el-button>
+    <div class="table-actions flex space-x-2 mb-4">
+      <el-button type="warning" plain :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改</el-button>
+      <el-button type="danger" plain :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">删除</el-button>
     </div>
 
     <!-- Data Table -->
@@ -25,30 +30,23 @@
     >
       <!-- Custom Status Render -->
       <template #statusSlot="scope">
-        <el-tag :type="scope.row.status === 1 ? 'success' : 'warning'">
-          {{ scope.row.status === 1 ? '有效' : '无效' }}
-        </el-tag>
+        <status-tag :status="scope.row.status === 1 ? 'success' : 'warning'" :text="scope.row.status === 1 ? '有效' : '无效'" />
       </template>
 
       <!-- Operations -->
-      <template #actionSlot="scope">
-        <el-button
-          type="primary"
-          link
-          :icon="Setting"
-          @click="handleAssignPermission(scope.row)"
-        >
-          分配权限
-        </el-button>
+      <template #action="{ row }">
+        <action-buttons :actions="getRowActions(row)" />
       </template>
     </pro-table>
 
     <!-- Add/Edit Dialog -->
-    <el-dialog
+    <form-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="500px"
-      destroy-on-close
+      size="small"
+      :loading="saving"
+      @confirm="handleSubmit"
+      @cancel="dialogVisible = false"
     >
       <el-form
         ref="formRef"
@@ -69,18 +67,16 @@
           </el-radio-group>
         </el-form-item>
       </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
+    </form-dialog>
 
     <!-- Permission Assignment Tree Dialog -->
-    <el-dialog
+    <form-dialog
       v-model="permDialogVisible"
       title="分配菜单权限"
-      width="500px"
-      destroy-on-close
+      size="small"
+      :loading="assigning"
+      @confirm="handleAssignSubmit"
+      @cancel="permDialogVisible = false"
     >
       <div v-loading="treeLoading" class="tree-container">
         <el-scrollbar max-height="400px">
@@ -95,11 +91,7 @@
           />
         </el-scrollbar>
       </div>
-      <template #footer>
-        <el-button @click="permDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="assigning" @click="handleAssignSubmit">确定</el-button>
-      </template>
-    </el-dialog>
+    </form-dialog>
   </div>
 </template>
 
@@ -137,9 +129,9 @@ const columns = [
   { prop: 'id', label: '编号', width: 80, sortable: true },
   { prop: 'name', label: '角色名称' },
   { prop: 'remark', label: '备注' },
-  { prop: 'status', label: '状态', slot: 'statusSlot' },
+  { prop: 'status', label: '状态', slot: 'statusSlot', align: 'center' },
   { prop: 'createTime', label: '创建时间' },
-  { label: '操作', width: 150, align: 'center', slot: 'actionSlot' }
+  { label: '操作', width: 220, align: 'center', slot: 'action', fixed: 'right' }
 ] as any[]
 
 const selectedIds = ref<number[]>([])
@@ -201,6 +193,37 @@ async function handleEdit() {
   } catch (error: any) {
     ElMessage.error(error.message || '获取角色信息失败')
   }
+}
+
+function handleEditRow(row: any) {
+  dialogTitle.value = '修改'
+  formModel.value = { ...row }
+  dialogVisible.value = true
+}
+
+function getRowActions(row: any) {
+  return [
+    { text: '分配权限', onClick: () => handleAssignPermission(row) },
+    { text: '编辑', onClick: () => handleEditRow(row) },
+    { 
+      text: '删除', 
+      danger: true, 
+      confirmText: '确定删除该角色吗？',
+      onClick: async () => {
+        try {
+          const res: any = await deleteRoles([row.id])
+          if (res && res.code === 0) {
+            ElMessage.success('删除成功')
+            tableRef.value?.reload()
+          } else {
+            ElMessage.error(res.msg || '删除失败')
+          }
+        } catch (error: any) {
+          ElMessage.error(error.message || '网络错误')
+        }
+      }
+    }
+  ]
 }
 
 function handleSubmit() {
@@ -326,15 +349,12 @@ async function handleAssignSubmit() {
 
 <style scoped>
 .role-management {
-  padding: 10px 0;
-}
-.table-actions {
-  margin-bottom: 16px;
+  /* Use layout spacing */
 }
 .tree-container {
-  border: 1px solid #dcdfe6;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 12px;
-  background-color: #fafafa;
+  background-color: var(--panel-muted-bg);
 }
 </style>

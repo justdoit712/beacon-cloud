@@ -1,4 +1,6 @@
 <template>
+  <div class="aurora-bg"></div>
+  <div class="aurora-bg-extra"></div>
   <router-view />
 </template>
 

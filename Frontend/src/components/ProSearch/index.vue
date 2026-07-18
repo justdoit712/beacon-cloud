@@ -2,7 +2,7 @@
   <div class="pro-search">
     <el-form :model="modelValue" inline class="search-form">
       <el-form-item
-        v-for="item in searchConfig"
+        v-for="(item, index) in visibleConfig"
         :key="item.prop"
         :label="item.label"
       >
@@ -34,15 +34,20 @@
       <el-form-item>
         <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
         <el-button :icon="Refresh" @click="handleReset">重置</el-button>
+        <el-button v-if="searchConfig.length > 4" type="primary" link @click="isExpanded = !isExpanded">
+          {{ isExpanded ? '收起' : '展开' }}
+          <el-icon class="ml-1"><component :is="isExpanded ? ArrowUp : ArrowDown" /></el-icon>
+        </el-button>
       </el-form-item>
     </el-form>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Search, Refresh } from '@element-plus/icons-vue'
+import { ref, computed } from 'vue'
+import { Search, Refresh, ArrowDown, ArrowUp } from '@element-plus/icons-vue'
 
-
+const isExpanded = ref(false)
 interface SearchItem {
   label: string
   prop: string
@@ -57,6 +62,11 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(['search', 'reset', 'update:modelValue'])
+
+const visibleConfig = computed(() => {
+  if (isExpanded.value) return props.searchConfig
+  return props.searchConfig.slice(0, 4)
+})
 
 function handleSearch() {
   emit('search')
@@ -74,10 +84,10 @@ function handleReset() {
 
 <style scoped>
 .pro-search {
-  background-color: #fff;
+  background-color: var(--panel-bg);
   padding: 16px 16px 0 16px;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  border-radius: 6px;
+  box-shadow: var(--shadow-soft);
   margin-bottom: 16px;
 }
 .search-form {

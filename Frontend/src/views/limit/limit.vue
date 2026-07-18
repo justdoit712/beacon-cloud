@@ -1,5 +1,11 @@
 <template>
   <div class="limit-management">
+    <page-header title="限流规则配置">
+      <template #actions>
+        <el-button type="primary" :icon="Plus" @click="handleAdd">新增规则</el-button>
+      </template>
+    </page-header>
+
     <!-- Search Form -->
     <pro-search
       v-model="searchParam"
@@ -9,10 +15,9 @@
     />
 
     <!-- Action Bar -->
-    <div class="table-actions">
-      <el-button type="primary" :icon="Plus" @click="handleAdd">新增</el-button>
-      <el-button type="warning" :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改</el-button>
-      <el-button type="danger" :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">删除</el-button>
+    <div class="table-actions flex space-x-2 mb-4">
+      <el-button type="warning" plain :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改</el-button>
+      <el-button type="danger" plain :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">删除</el-button>
     </div>
 
     <!-- Data Table -->
@@ -25,18 +30,23 @@
     >
       <!-- Custom render for Limit State -->
       <template #stateSlot="scope">
-        <el-tag :type="scope.row.limitState === 1 ? 'success' : 'danger'">
-          {{ scope.row.limitState === 1 ? '启用' : '禁用' }}
-        </el-tag>
+        <status-tag :status="scope.row.limitState === 1 ? 'success' : 'danger'" :text="scope.row.limitState === 1 ? '启用' : '禁用'" />
+      </template>
+
+      <!-- Custom Actions -->
+      <template #action="{ row }">
+        <action-buttons :actions="getRowActions(row)" />
       </template>
     </pro-table>
 
     <!-- Add/Edit Dialog -->
-    <el-dialog
+    <form-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="550px"
-      destroy-on-close
+      size="medium"
+      :loading="saving"
+      @confirm="handleSubmit"
+      @cancel="dialogVisible = false"
     >
       <el-form
         ref="formRef"
@@ -50,9 +60,8 @@
         <el-form-item label="限流次数" prop="limitCount">
           <el-input-number v-model="formModel.limitCount" :min="1" style="width: 100%" placeholder="限流时间周期内最大请求次数" />
         </el-form-item>
-        <!-- Notice the 'despcription' key! -->
         <el-form-item label="限流描述" prop="despcription">
-          <el-input v-model="formModel.despcription" placeholder="限流规则的说明说明" />
+          <el-input v-model="formModel.despcription" placeholder="限流规则的说明" />
         </el-form-item>
         <el-form-item label="规则状态" prop="limitState">
           <el-radio-group v-model="formModel.limitState">
@@ -61,11 +70,7 @@
           </el-radio-group>
         </el-form-item>
       </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
+    </form-dialog>
   </div>
 </template>
 
@@ -92,7 +97,8 @@ const columns = [
   { prop: 'limitTime', label: '限流周期(秒)', width: 130, align: 'center' },
   { prop: 'limitCount', label: '最大允许次数', width: 130, align: 'center' },
   { prop: 'despcription', label: '限流描述' },
-  { prop: 'limitState', label: '状态', width: 100, slot: 'stateSlot', align: 'center' }
+  { prop: 'limitState', label: '状态', width: 100, slot: 'stateSlot', align: 'center' },
+  { label: '操作', slot: 'action', width: 120, fixed: 'right', align: 'center' }
 ] as any[]
 
 const selectedIds = ref<number[]>([])
@@ -151,6 +157,36 @@ async function handleEdit() {
   }
 }
 
+function handleEditRow(row: any) {
+  dialogTitle.value = '修改'
+  formModel.value = { ...row }
+  dialogVisible.value = true
+}
+
+function getRowActions(row: any) {
+  return [
+    { text: '编辑', onClick: () => handleEditRow(row) },
+    { 
+      text: '删除', 
+      danger: true, 
+      confirmText: '确定删除该限流规则吗？',
+      onClick: async () => {
+        try {
+          const res: any = await deleteLimits([row.id])
+          if (res && res.code === 0) {
+            ElMessage.success('删除成功')
+            tableRef.value?.reload()
+          } else {
+            ElMessage.error(res.msg || '删除失败')
+          }
+        } catch (error: any) {
+          ElMessage.error(error.message || '网络错误')
+        }
+      }
+    }
+  ]
+}
+
 function handleSubmit() {
   formRef.value?.validate(async (valid) => {
     if (valid) {
@@ -198,9 +234,6 @@ function handleBatchDelete() {
 
 <style scoped>
 .limit-management {
-  padding: 10px 0;
-}
-.table-actions {
-  margin-bottom: 16px;
+  /* Use layout spacing */
 }
 </style>

@@ -5,7 +5,6 @@
       v-loading="loading"
       :data="tableData"
       border
-      stripe
       v-bind="$attrs"
     >
       <template v-for="col in columns" :key="col.prop || col.type">
@@ -138,10 +137,10 @@ defineExpose({
 
 <style scoped>
 .pro-table {
-  background-color: #fff;
+  background-color: var(--panel-bg);
   padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  border-radius: 6px;
+  box-shadow: var(--shadow-soft);
 }
 
 .pagination-container {

@@ -1,5 +1,7 @@
 <template>
   <div class="stragetyfilter-management">
+    <page-header title="业务策略链配置" />
+
     <!-- Search Form -->
     <pro-search
       v-model="searchParam"
@@ -9,8 +11,8 @@
     />
 
     <!-- Action Bar -->
-    <div class="table-actions">
-      <el-button type="warning" :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改</el-button>
+    <div class="table-actions flex space-x-2 mb-4">
+      <el-button type="warning" plain :icon="Edit" :disabled="selectedIds.length !== 1" @click="handleEdit">修改策略</el-button>
     </div>
 
     <!-- Data Table -->
@@ -20,14 +22,21 @@
       :request-api="getStrategyFilterList"
       :init-param="searchParam"
       @selection-change="handleSelectionChange"
-    />
+    >
+      <!-- Custom Actions -->
+      <template #action="{ row }">
+        <action-buttons :actions="getRowActions(row)" />
+      </template>
+    </pro-table>
 
     <!-- Edit Dialog -->
-    <el-dialog
+    <form-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="600px"
-      destroy-on-close
+      size="medium"
+      :loading="saving"
+      @confirm="handleSubmit"
+      @cancel="dialogVisible = false"
     >
       <el-form
         ref="formRef"
@@ -57,11 +66,7 @@
           <div class="help-text">选中过滤器将按先后顺序拼装为策略过滤链生效。</div>
         </el-form-item>
       </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
+    </form-dialog>
   </div>
 </template>
 
@@ -87,7 +92,8 @@ const columns = [
   { prop: 'id', label: '编号', width: 80, sortable: true },
   { prop: 'corpname', label: '客户名称' },
   { prop: 'usercode', label: '接入账号' },
-  { prop: 'filters', label: '策略过滤器列表', showOverflowTooltip: true }
+  { prop: 'filters', label: '策略过滤器列表', showOverflowTooltip: true },
+  { label: '操作', slot: 'action', width: 120, fixed: 'right', align: 'center' }
 ] as any[]
 
 const selectedIds = ref<number[]>([])
@@ -153,6 +159,17 @@ async function handleEdit() {
   }
 }
 
+function handleEditRow(row: any) {
+  selectedIds.value = [row.id]
+  handleEdit()
+}
+
+function getRowActions(row: any) {
+  return [
+    { text: '编辑策略', onClick: () => handleEditRow(row) }
+  ]
+}
+
 function handleSubmit() {
   formRef.value?.validate(async (valid) => {
     if (valid) {
@@ -183,10 +200,7 @@ function handleSubmit() {
 
 <style scoped>
 .stragetyfilter-management {
-  padding: 10px 0;
-}
-.table-actions {
-  margin-bottom: 16px;
+  /* Use layout spacing */
 }
 .help-text {
   font-size: 12px;

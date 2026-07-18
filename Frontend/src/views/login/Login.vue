@@ -137,13 +137,13 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(135deg, #1f2d3d 0%, #111a24 100%);
+  background: var(--app-bg);
 }
 
 .login-card {
   width: 400px;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  box-shadow: var(--shadow-soft);
   border: none;
 }
 
@@ -153,7 +153,7 @@ onMounted(() => {
 
 .card-header h2 {
   margin: 0;
-  color: #303133;
+  color: var(--text-primary);
   font-size: 24px;
   font-weight: 600;
 }
